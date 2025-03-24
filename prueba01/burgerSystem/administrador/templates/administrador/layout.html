@@ -29,7 +29,7 @@
                     <a  class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Gestion</a>
                     <ul class="dropdown-menu">
                         <li><a class="dropdown-item" href="#">Producto</a></li>
-                        <li><a class="dropdown-item" href="#">Compras</a></li>
+                        <li><a class="dropdown-item" href="{% url 'lista_compras' %}">Compras</a></li>
                     </ul>
                 </li>
 
@@ -49,8 +49,8 @@
                 <li class="nav-item dropdown">
                     <a  class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Personas</a>
                     <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="{% url 'registro' %}">Registro</a></li>
-                        <li><a class="dropdown-item" href="{% url 'listar' %}">Listar</a></li>
+                        <li><a class="dropdown-item" href="{% url 'crear_persona' %}">Registro</a></li>
+                        <li><a class="dropdown-item" href="{% url 'listar_personas' %}">Listar</a></li>
                     </ul>
                 </li>
             </ul>
