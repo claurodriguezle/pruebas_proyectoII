@@ -1,0 +1,3 @@
+admin Django
+user: janyne
+pass: admin2025
