@@ -10,6 +10,6 @@ urlpatterns = [
     path('listar/', views.listar_personas, name='listar_personas'),
 
     #Rutas para compras
-    path('compras/', TemplateView.as_view(template_name='compras/lista_compras.html'), name='lista_compras'),
-    path('compras/crear/', TemplateView.as_view(template_name='compras/crear_compra.html'), name='crear_compra'),
+    path('compras/', views.lista_compras, name='lista_compras'),
+    path('compras/crear/', views.crear_compra, name='crear_compra'),
 ]

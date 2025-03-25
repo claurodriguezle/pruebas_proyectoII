@@ -1,426 +1,244 @@
 {% extends "administrador/layout.html" %}
 {% load static %}
 
-{% block title %}
-    Formulario de Compras
-{% endblock %}
+{% block title %}Crear Nueva Compra{% endblock %}
 
 {% block extra_css %}
-    {{ block.super }}
-    <link rel="stylesheet" type="text/css" href="{% static 'admin/css/forms.css' %}">
-    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        .hidden-formset {
-            display: none;
-        }
-        .detalle-row:hover .delete-btn {
-            opacity: 1;
-        }
-        .delete-btn {
-            opacity: 0.5;
-            transition: opacity 0.2s;
-        }
-    </style>
+<style>
+    .item-row {
+        background-color: #f8f9fa;
+        padding: 15px;
+        margin-bottom: 10px;
+        border-radius: 5px;
+        border: 1px solid #dee2e6;
+    }
+    .btn-remove-item {
+        margin-top: 32px;
+    }
+    .total-display {
+        font-size: 1.2em;
+        font-weight: bold;
+    }
+</style>
 {% endblock %}
 
 {% block body %}
-<div id="content-main" class="container-fluid">
-    <div class="object-tools mb-3">
-        <a href="{% url 'lista_compras' %}" class="btn btn-secondary">Volver a la lista</a>
-    </div>
+<div class="container mt-4">
+    <h2>Registrar Nueva Compra</h2>
+    
+    {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
 
-    <h1 class="mb-4">Nueva Compra</h1>
-
-    <form method="post" id="compra-form" class="form-horizontal">
+    <form method="post" id="compra-form">
         {% csrf_token %}
         
-        <!-- Detalles de la Compra -->
-        <div class="card mb-3">
-            <div class="card-header bg-primary text-white">
-                Detalles de la Compra
+        <!-- Datos de la Compra -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>Información de la Factura</h5>
             </div>
             <div class="card-body">
-                <div class="form-row">
-                    <div class="form-group col-md-12">
-                        <label>Modo de entrada:</label>
-                        <div class="btn-group" role="group">
-                            <button type="button" id="btn-modo-select" class="btn btn-primary">Seleccionar producto</button>
-                            <button type="button" id="btn-modo-manual" class="btn btn-secondary">Entrada manual</button>
-                        </div>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="numero_factura" class="form-label">Número de Factura</label>
+                        <input type="text" class="form-control" id="numero_factura" name="numero_factura" required>
                     </div>
-                </div>
-  
-                <!-- Formulario de Selección de Producto -->
-                <div id="producto-select-form" class="form-row">
-                    <div class="form-group col-md-4">
-                        <label for="id_producto">Producto:</label>
-                        <select id="id_producto" class="form-control">
-                            <option value="">Seleccionar producto</option>
-                            {% for producto in productos %}
-                                <option value="{{ producto.id }}" data-precio="{{ producto.precio_referencia|default:0 }}">{{ producto.nombre }}</option>
+                    <div class="col-md-4 mb-3">
+                        <label for="fecha" class="form-label">Fecha</label>
+                        <input type="date" class="form-control" id="fecha" name="fecha" required>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="proveedor" class="form-label">Proveedor</label>
+                        <select class="form-select" id="proveedor" name="proveedor" required>
+                            <option value="">Seleccione un proveedor</option>
+                            {% for proveedor in proveedores %}
+                            <option value="{{ proveedor.id }}">{{ proveedor.nombre_empresa }}</option>
                             {% endfor %}
                         </select>
                     </div>
-
-                    <div class="form-group col-md-4">
-                        <label for="id_cantidad">Cantidad:</label>
-                        <input type="number" id="id_cantidad" class="form-control" min="0.01" step="0.01" value="1">
-                    </div>
-
-                    <div class="form-group col-md-4">
-                        <label for="id_precio_compra">Precio Unitario:</label>
-                        <input type="number" id="id_precio_compra" class="form-control" min="0" step="1" value="0">
-                    </div>
-                </div>
-
-                <!-- Formulario de Entrada Manual -->
-                <div id="producto-manual-form" class="form-row" style="display: none;">
-                    <div class="form-group col-md-4">
-                        <label for="id_descripcion">Descripción:</label>
-                        <input type="text" id="id_descripcion" class="form-control" placeholder="Ej: Aceite vegetal">
-                    </div>
-
-                    <div class="form-group col-md-4">
-                        <label for="id_cantidad_manual">Cantidad:</label>
-                        <input type="number" id="id_cantidad_manual" class="form-control" min="0.01" step="0.01" value="1">
-                    </div>
-
-                    <div class="form-group col-md-4">
-                        <label for="id_precio_manual">Precio Unitario:</label>
-                        <input type="number" id="id_precio_manual" class="form-control" min="0" step="1" value="0">
-                    </div>
-                </div>
-        
-                <!-- Botón para Agregar Detalle -->
-                <div class="form-row">
-                    <div class="form-group col-md-12">
-                        <button type="button" id="btn-agregar-detalle" class="btn btn-success">
-                            <i class="fas fa-plus"></i> Agregar
-                        </button>
-                    </div>
-                </div>
-        
-                <!-- Tabla de Detalles -->
-                <div class="results">
-                    <table id="detalles-table" class="table table-bordered">
-                        <thead>
-                            <tr>
-                                <th>Producto</th>
-                                <th>Cantidad</th>
-                                <th>Precio Unitario</th>
-                                <th>Subtotal</th>
-                                <th width="50"></th>
-                            </tr>
-                        </thead>
-                        <tbody id="detalles-body">
-                            <tr id="empty-row">
-                                <td colspan="5" style="text-align: center; padding: 20px;">
-                                    No hay productos agregados. Agregue al menos un producto para continuar.
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- Formset Oculto -->
-                <div class="hidden-formset">
-                    {{ detalles_formset.management_form }}
-                    <div id="formset-container">
-                        {% for form in detalles_formset.forms %}
-                            <div class="formset-form">
-                                {{ form.as_p }}
-                            </div>
-                        {% endfor %}
-                    </div>
                 </div>
             </div>
         </div>
-      
-        <!-- Resumen de la Compra -->
-        <div class="card mb-3">
-            <div class="card-header bg-primary text-white">
-                Resumen de la Compra
+
+        <!-- Ítems de la Compra -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5>Ítems de la Compra</h5>
+                <button type="button" id="add-item" class="btn btn-sm btn-primary">
+                    <i class="bi bi-plus-circle"></i> Agregar Ítem
+                </button>
             </div>
             <div class="card-body">
-                <div class="form-row">
-                    <div class="form-group col-md-4">
-                        <label>Subtotal (sin IVA):</label>
-                        <span id="total-sin-iva" class="form-control-plaintext">0 ₲</span>
-                    </div>
-                    <div class="form-group col-md-4">
-                        <label>IVA 10%:</label>
-                        <span id="total-iva" class="form-control-plaintext">0 ₲</span>
-                    </div>
-                    <div class="form-group col-md-4">
-                        <label>Total:</label>
-                        <span id="total-compra" class="form-control-plaintext font-weight-bold">0 ₲</span>
+                <div id="items-container">
+                    <!-- Ítem inicial -->
+                    <div class="item-row row g-3 mb-3" id="item-0">
+                        <div class="col-md-4">
+                            <label class="form-label">Nombre del Ítem</label>
+                            <input type="text" class="form-control item-nombre" name="items" required>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Tipo</label>
+                            <select class="form-select item-tipo" name="tipos" required>
+                                <option value="ARTICULO">Artículo</option>
+                                <option value="MATERIA_PRIMA">Materia Prima</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="form-group">
+                                <label>Unidad de Medida</label>
+                                <select name="unidades" class="form-control" required>
+                                    {% for value, label in unidad_choices %}
+                                        <option value="{{ value }}" {% if value == 'unidad' %}selected{% endif %}>
+                                            {{ label }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Cantidad</label>
+                            <input type="number" step="0.01" class="form-control item-cantidad" name="cantidades" required>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Precio Unitario</label>
+                            <input type="number" step="0.01" class="form-control item-precio" name="precios" required>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-      
+
+        <!-- Totales -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>Totales</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 offset-md-8">
+                        <table class="table">
+                            <tr>
+                                <th>Subtotal:</th>
+                                <td class="text-end" id="subtotal">0.00</td>
+                            </tr>
+                            <tr>
+                                <th>IVA 5%:</th>
+                                <td class="text-end" id="iva5">0.00</td>
+                            </tr>
+                            <tr>
+                                <th>IVA 10%:</th>
+                                <td class="text-end" id="iva10">0.00</td>
+                            </tr>
+                            <tr class="table-active">
+                                <th>Total:</th>
+                                <td class="text-end total-display" id="total">0.00</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Botones de Acción -->
-        <div class="submit-row mt-4">
-            <a href="{% url 'lista_compras' %}" class="btn btn-danger">Cancelar</a>
-            <input type="submit" id="btn-submit" value="Registrar Compra" class="btn btn-primary" disabled>
+        <div class="d-flex justify-content-between">
+            <a href="{% url 'lista_compras' %}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Cancelar
+            </a>
+            <button type="submit" class="btn btn-success">
+                <i class="bi bi-save"></i> Guardar Compra
+            </button>
         </div>
     </form>
 </div>
-  
-{% block admin_change_form_document_ready %}
+
+{% endblock %}
+
+{% block extra_js %}
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        let entryMode = 'select';
-        let detallesCount = 0;
-        let totalCompra = 0;
+document.addEventListener('DOMContentLoaded', function() {
+    let itemCount = 1;
+    
+    // Función para agregar nuevo ítem
+    document.getElementById('add-item').addEventListener('click', function() {
+        itemCount++;
+        const newItem = document.getElementById('item-template').cloneNode(true);
+        newItem.id = `item-${itemCount}`;
+        newItem.style.display = 'block';  // Hacer visible el ítem clonado
         
-        // Referencias a elementos DOM
-        const btnModoSelect = document.getElementById('btn-modo-select');
-        const btnModoManual = document.getElementById('btn-modo-manual');
-        const productoSelectForm = document.getElementById('producto-select-form');
-        const productoManualForm = document.getElementById('producto-manual-form');
-        const btnAgregarDetalle = document.getElementById('btn-agregar-detalle');
-        const detallesBody = document.getElementById('detalles-body');
-        const emptyRow = document.getElementById('empty-row');
-        const formsetContainer = document.getElementById('formset-container');
-        const btnSubmit = document.getElementById('btn-submit');
-        
-        // Elementos para calcular totales
-        const totalSinIvaElement = document.getElementById('total-sin-iva');
-        const totalIvaElement = document.getElementById('total-iva');
-        const totalCompraElement = document.getElementById('total-compra');
-        
-        // Cambiar modo de entrada
-        btnModoSelect.addEventListener('click', function() {
-            entryMode = 'select';
-            btnModoSelect.classList.add('selected');
-            btnModoManual.classList.remove('selected');
-            productoSelectForm.style.display = 'block';
-            productoManualForm.style.display = 'none';
+        // Limpiar valores
+        newItem.querySelector('[name="items"]').value = '';
+        newItem.querySelector('[name="cantidades"]').value = '';
+        newItem.querySelector('[name="precios"]').value = '';
+        // Agregar botón de eliminar
+        const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.className = 'btn btn-danger btn-sm';
+            removeBtn.innerHTML = '<i class="bi bi-trash"></i>';
+            removeBtn.onclick = function() { newItem.remove(); };
+            newItem.querySelector('.item-actions').appendChild(removeBtn);
+            
+            document.getElementById('items-container').appendChild(newItem);
         });
-        
-        btnModoManual.addEventListener('click', function() {
-            entryMode = 'manual';
-            btnModoManual.classList.add('selected');
-            btnModoSelect.classList.remove('selected');
-            productoManualForm.style.display = 'block';
-            productoSelectForm.style.display = 'none';
-        });
-        
-        // Autocompletar precio al seleccionar producto
-        document.getElementById('id_producto').addEventListener('change', function() {
-            const selectedOption = this.options[this.selectedIndex];
-            if (selectedOption.value) {
-                const precio = selectedOption.getAttribute('data-precio');
-                document.getElementById('id_precio_compra').value = precio;
-            } else {
-                document.getElementById('id_precio_compra').value = 0;
-            }
-        });
-        
-        // Agregar detalle
-        btnAgregarDetalle.addEventListener('click', function() {
-            let isValid = true;
-            let productoId, productoNombre, cantidad, precio;
-            
-            if (entryMode === 'select') {
-                const productoSelect = document.getElementById('id_producto');
-                productoId = productoSelect.value;
-                productoNombre = productoSelect.options[productoSelect.selectedIndex].text;
-                cantidad = parseFloat(document.getElementById('id_cantidad').value);
-                precio = parseFloat(document.getElementById('id_precio_compra').value);
-                
-                if (!productoId || isNaN(cantidad) || isNaN(precio) || cantidad <= 0 || precio < 0) {
-                    isValid = false;
-                }
-            } else {
-                productoId = -1; // Indicador de entrada manual
-                productoNombre = document.getElementById('id_descripcion').value;
-                cantidad = parseFloat(document.getElementById('id_cantidad_manual').value);
-                precio = parseFloat(document.getElementById('id_precio_manual').value);
-                
-                if (!productoNombre || isNaN(cantidad) || isNaN(precio) || cantidad <= 0 || precio < 0) {
-                    isValid = false;
-                }
-            }
-            
-            if (isValid) {
-                // Ocultar fila vacía si es la primera entrada
-                if (detallesCount === 0) {
-                    emptyRow.style.display = 'none';
-                }
-                
-                // Calcular subtotal
-                const subtotal = cantidad * precio;
-                
-                // Crear nueva fila en la tabla
-                const newRow = document.createElement('tr');
-                newRow.className = 'detalle-row';
-                newRow.id = `detalle-row-${detallesCount}`;
-                newRow.innerHTML = `
-                    <td>${productoNombre}</td>
-                    <td style="text-align: right;">${cantidad.toFixed(2)}</td>
-                    <td style="text-align: right;">${formatCurrency(precio)}</td>
-                    <td style="text-align: right;">${formatCurrency(subtotal)}</td>
-                    <td>
-                        <button type="button" class="delete-btn" data-index="${detallesCount}" title="Eliminar">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="3 6 5 6 21 6"></polyline>
-                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                                <line x1="10" y1="11" x2="10" y2="17"></line>
-                                <line x1="14" y1="11" x2="14" y2="17"></line>
-                            </svg>
-                        </button>
-                    </td>
-                `;
-                detallesBody.appendChild(newRow);
-                
-                // Agregar al formset oculto
-                addToFormset(detallesCount, productoId, productoNombre, cantidad, precio);
-                
-                // Actualizar contadores y totales
-                detallesCount++;
-                updateTotals();
-                updateFormsetManagement();
-                
-                // Limpiar formulario
-                if (entryMode === 'select') {
-                    document.getElementById('id_producto').value = '';
-                    document.getElementById('id_cantidad').value = '1';
-                    document.getElementById('id_precio_compra').value = '0';
-                } else {
-                    document.getElementById('id_descripcion').value = '';
-                    document.getElementById('id_cantidad_manual').value = '1';
-                    document.getElementById('id_precio_manual').value = '0';
-                }
-                
-                // Habilitar botón de envío
-                btnSubmit.disabled = false;
-            } else {
-                alert('Por favor complete todos los campos correctamente.');
-            }
-        });
-        
-        // Eliminar detalle (delegación de eventos)
-        detallesBody.addEventListener('click', function(e) {
-            if (e.target.closest('.delete-btn')) {
-                const btn = e.target.closest('.delete-btn');
-                const index = btn.getAttribute('data-index');
-                const row = document.getElementById(`detalle-row-${index}`);
-                
-                // Eliminar fila de la tabla
-                row.remove();
-                
-                // Eliminar del formset
-                const formsetForm = document.querySelector(`.formset-form[data-index="${index}"]`);
-                if (formsetForm) {
-                    const deleteInput = formsetForm.querySelector('input[name$="-DELETE"]');
-                    if (deleteInput) {
-                        deleteInput.value = 'on';
-                    }
-                }
-                
-                // Actualizar contadores y totales
-                detallesCount--;
-                updateTotals();
-                
-                // Mostrar fila vacía si no hay detalles
-                if (detallesCount === 0) {
-                    emptyRow.style.display = 'table-row';
-                    btnSubmit.disabled = true;
-                }
-            }
-        });
-        
-        // Funciones auxiliares
-        function addToFormset(index, productoId, productoNombre, cantidad, precio) {
-            // Clonar el primer formulario del formset
-            const formTemplate = document.querySelector('.formset-form');
-            const newForm = formTemplate.cloneNode(true);
-            newForm.setAttribute('data-index', index);
-            
-            // Actualizar los IDs y nombres de los campos
-            const inputs = newForm.querySelectorAll('input, select');
-            inputs.forEach(input => {
-                const name = input.getAttribute('name');
-                if (name) {
-                    const newName = name.replace('-0-', `-${index}-`);
-                    input.setAttribute('name', newName);
-                    
-                    const id = input.getAttribute('id');
-                    if (id) {
-                        const newId = id.replace('-0-', `-${index}-`);
-                        input.setAttribute('id', newId);
-                    }
-                }
-            });
-            
-            // Establecer valores
-            if (entryMode === 'select') {
-                const productoInput = newForm.querySelector('input[name$="-producto"]');
-                if (productoInput) {
-                    productoInput.value = productoId;
-                }
-            } else {
-                const descripcionInput = newForm.querySelector('input[name$="-descripcion"]');
-                if (descripcionInput) {
-                    descripcionInput.value = productoNombre;
-                }
-            }
-            
-            const cantidadInput = newForm.querySelector('input[name$="-cantidad"]');
-            if (cantidadInput) {
-                cantidadInput.value = cantidad;
-            }
-            
-            const precioInput = newForm.querySelector('input[name$="-precio_compra"]');
-            if (precioInput) {
-                precioInput.value = precio;
-            }
-            
-            // Agregar al contenedor
-            formsetContainer.appendChild(newForm);
-        }
-        
-        function updateFormsetManagement() {
-            const totalForms = document.querySelector('input[name="detalles-TOTAL_FORMS"]');
-            if (totalForms) {
-                totalForms.value = detallesCount;
-            }
-        }
-        
-        function updateTotals() {
-            // Calcular totales
-            totalCompra = 0;
-            
-            const rows = detallesBody.querySelectorAll('tr:not(#empty-row)');
-            rows.forEach(row => {
-                const cells = row.querySelectorAll('td');
-                if (cells.length >= 4) {
-                    const subtotalText = cells[3].textContent;
-                    const subtotal = parseFloat(subtotalText.replace(/[^\d]/g, ''));
-                    totalCompra += subtotal;
-                }
-            });
-            
-            // Calcular IVA (asumiendo 10%)
-            const totalSinIva = totalCompra / 1.1;
-            const totalIva = totalCompra - totalSinIva;
-            
-            // Actualizar elementos
-            totalSinIvaElement.textContent = formatCurrency(totalSinIva);
-            totalIvaElement.textContent = formatCurrency(totalIva);
-            totalCompraElement.textContent = formatCurrency(totalCompra);
-        }
-        
-        function formatCurrency(amount) {
-            return new Intl.NumberFormat('es-PY', { 
-                style: 'currency', 
-                currency: 'PYG',
-                maximumFractionDigits: 0 
-            }).format(amount);
+    
+    // Calcular totales al cambiar valores
+    document.getElementById('items-container').addEventListener('input', function(e) {
+        if (e.target.classList.contains('item-cantidad') || e.target.classList.contains('item-precio') || 
+            e.target.classList.contains('item-tipo')) {
+            calcularTotales();
         }
     });
+    document.addEventListener('change', function(e) {
+        if (e.target && e.target.matches('select[name="unidades"]')) {
+            const row = e.target.closest('.item-row');
+            const cantidadInput = row.querySelector('[name="cantidades"]');
+            const unidadActual = e.target.value;
+            const cantidad = parseFloat(cantidadInput.value) || 0;
+            
+            if (unidadActual === 'gr' && e.target.oldValue === 'kg') {
+                cantidadInput.value = cantidad * 1000;  // kg → gr
+            } else if (unidadActual === 'kg' && e.target.oldValue === 'gr') {
+                cantidadInput.value = cantidad / 1000;  // gr → kg
+            }
+            
+            e.target.oldValue = unidadActual;  // Guardar valor anterior
+        }
+    });
+    
+    // Función para calcular totales
+    function calcularTotales() {
+        let subtotal = 0;
+        let iva5 = 0;
+        let iva10 = 0;
+        
+        document.querySelectorAll('.item-row').forEach(row => {
+            const cantidad = parseFloat(row.querySelector('.item-cantidad').value) || 0;
+            const precio = parseFloat(row.querySelector('.item-precio').value) || 0;
+            const tipo = row.querySelector('.item-tipo').value;
+            const itemTotal = cantidad * precio;
+            
+            subtotal += itemTotal;
+            
+            if (tipo === 'MATERIA_PRIMA') {
+                iva5 += itemTotal * 0.05;
+            } else {
+                iva10 += itemTotal * 0.10;
+            }
+        });
+        
+        const totalIva = iva5 + iva10;
+        const total = subtotal + totalIva;
+        
+        document.getElementById('subtotal').textContent = subtotal.toFixed(2);
+        document.getElementById('iva5').textContent = iva5.toFixed(2);
+        document.getElementById('iva10').textContent = iva10.toFixed(2);
+        document.getElementById('total').textContent = total.toFixed(2);
+    }
+});
 </script>
-{% endblock %}
 {% endblock %}
