@@ -1,6 +1,5 @@
 from django import forms
 from .models import Persona, Cliente, Empleado, Proveedor # noqa: F401
-from .models import Compra, DetalleCompra, Item
 
 class PersonaForm(forms.ModelForm):
     TIPO_PERSONA_CHOICES = [
@@ -60,33 +59,32 @@ class PersonaForm(forms.ModelForm):
         label="Empresa"
     )
 
-#Formularios para compras
-class ItemForm(forms.ModelForm):
-    class Meta:
-        model = Item
-        fields = ['nombre','tipo','unidad_medida']
-class DetalleCompraForm(forms.ModelForm):
-    class Meta:
-        model = DetalleCompra
-        fields = ['item','cantidad','precio_compra']
+    # Codigo para manejar los campos dinamicos
 
-    def __init__(self,*args,**kwargs):
-        super().__init__(*args,**kwargs)
-        self.fields['item'].queryset = Item.objects.all()
+def clean(self):
+    cleaned_data = super().clean()
+    tipo_persona = cleaned_data.get('tipo_persona')
 
-class CompraForm(forms.ModelForm):
-    class Meta:
-        model = Compra
-        fields = ['numero_factura','fecha','proveedor']
-        widgets = {
-            'fecha': forms.DateInput(attrs={'type':'date'}),
-        }
-class CompraCompletaForm(forms.Form):
-    numero_factura = forms.CharField(max_length=50)
-    fecha = forms.DateField(widget=forms.DateInput(attrs={'type':'date'}))
-    proveedor = forms.ModelChoiceField(queryset=Proveedor.objects.all())
+    # Limpiar campos no relevantes
+    if tipo_persona == 'cliente':
+        cleaned_data['sueldo'] = None
+        cleaned_data['fecha_contratacion'] = None
+        cleaned_data['t_empleado'] = None
+        cleaned_data['nombre_empresa'] = None
+        
+        # Validación opcional para RUC
+        ruc = cleaned_data.get('ruc', '').strip()
+        if not ruc:
+            cleaned_data['ruc'] = None  # Guardar como NULL si está vacío
 
-    #Campos para el detalle
-    item = forms.ModelChoiceField(queryset=Item.objects.all())
-    cantidad = forms.DecimalField(max_digits=10, decimal_places=2)
-    precio_compra = forms.DecimalField(max_digits=10,decimal_places=2)
+    elif tipo_persona == 'empleado':
+        cleaned_data['ruc'] = None
+        cleaned_data['nombre_empresa'] = None
+
+    elif tipo_persona == 'proveedor':
+        cleaned_data['sueldo'] = None
+        cleaned_data['fecha_contratacion'] = None
+        cleaned_data['t_empleado'] = None
+
+    return cleaned_data
+

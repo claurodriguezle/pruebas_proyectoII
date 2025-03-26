@@ -1,15 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.core.exceptions import ValidationError
-from django.contrib import messages
-from django.db import transaction
-from decimal import Decimal
 from .models import Persona, Cliente, Empleado, Proveedor
 from .forms import PersonaForm
-#Importaciones para Compras
-from .models import Compra, DetalleCompra, Item
-from .forms import CompraCompletaForm, DetalleCompraForm, CompraForm
-
-# Create your views here.
+from django.db import IntegrityError
 
 def menu(request):
     return render(request, 'administrador/menu.html')
@@ -22,6 +14,7 @@ def listar_personas(request):
 
 def crear_persona(request):
     if request.method == 'POST':
+        print(request.POST)
         form = PersonaForm(request.POST)
         if form.is_valid():
             tipo_persona = form.cleaned_data['tipo_persona']
@@ -37,30 +30,36 @@ def crear_persona(request):
                 'nacionalidad': form.cleaned_data['nacionalidad'],
             }
 
-            if tipo_persona == 'cliente':
-                cliente = Cliente.objects.create(
-                    **persona_data,
-                    ruc=form.cleaned_data['ruc']
-                )
-                cliente.save()
-            elif tipo_persona == 'empleado':
-                empleado = Empleado.objects.create(
-                    **persona_data,
-                    sueldo=form.cleaned_data['sueldo'],
-                    fecha_contratacion=form.cleaned_data['fecha_contratacion'],
-                    t_empleado=form.cleaned_data['t_empleado']
-                )
-                empleado.save()
-            elif tipo_persona == 'proveedor':
-                proveedor = Proveedor.objects.create(
-                    **persona_data,
-                    nombre_empresa=form.cleaned_data['nombre_empresa'],
-                    ruc=form.cleaned_data['ruc']
-                )
-                proveedor.save()
-            return redirect('listar_personas') # Redirigir a la lista de presonas
+            try:
+                if tipo_persona == 'cliente':
+                    # cleaned_data['ruc'] ya será None si está vacío (gracias al form.clean())
+                    Cliente.objects.create(**persona_data, ruc=form.cleaned_data['ruc'])
+
+                elif tipo_persona == 'empleado':
+                    Empleado.objects.create(
+                        **persona_data,
+                        sueldo=form.cleaned_data['sueldo'],         # No será None (campo requerido para empleado)
+                        fecha_contratacion=form.cleaned_data['fecha_contratacion'],
+                        t_empleado=form.cleaned_data['t_empleado']
+                    )
+
+                elif tipo_persona == 'proveedor':
+                    Proveedor.objects.create(
+                        **persona_data,
+                        nombre_empresa=form.cleaned_data['nombre_empresa'],
+                        ruc=form.cleaned_data['ruc']                # None o valor valido
+                    )
+
+                return redirect('listar_personas')
+
+            except IntegrityError as e:
+                # Maneja errores de unicidad
+                form.add_error(None, "Error al guardar. Verifica los datos únicos.")
+                print(f"Error de integridad: {e}")
+
     else:
         form = PersonaForm()
+
     return render(request, 'administrador/registro.html', {'form': form})
 
 def editar_persona(request, id):
@@ -122,87 +121,3 @@ def eliminar_persona(request, id):
     persona = get_object_or_404(Persona, id=id)
     persona.delete()
     return redirect('listar_personas')
-
-#COMPRAS
-
-def lista_compras(request):
-    compras = Compra.objects.all()  # Obtén todas las compras de la base de datos
-    return render(request, 'compras/lista_compras.html', {'compras': compras})
-
-def crear_compra(request):
-    # Obtener choices directamente del modelo
-    UNIDAD_CHOICES = Item.UNIDAD_CHOICES
-    TIPO_CHOICES = Item.TIPO_CHOICES
-    
-    if request.method == 'POST':
-        compra_form = CompraForm(request.POST)
-        
-        if compra_form.is_valid():
-            try:
-                with transaction.atomic():
-                    # Guardar la compra principal
-                    compra = compra_form.save()
-                    
-                    # Procesar items
-                    items_data = request.POST.getlist('items')
-                    cantidades = request.POST.getlist('cantidades')
-                    precios = request.POST.getlist('precios')
-                    tipos = request.POST.getlist('tipos')
-                    unidades = request.POST.getlist('unidades')
-                    
-                    # Validación básica
-                    if not items_data:
-                        raise ValidationError("Debe agregar al menos un ítem a la compra")
-                    
-                    # Procesar cada ítem
-                    for i in range(len(items_data)):
-                        nombre_item = items_data[i].strip()
-                        if not nombre_item:
-                            raise ValidationError(f"El nombre del ítem en la posición {i+1} no puede estar vacío")
-                        
-                        try:
-                            cantidad = Decimal(cantidades[i])
-                            precio = Decimal(precios[i])
-                            if cantidad <= 0 or precio <= 0:
-                                raise ValidationError("Cantidad y precio deben ser mayores a cero")
-                        except (InvalidOperation, ValueError):
-                            raise ValidationError("Valores numéricos inválidos")
-                        
-                        # Buscar o crear item
-                        item, created = Item.objects.get_or_create(
-                            nombre=nombre_item,
-                            defaults={
-                                'tipo': tipos[i],
-                                'unidad_medida': unidades[i]
-                            }
-                        )
-                        
-                        # Crear detalle de compra
-                        DetalleCompra.objects.create(
-                            compra=compra,
-                            item=item,
-                            cantidad=cantidad,
-                            precio_compra=precio
-                        )
-                    
-                    # Calcular totales después de agregar todos los items
-                    compra.calcular_totales()
-                    
-                    messages.success(request, 'Compra registrada exitosamente!')
-                    return redirect('lista_compras')
-            
-            except ValidationError as e:
-                messages.error(request, str(e))
-            except Exception as e:
-                messages.error(request, f"Error al registrar la compra: {str(e)}")
-    else:
-        compra_form = CompraForm()
-    
-    context = {
-        'compra_form': compra_form,
-        'proveedores': Proveedor.objects.all(),
-        'unidad_choices': UNIDAD_CHOICES,  # Pasar opciones al template
-        'tipo_choices': TIPO_CHOICES,      # Pasar opciones al template
-        'items_existentes': Item.objects.all()  # Para autocompletado
-    }
-    return render(request, 'compras/crear_compra.html', context)

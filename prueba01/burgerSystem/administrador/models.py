@@ -17,7 +17,13 @@ class Persona(models.Model):
         return f"{self.nombre} {self.apellido}"
 
 class Cliente(Persona):
-    ruc = models.CharField(max_length=20, unique=True)
+    ruc = models.CharField(
+        max_length=20,
+        unique=True,
+        blank=True,
+        null=True,
+        default=None
+        )
 
     def __str__(self):
         return f"Cliente: {self.nombre} {self.apellido}"
@@ -32,7 +38,13 @@ class Empleado(Persona):
 
 class Proveedor(Persona):
     nombre_empresa = models.CharField(max_length=150)
-    ruc = models.CharField(max_length=20, unique=True)
+    ruc = models.CharField(
+        max_length=20, 
+        unique=True,
+        blank=True,
+        null=True,
+        default=None
+        )
 
     def __str__(self):
         return f"Proveedor: {self.nombre_empresa}"
