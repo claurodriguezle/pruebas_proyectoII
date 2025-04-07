@@ -1,1 +1,114 @@
-hola
+{% extends "administrador/layout.html" %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}
+Detalles de Compra #{{ compra.numero_factura }}
+{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Detalles de Compra</h2>
+        <a href="{% url 'lista_compras' %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Volver a la lista
+        </a>
+    </div>
+
+    <!-- Información de la factura -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">Información de Factura</h4>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <p><strong>Número de Factura:</strong> {{ compra.numero_factura }}</p>
+                </div>
+                <div class="col-md-4">
+                    <p><strong>Fecha:</strong> {{ compra.fecha|date:"d/m/Y" }}</p>
+                </div>
+                <div class="col-md-4">
+                    <p><strong>Proveedor:</strong> {{ compra.proveedor.nombre_empresa }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Artículos comprados -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">Artículos Comprados</h4>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Artículo</th>
+                            <th>Tipo</th>
+                            <th>Cantidad</th>
+                            <th>Precio Unitario</th>
+                            <th>Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for detalle in detalles %}
+                        <tr>
+                            <td>{{ detalle.item.nombre }}</td>
+                            <td>{{ detalle.item.get_tipo_display }}</td>
+                            <td>
+                                {% if detalle.item.unidad_medida == 'kg' %}
+                                    {{ detalle.cantidad|floatformat:3 }} kg
+                                {% else %}
+                                    {{ detalle.cantidad|floatformat:2 }} {{ detalle.item.get_unidad_medida_display }}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if detalle.item.unidad_medida == 'kg' %}
+                                    {{ detalle.precio_compra|floatformat:0|intcomma }} Gs/kg
+                                {% else %}
+                                    {{ detalle.precio_compra|floatformat:0|intcomma }} Gs/{{ detalle.item.get_unidad_medida_display }}
+                                {% endif %}
+                            </td>
+                            <td>{{ detalle.subtotal|floatformat:0|intcomma }} Gs.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Totales -->
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">Resumen de Totales</h4>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6 offset-md-3">
+                    <table class="table table-bordered">
+                        <tr>
+                            <th class="bg-light">Subtotal sin IVA:</th>
+                            <td class="text-end">{{ compra.total_sin_iva|intcomma }} Gs.</td>
+                        </tr>
+                        <tr>
+                            <th class="bg-light">IVA 5%:</th>
+                            <td class="text-end">{{ compra.iva_5|intcomma }} Gs.</td>
+                        </tr>
+                        <tr>
+                            <th class="bg-light">IVA 10%:</th>
+                            <td class="text-end">{{ compra.iva_10|intcomma }} Gs.</td>
+                        </tr>
+                        <tr class="table-active">
+                            <th class="bg-light">TOTAL:</th>
+                            <td class="text-end fw-bold">{{ compra.monto_total|intcomma }} Gs.</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

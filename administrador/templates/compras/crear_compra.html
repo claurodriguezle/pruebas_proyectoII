@@ -178,8 +178,13 @@ Crear Nueva Compra
                 const precio = parseFloat(item.querySelector('.item-precio').value) || 0;
                 const cantidad = parseFloat(item.querySelector('.item-cantidad').value) || 0;
                 const tipo = item.querySelector('.item-tipo').value;
+                const unidad = item.querySelector('.item-unidad').value;
                 
-                if (precio > 0 && cantidad > 0) {
+                if (precio > 0 && cantidad > 0){
+                    //Aplicamos conversion de unidades
+                    const precioFinal = unidad === 'kg' ? precio / 1000 : precio;
+                    const cantidadFinal = unidad === 'kg' ? cantidad * 1000 : cantidad;
+                    const subtotalItem = cantidad * precio; //Mostrar subtotal en unidad original
                     if (tipo === 'MATERIA_PRIMA') {
                         const sinIva = precio / 1.05;
                         subtotal += cantidad * sinIva;
@@ -197,9 +202,8 @@ Crear Nueva Compra
             document.getElementById('iva5').textContent = Math.round(iva5).toLocaleString('es-PY') + ' Gs.';
             document.getElementById('iva10').textContent = Math.round(iva10).toLocaleString('es-PY') + ' Gs.';
             document.getElementById('total').textContent = Math.round(subtotal + iva5 + iva10).toLocaleString('es-PY') + ' Gs.';
-        }
+}
 
-    
         // Función de validación para cada item
         function validateInputs(item, index) {
             const cantidadField = item.querySelector('.item-cantidad');

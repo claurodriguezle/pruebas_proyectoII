@@ -13,21 +13,25 @@
         
         <div class="card mb-3">
             <div class="card-body">
-                <form method="get" class="row">
+                <form method="get" class="row g-3">
                     <div class="col-md-8">
                         <input type="text" name="q" placeholder="Buscar por proveedor o número de factura..." 
-                               class="form-control" value="{{ request.GET.q }}">
+                               class="form-control" value="{{ query }}">
                     </div>
                     <div class="col-md-4">
-                        <button type="submit" class="btn btn-primary">Buscar</button>
-                        <a href="{% url 'lista_compras' %}" class="btn btn-secondary">Limpiar</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-search"></i> Buscar
+                        </button>
+                        <a href="{% url 'lista_compras' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-counterclockwise"></i> Limpiar
+                        </a>
                     </div>
                 </form>
             </div>
         </div>
 
         <div class="table-responsive">
-            <table class="table table-bordered table-striped">
+            <table class="table table-bordered table-striped table-hover">
                 <thead class="table-dark">
                     <tr>
                         <th>N° Factura</th>
@@ -46,19 +50,25 @@
                         <td>{{ compra.numero_factura }}</td>
                         <td>{{ compra.fecha|date:"d/m/Y" }}</td>
                         <td>{{ compra.proveedor.nombre_empresa }}</td>
-                        <td>{{ compra.total_sin_iva|intcomma }} Gs.</td>
-                        <td>{{ compra.iva_5|intcomma }} Gs.</td>
-                        <td>{{ compra.iva_10|intcomma }} Gs.</td>
-                        <td>{{ compra.monto_total|intcomma }}Gs.</td>
-                        <td>
-                            <a href="#" class="btn btn-sm btn-info" title="Ver detalle">
-                                <i class="bi bi-eye"></i>
+                        <td class="text-end">{{ compra.total_sin_iva|intcomma }} Gs.</td>
+                        <td class="text-end">{{ compra.iva_5|intcomma }} Gs.</td>
+                        <td class="text-end">{{ compra.iva_10|intcomma }} Gs.</td>
+                        <td class="text-end fw-bold">{{ compra.monto_total|intcomma }} Gs.</td>
+                        <td class="text-center">
+                            <a href="{% url 'detalle_compra' compra.id %}" class="btn btn-sm btn-info" title="Ver detalle">
+                                <i class="bi bi-eye-fill"></i>
                             </a>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="8" class="text-center">No hay compras registradas</td>
+                        <td colspan="8" class="text-center py-4">
+                            {% if query %}
+                                No se encontraron compras con "{{ query }}"
+                            {% else %}
+                                No hay compras registradas
+                            {% endif %}
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>

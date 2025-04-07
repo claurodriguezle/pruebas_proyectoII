@@ -8,6 +8,7 @@ from .forms import PersonaForm
 #Importaciones para Compras
 from .models import Compra, DetalleCompra, Item
 from .forms import CompraForm
+from . import models
 
 # Create your views here.
 
@@ -126,8 +127,17 @@ def eliminar_persona(request, id):
 #COMPRAS
 
 def lista_compras(request):
-    compras = Compra.objects.all()  # Obtén todas las compras de la base de datos
-    return render(request, 'compras/lista_compras.html', {'compras': compras})
+    query = request.GET.get('q', '')
+    
+    if query:
+        compras = Compra.objects.filter(
+            models.Q(numero_factura__icontains=query) |
+            models.Q(proveedor__nombre_empresa__icontains=query)
+        ).select_related('proveedor').order_by('-fecha')
+    else:
+        compras = Compra.objects.all().select_related('proveedor').order_by('-fecha')
+    
+    return render(request, 'compras/lista_compras.html', {'compras': compras, 'query': query})
 
 def crear_compra(request):
     UNIDAD_CHOICES = Item.UNIDAD_CHOICES
@@ -173,15 +183,21 @@ def crear_compra(request):
                                 raise ValidationError(f"Ítem {i+1}: Valores deben ser positivos")
 
                             # Conversión de unidades
-                            cantidad_final = cantidad * 1000 if unidades[i] == 'kg' else cantidad
-                            unidad_final = 'gr' if unidades[i] == 'kg' else unidades[i]
+                            if unidades[i] == 'kg':
+                                #Precio ingresado es por kg, convertimos a precio por gramo
+                                precio_por_gramo = precio/1000
+                                cantidad_en_gramos = cantidad * 1000
+                            else:
+                                #Precio ya esta en gramos (u otras unidades)
+                                precio_por_gramo = precio
+                                cantidad_en_gramos = cantidad
 
                             # Buscar/crear ítem
                             item, _ = Item.objects.get_or_create(
                                 nombre=nombre_item,
                                 defaults={
                                     'tipo': tipos[i],
-                                    'unidad_medida': unidad_final
+                                    'unidad_medida': unidades[i] #Guardamos la unidad original
                                 }
                             )
 
@@ -189,8 +205,8 @@ def crear_compra(request):
                             DetalleCompra.objects.create(
                                 compra=compra,
                                 item=item,
-                                cantidad=cantidad_final,
-                                precio_compra=precio
+                                cantidad=cantidad_en_gramos, #Siempre en gramos
+                                precio_compra=precio_por_gramo #Precio por gramo
                             )
 
                         except (InvalidOperation, ValueError) as e:
@@ -220,3 +236,13 @@ def crear_compra(request):
         'items_existentes': Item.objects.all().values_list('nombre', flat=True)
     }
     return render(request, 'compras/crear_compra.html', context)
+
+def detalle_compra(request, compra_id):
+    compra = get_object_or_404(Compra, pk=compra_id)
+    detalles = compra.detalles.all().select_related('item')
+
+    context = {
+        'compra':compra,
+        'detalles':detalles,
+    }
+    return render(request,'compras/detalles_compra.html',context)

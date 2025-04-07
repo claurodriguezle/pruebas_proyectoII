@@ -12,4 +12,5 @@ urlpatterns = [
     #Rutas para compras
     path('compras/', views.lista_compras, name='lista_compras'),
     path('compras/crear/', views.crear_compra, name='crear_compra'),
+    path('compras/<int:compra_id>/',views.detalle_compra, name='detalle_compra'),
 ]
