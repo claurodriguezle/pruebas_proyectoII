@@ -1,0 +1,11 @@
+.resumen-container {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+}
+.resumen-iva {
+    text-align: left;
+}
+.resumen-totales {
+    text-align: right;
+}

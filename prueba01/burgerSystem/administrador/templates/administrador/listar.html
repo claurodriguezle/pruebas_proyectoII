@@ -1,0 +1,42 @@
+{% extends "administrador/layout.html" %}
+{% load static %}
+
+{% block title %}
+    Lista de Clientes
+{% endblock %}
+
+{% block body %}
+    <div class="container">
+        <!--<h1 class="mt-4">Lista </h1>-->
+        <a href="{% url 'crear_persona' %}" class="btn btn-primary mb-3">Nuevo Registro</a>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Apellido</th>
+                    <th>Email</th>
+                    <th>Teléfono</th>
+                    <th>Cedula</th>
+                    <th>RUC</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for persona in personas %}
+                <tr>
+                    <td>{{ persona.nombre }}</td>
+                    <td>{{ persona.apellido }}</td>
+                    <td>{{ persona.email }}</td>
+                    <td>{{ persona.telefono }}</td>
+                    <td>{{ persona.cedula }}</td>
+                    <td>{{ persona.ruc }}</td>
+                    <td>
+                        <a href="{% url 'editar_persona' persona.id %}" class="btn btn-warning btn-sm">Editar</a>
+                        <a href="{% url 'eliminar_persona' persona.id %}" class="btn btn-danger btn-sm">Eliminar</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

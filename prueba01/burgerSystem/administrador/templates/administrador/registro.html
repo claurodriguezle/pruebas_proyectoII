@@ -1,0 +1,156 @@
+{% extends "administrador/layout.html" %}
+{% load static %}
+
+{% block tile %}
+    Clientes Form
+{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/registro.css' %}">
+{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <h3 class="text-center">
+        Registrar
+    </h3>
+        <hr>
+    <form method="post" action="{% if persona %}{% url 'editar_persona' persona.id %}{% else %}{% url 'crear_persona' %}{% endif %}" class="shadow p-4 bg-white rounded">
+        {% csrf_token %}
+
+        <div class="mb-3">
+            <label for="{{ form.nombre.id_for_label }}" class="form-label">Nombre</label>
+            {{ form.nombre }}
+        </div>
+
+        <div class="mb-3">
+            <label for="{{ form.apellido.id_for_label }}" class="form-label">Apellido</label>
+            {{ form.apellido }}
+        </div>
+
+        <div class="mb-3">
+            <label for="{{ form.telefono.id_for_label }}" class="form-label">Teléfono</label>
+            {{ form.telefono }}
+        </div>
+
+        <div class="mb-3">
+            <label for="{{ form.email.id_for_label }}" class="form-label">Correo</label>
+            {{ form.email }}
+        </div>
+
+        <div class="mb-3">
+            <label for="{{ form.fecha_nacimiento.id_for_label }}" class="form-label">Fecha de Nacimiento</label>
+            {{ form.fecha_nacimiento }}
+        </div>
+
+        <div class="mb-3">
+            <label for="{{ form.cedula.id_for_label }}" class="form-label">Cédula</label>
+            {{ form.cedula }}
+        </div>
+
+        <div class="mb-3">
+            <label for="{{ form.ciudad.id_for_label }}" class="form-label">Ciudad</label>
+            {{ form.ciudad }}
+        </div>
+
+        <div class="mb-3">
+            <label for="{{ form.barrio.id_for_label }}" class="form-label">Barrio</label>
+            {{ form.barrio }}
+        </div>
+
+        <div class="mb-3">
+            <label for="{{ form.nacionalidad.id_for_label }}" class="form-label">Nacionalidad</label>
+            {{ form.nacionalidad }}
+        </div>
+        
+        <!-- Dropdown de Rol -->
+        <div class="mb-3">
+        <label for="{{ form.tipo_persona.id_for_label }}" class="form-label">Rol</label>
+            {{ form.tipo_persona }}
+        </div>
+
+        <!-- Campos dinámicos para Cliente -->
+        <div id="clienteFields" class="campos-dinamicos" style="display: none;">
+            <div class="mb-3">
+                <label for="{{ form.ruc.id_for_label }}" class="form-label">RUC</label>
+                {{ form.ruc }}
+            </div>
+        </div>
+
+        <!-- Campos dinámicos para Empleado -->
+        <div id="empleadoFields" class="campos-dinamicos" style="display: none;">
+            <div class="mb-3">
+                <label for="{{ form.sueldo.id_for_label }}" class="form-label">Salario</label>
+                {{ form.sueldo }}
+            </div>
+            <div class="mb-3">
+                <label for="{{ form.fecha_contratacion.id_for_label }}" class="form-label">Fecha de Contratación</label>
+                {{ form.fecha_contratacion }}
+            </div>
+            <div class="mb-3">
+                <label for="{{ form.t_empleado.id_for_label }}" class="form-label">Tipo de Empleado</label>
+                {{ form.t_empleado }}
+            </div>
+        </div>
+
+        <!-- Campos dinámicos para Proveedor -->
+        <div id="proveedorFields" class="campos-dinamicos" style="display: none;">
+            <div class="mb-3">
+                <label for="{{ form.nombre_empresa.id_for_label }}" class="form-label">Empresa</label>
+                {{ form.nombre_empresa }}
+            </div>
+            <div class="mb-3">
+                <label for="{{ form.ruc.id_for_label }}" class="form-label">RUC</label>
+                {{ form.ruc }}
+            </div>
+        </div>
+        <!-- Botones -->
+        <div class="d-flex justify-content-between">
+            <button type="submit" class="btn btn-dark">
+                {% if persona %} Actualizar{% else %}Registrar{% endif %}
+            </button>
+            <a href="{% url 'listar_personas' %}" class="btn btn-danger">Cancelar</a>
+        </div>
+    </form>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.min.js"></script>
+
+<!-- JavaScript para manejar los campos dinámicos -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Usar el ID correcto: 'form-rol'
+        const tipoPersonaDropdown = document.getElementById('form-rol');
+        console.log('Dropdown:', tipoPersonaDropdown);  // Depuración
+    
+        if (tipoPersonaDropdown) {
+            // Registrar el evento 'change' en el dropdown
+            tipoPersonaDropdown.addEventListener('change', function() {
+                console.log('Dropdown cambiado:', this.value);  // Depuración
+    
+                // Ocultar todos los campos dinámicos primero
+                document.querySelectorAll('.campos-dinamicos').forEach(function(campo) {
+                    campo.style.display = 'none';
+                });
+    
+                // Mostrar los campos según la selección
+                if (this.value === 'cliente') {
+                    document.getElementById('clienteFields').style.display = 'block';
+                } else if (this.value === 'empleado') {
+                    document.getElementById('empleadoFields').style.display = 'block';
+                } else if (this.value === 'proveedor') {
+                    document.getElementById('proveedorFields').style.display = 'block';
+                }
+            });
+    
+            // Disparar el evento 'change' si ya hay un valor seleccionado al cargar la página
+            if (tipoPersonaDropdown.value) {
+                tipoPersonaDropdown.dispatchEvent(new Event('change'));
+            }
+        } else {
+            console.error('No se encontró el dropdown con ID "form-rol"');  // Depuración
+        }
+    });
+</script>
+{% endblock %}
