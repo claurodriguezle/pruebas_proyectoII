@@ -10,7 +10,7 @@ class PersonaForm(forms.ModelForm):
 
     tipo_persona = forms.ChoiceField(
         choices=TIPO_PERSONA_CHOICES,
-        widget=forms.Select(attrs={'class': 'form-select', 'id': 'form-rol'}),
+        widget=forms.Select(attrs={'class': 'form-select', 'id': 'tipo-persona'}),
         label="Rol"
     )
 

@@ -18,6 +18,20 @@
         <form method="post" action="{% if persona %}{% url 'editar_persona' persona.id %}{% else %}{% url 'crear_persona' %}{% endif %}" class="shadow p-4 bg-white rounded" autocomplete="off">
         {% csrf_token %}
 
+        <!-- Mostrar errores generales -->
+        {% if form.errors %}
+        <div class="alert alert-danger">
+            {% for field in form %}
+                {% for error in field.errors %}
+                    <p>{{ error }}</p>
+                {% endfor %}
+            {% endfor %}
+            {% for error in form.non_field_errors %}
+                <p>{{ error }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+
         <div class="mb-3">
             <label for="{{ form.nombre.id_for_label }}" class="form-label">Nombre</label>
             {{ form.nombre }}
@@ -119,7 +133,7 @@
 <!-- JavaScript para manejar los campos dinámicos -->
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const tipoPersonaDropdown = document.getElementById('form-rol');
+        const tipoPersonaDropdown = document.getElementById('tipo-persona');
         
         // Función para mostrar/ocultar campos
         function actualizarCampos() {
@@ -147,7 +161,7 @@
             
             // Deshabilita TODOS los campos dinámicos primero
             document.querySelectorAll('.campos-dinamicos input').forEach(input => {
-                input.disabled = true;
+                input.disabled= true;
             });
     
             // Habilita SOLO los campos relevantes

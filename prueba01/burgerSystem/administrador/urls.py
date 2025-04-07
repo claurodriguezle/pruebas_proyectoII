@@ -1,4 +1,4 @@
-from django.views.generic import TemplateView
+#from django.views.generic import TemplateView
 from django.urls import path
 from . import views
 
@@ -10,6 +10,6 @@ urlpatterns = [
     path('listar/', views.listar_personas, name='listar_personas'),
 
     #Rutas para compras
-    path('compras/', views.lista_compras, name='lista_compras'),
-    path('compras/crear/', views.crear_compra, name='crear_compra'),
+    #path('compras/', views.lista_compras, name='lista_compras'),
+    #path('compras/crear/', views.crear_compra, name='crear_compra'),
 ]

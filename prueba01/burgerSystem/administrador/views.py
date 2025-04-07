@@ -2,6 +2,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from .models import Persona, Cliente, Empleado, Proveedor
 from .forms import PersonaForm
 from django.db import IntegrityError
+from django.http import Http404
+from django.db import connection, transaction
 
 def menu(request):
     return render(request, 'administrador/menu.html')
@@ -62,10 +64,11 @@ def crear_persona(request):
 
     return render(request, 'administrador/registro.html', {'form': form})
 
+
 def editar_persona(request, id):
     persona = get_object_or_404(Persona, id=id)
-
-    # Determinar el tipo de persona
+    
+    # Determinar tipo de persona
     if hasattr(persona, 'cliente'):
         tipo_persona = 'cliente'
         instancia_especifica = persona.cliente
@@ -76,46 +79,117 @@ def editar_persona(request, id):
         tipo_persona = 'proveedor'
         instancia_especifica = persona.proveedor
     else:
-        tipo_persona = None
-        instancia_especifica = None
+        raise Http404("Tipo de persona no válido")
 
     if request.method == 'POST':
         form = PersonaForm(request.POST, instance=persona)
+        
         if form.is_valid():
-            # Guardar los datos generales de Persona
-            persona = form.save()
+            try:
+                with transaction.atomic():
+                    # Actualización directa vía SQL (bypass ORM)
+                    with connection.cursor() as cursor:
+                        cursor.execute(
+                            """
+                            UPDATE administrador_persona SET
+                                nombre = %s,
+                                apellido = %s,
+                                telefono = %s,
+                                email = %s,
+                                fecha_nacimiento = %s,
+                                cedula = %s,
+                                ciudad = %s,
+                                barrio = %s,
+                                nacionalidad = %s
+                            WHERE id = %s
+                            """,
+                            [
+                                form.cleaned_data['nombre'],
+                                form.cleaned_data['apellido'],
+                                form.cleaned_data['telefono'],
+                                form.cleaned_data['email'],
+                                form.cleaned_data['fecha_nacimiento'],
+                                form.cleaned_data['cedula'],
+                                form.cleaned_data['ciudad'],
+                                form.cleaned_data['barrio'],
+                                form.cleaned_data['nacionalidad'],
+                                id
+                            ]
+                        )
+                        
+                        # Actualización modelo hijo
+                        if tipo_persona == 'cliente':
+                            cursor.execute(
+                                "UPDATE administrador_cliente SET ruc = %s WHERE persona_ptr_id = %s",
+                                [form.cleaned_data.get('ruc'), id]
+                            )
+                        elif tipo_persona == 'empleado':
+                            cursor.execute(
+                                """UPDATE administrador_empleado SET
+                                    sueldo = %s,
+                                    fecha_contratacion = %s,
+                                    t_empleado = %s
+                                WHERE persona_ptr_id = %s""",
+                                [
+                                    form.cleaned_data['sueldo'],
+                                    form.cleaned_data['fecha_contratacion'],
+                                    form.cleaned_data['t_empleado'],
+                                    id
+                                ]
+                            )
+                        elif tipo_persona == 'proveedor':
+                            cursor.execute(
+                                """UPDATE administrador_proveedor SET
+                                    nombre_empresa = %s,
+                                    ruc = %s
+                                WHERE persona_ptr_id = %s""",
+                                [
+                                    form.cleaned_data['nombre_empresa'],
+                                    form.cleaned_data.get('ruc'),
+                                    id
+                                ]
+                            )
 
-            # Actualizar los campos específicos según el tipo de persona
-            if tipo_persona == 'cliente':
-                instancia_especifica.ruc = form.cleaned_data['ruc']
-                instancia_especifica.save()
-            elif tipo_persona == 'empleado':
-                instancia_especifica.sueldo = form.cleaned_data['sueldo']
-                instancia_especifica.fecha_contratacion = form.cleaned_data['fecha_contratacion']
-                instancia_especifica.t_empleado = form.cleaned_data['t_empleado']
-                instancia_especifica.save()
-            elif tipo_persona == 'proveedor':
-                instancia_especifica.nombre_empresa = form.cleaned_data['nombre_empresa']
-                instancia_especifica.ruc = form.cleaned_data['ruc']
-                instancia_especifica.save()
+                    # Forzar recarga de instancias
+                    persona.refresh_from_db()
+                    if hasattr(persona, 'cliente'):
+                        persona.cliente.refresh_from_db()
+                    elif hasattr(persona, 'empleado'):
+                        persona.empleado.refresh_from_db()
+                    elif hasattr(persona, 'proveedor'):
+                        persona.proveedor.refresh_from_db()
 
-            return redirect('listar_personas')
+                return redirect('listar_personas')
+                
+            except Exception as e:
+                print(f"ERROR EN TRANSACCIÓN: {str(e)}")
+                form.add_error(None, f"Error crítico al actualizar: {str(e)}")
     else:
-        # Pasar los valores adicionales como valores iniciales del formulario
-        initial_data = {'tipo_persona': tipo_persona}
-        if tipo_persona == 'cliente':
-            initial_data['ruc'] = instancia_especifica.ruc
-        elif tipo_persona == 'empleado':
-            initial_data['sueldo'] = instancia_especifica.sueldo
-            initial_data['fecha_contratacion'] = instancia_especifica.fecha_contratacion
-            initial_data['t_empleado'] = instancia_especifica.t_empleado
-        elif tipo_persona == 'proveedor':
-            initial_data['nombre_empresa'] = instancia_especifica.nombre_empresa
-            initial_data['ruc'] = instancia_especifica.ruc
+        # CÓDIGO INICIAL DEL FORM (ELSE)
+        initial_data = {
+            'tipo_persona': tipo_persona,
+            'nombre': persona.nombre,
+            'apellido': persona.apellido,
+            'telefono': persona.telefono,
+            'email': persona.email,
+            'fecha_nacimiento': persona.fecha_nacimiento,
+            'cedula': persona.cedula,
+            'ciudad': persona.ciudad,
+            'barrio': persona.barrio,
+            'nacionalidad': persona.nacionalidad,
+            'ruc': getattr(instancia_especifica, 'ruc', None),
+            'sueldo': getattr(instancia_especifica, 'sueldo', ''),
+            'fecha_contratacion': getattr(instancia_especifica, 'fecha_contratacion', ''),
+            't_empleado': getattr(instancia_especifica, 't_empleado', ''),
+            'nombre_empresa': getattr(instancia_especifica, 'nombre_empresa', ''),
+        }
+        form = PersonaForm(initial=initial_data)
 
-        form = PersonaForm(instance=persona, initial=initial_data)
-
-    return render(request, 'administrador/registro.html', {'form': form, 'persona': persona})
+    return render(request, 'administrador/registro.html', {
+        'form': form,
+        'persona': persona,
+        'tipo_persona': tipo_persona
+    })
 
 def eliminar_persona(request, id):
     persona = get_object_or_404(Persona, id=id)
