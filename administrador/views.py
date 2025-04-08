@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.core.exceptions import ValidationError
 from django.contrib import messages
 from django.db import transaction
+from django.db.models import Q
 from decimal import Decimal, InvalidOperation
 from .models import Persona, Cliente, Empleado, Proveedor
 from .forms import PersonaForm
@@ -127,17 +128,22 @@ def eliminar_persona(request, id):
 #COMPRAS
 
 def lista_compras(request):
-    query = request.GET.get('q', '')
+    query = request.GET.get('q', '').strip()
+    
+    compras = Compra.objects.all().select_related('proveedor').order_by('-fecha')
     
     if query:
-        compras = Compra.objects.filter(
-            models.Q(numero_factura__icontains=query) |
-            models.Q(proveedor__nombre_empresa__icontains=query)
-        ).select_related('proveedor').order_by('-fecha')
-    else:
-        compras = Compra.objects.all().select_related('proveedor').order_by('-fecha')
+        compras = compras.filter(
+            Q(numero_factura__icontains=query) |
+            Q(proveedor__nombre_empresa__icontains=query) |
+            Q(proveedor__nombre__icontains=query) |
+            Q(proveedor__apellido__icontains=query)
+        )
     
-    return render(request, 'compras/lista_compras.html', {'compras': compras, 'query': query})
+    return render(request, 'compras/lista_compras.html', {
+        'compras': compras,
+        'query': query
+    })
 
 def crear_compra(request):
     UNIDAD_CHOICES = Item.UNIDAD_CHOICES
@@ -246,3 +252,108 @@ def detalle_compra(request, compra_id):
         'detalles':detalles,
     }
     return render(request,'compras/detalles_compra.html',context)
+#Editar Compra
+def editar_compra(request, compra_id):
+    compra = get_object_or_404(Compra, pk=compra_id)
+    proveedores = Proveedor.objects.all()  # Asegurarnos de pasar los proveedores
+    
+    if request.method == 'POST':
+        form = CompraForm(request.POST, instance=compra)
+        if form.is_valid():
+            try:
+                with transaction.atomic():
+                    compra = form.save()
+                    compra.detalles.all().delete()  # Eliminar detalles antiguos
+                    
+                    # Procesar los items como en crear_compra
+                    items = request.POST.getlist('items')
+                    cantidades = request.POST.getlist('cantidades')
+                    precios = request.POST.getlist('precios')
+                    tipos = request.POST.getlist('tipos')
+                    unidades = request.POST.getlist('unidades')
+                    
+                    for i in range(len(items)):
+                        nombre_item = items[i].strip()
+                        if not nombre_item:
+                            continue
+
+                        try:
+                            cantidad = Decimal(cantidades[i])
+                            precio = int(precios[i])
+
+                            if cantidad <= 0 or precio <= 0:
+                                raise ValidationError(f"Ítem {i+1}: Valores deben ser positivos")
+
+                            if unidades[i] == 'kg':
+                                precio_por_gramo = precio / 1000
+                                cantidad_en_gramos = cantidad * 1000
+                            else:
+                                precio_por_gramo = precio
+                                cantidad_en_gramos = cantidad
+
+                            item, _ = Item.objects.get_or_create(
+                                nombre=nombre_item,
+                                defaults={
+                                    'tipo': tipos[i],
+                                    'unidad_medida': unidades[i]
+                                }
+                            )
+
+                            DetalleCompra.objects.create(
+                                compra=compra,
+                                item=item,
+                                cantidad=cantidad_en_gramos,
+                                precio_compra=precio_por_gramo
+                            )
+
+                        except (InvalidOperation, ValueError) as e:
+                            raise ValidationError(f"Error en ítem {i+1}: {str(e)}")
+                    
+                    compra.calcular_totales()
+                    messages.success(request, '✅ Compra actualizada exitosamente!')
+                    return redirect('detalle_compra', compra_id=compra.id)
+                    
+            except Exception as e:
+                messages.error(request, f'❌ Error al actualizar: {str(e)}')
+    else:
+        form = CompraForm(instance=compra)
+        
+        # Preparar datos para el template
+        detalles = compra.detalles.all().select_related('item')
+        items_data = []
+        
+        for detalle in detalles:
+            # Convertir unidades para mostrar (kg → gramos)
+            if detalle.item.unidad_medida == 'kg':
+                cantidad_mostrar = detalle.cantidad / 1000
+                precio_mostrar = detalle.precio_compra * 1000
+            else:
+                cantidad_mostrar = detalle.cantidad
+                precio_mostrar = detalle.precio_compra
+                
+            items_data.append({
+                'nombre': detalle.item.nombre,
+                'tipo': detalle.item.tipo,
+                'unidad': detalle.item.unidad_medida,
+                'cantidad': float(cantidad_mostrar),
+                'precio': int(precio_mostrar)
+            })
+
+    context = {
+        'compra_form': form,
+        'proveedores': proveedores,
+        'items_data': items_data,
+        'editing': True,
+        'compra': compra,
+        'unidad_choices': Item.UNIDAD_CHOICES,
+        'tipo_choices': Item.TIPO_CHOICES,
+        'items_existentes': Item.objects.all().values_list('nombre', flat=True)
+    }
+    
+    return render(request, 'compras/crear_compra.html', context)
+#ELIMINAR COMPRA
+def eliminar_compra(request, compra_id):
+    compra = get_object_or_404(Compra, id=compra_id)
+    compra.delete()
+    messages.success(request, f'Compra #{compra.numero_factura} eliminada correctamente')
+    return redirect('lista_compras')
