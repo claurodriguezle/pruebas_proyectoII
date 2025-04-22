@@ -1,0 +1,30 @@
+<tr id="producto-{{ producto.id }}">
+    <td>
+        {% if producto.imagen %}
+            <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}" width="50" height="50">
+        {% else %}
+            <span class="text-muted">Sin imagen</span>
+        {% endif %}
+    </td>
+    <td>{{ producto.codigo }}</td>
+    <td>{{ producto.nombre }}</td>
+    <td>${{ producto.precio }}</td>
+    <td>{{ producto.descripcion }}</td>
+    <td>
+        <button class="btn btn-sm btn-outline-primary me-2"
+            data-bs-toggle="modal"
+            data-bs-target="#productModal"
+            hx-get="{% url 'administrador:editar_partial' producto.id %}"
+            hx-target="#productFormBody"
+            hx-swap="innerHTML">
+            Editar
+        </button>
+        <button class="btn btn-sm btn-outline-danger"
+            hx-post="{% url 'administrador:eliminar_htmx' producto.id %}"
+            hx-target="#producto-{{ producto.id }}"
+            hx-swap="outerHTML"
+            hx-confirm="¿Quieres eliminar este producto?">
+            Eliminar
+        </button>
+    </td>
+</tr>

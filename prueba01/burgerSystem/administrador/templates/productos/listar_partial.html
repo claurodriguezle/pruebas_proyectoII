@@ -1,0 +1,7 @@
+{% for producto in productos %}
+    {% include "productos/row_partial.html" with producto=producto  %}
+{% empty %}
+    <tr>
+        <td colspan="6" class="text-center">No hay productos disponibles</td>
+    </tr>
+{% endfor %}

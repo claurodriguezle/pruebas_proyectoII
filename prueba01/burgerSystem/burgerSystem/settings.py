@@ -79,11 +79,11 @@ WSGI_APPLICATION = 'burgerSystem.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME':'bdburgerapp',
-        'USER':'crodriguez',
-        'PASSWORD':'12345',
+        'NAME':'dburger',
+        'USER':'ruizj',
+        'PASSWORD':'admin',
         'HOST':'localhost',
-        'PORT': '5433',
+        'PORT': '5432',
     }
 }
 
@@ -129,3 +129,4 @@ STATICFILES_DIRS = [os.path.join(BASE_DIR, 'administrador/static')]
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
