@@ -1,5 +1,5 @@
 from django import forms
-from .models import Persona, Cliente, Empleado, Proveedor # noqa: F401
+from .models import Persona, Cliente, Empleado, Proveedor, Producto # noqa: F401
 
 class PersonaForm(forms.ModelForm):
     TIPO_PERSONA_CHOICES = [
@@ -59,7 +59,7 @@ class PersonaForm(forms.ModelForm):
         label="Empresa"
     )
 
-    # Codigo para manejar los campos dinamicos
+# Codigo para manejar los campos dinamicos
 
 def clean(self):
     cleaned_data = super().clean()
@@ -88,3 +88,39 @@ def clean(self):
 
     return cleaned_data
 
+# PRODUCTOS
+class ProductoForm(forms.ModelForm):
+    class Meta:
+        model = Producto
+        fields = [
+            'codigo', 'nombre', 'precio', 'imagen', 'descripcion', 'estado', 'categoria',
+        ]
+        widgets = {
+            'codigo': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ingrese codigo',
+            }),
+            'nombre': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ingrese nombre de producto'
+            }),
+            'precio': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ingrese precio',
+                'step': '0.01',
+            }),
+            'imagen': forms.ClearableFileInput(attrs={
+                'class': 'form-control',
+            }),
+            'descripcion': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 2,
+                'placeholder': 'Descripcion del producto',
+            }),
+            'estado': forms.Select(attrs={
+                'class': 'form-select',
+            }),
+            'categoria': forms.Select(attrs={
+                'class': 'form-select',
+            }),
+        }

@@ -15,7 +15,7 @@
         Registrar
     </h3>
         <hr>
-        <form method="post" action="{% if persona %}{% url 'editar_persona' persona.id %}{% else %}{% url 'crear_persona' %}{% endif %}" class="shadow p-4 bg-white rounded" autocomplete="off">
+        <form method="post" action="{% if persona %}{% url 'administrador:editar_persona' persona.id %}{% else %}{% url 'administrador:crear_persona' %}{% endif %}" class="shadow p-4 bg-white rounded" autocomplete="off">
         {% csrf_token %}
 
         <!-- Mostrar errores generales -->
@@ -123,7 +123,7 @@
             <button type="submit" class="btn btn-dark">
                 {% if persona %} Actualizar{% else %}Registrar{% endif %}
             </button>
-            <a href="{% url 'listar_personas' %}" class="btn btn-danger">Cancelar</a>
+            <a href="{% url 'administrador:listar_personas' %}" class="btn btn-danger">Cancelar</a>
         </div>
     </form>
 </div>

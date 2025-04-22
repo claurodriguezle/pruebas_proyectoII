@@ -1,8 +1,8 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Persona, Cliente, Empleado, Proveedor
-from .forms import PersonaForm
+from .models import Persona, Cliente, Empleado, Proveedor, Producto
+from .forms import PersonaForm, ProductoForm
 from django.db import IntegrityError
-from django.http import Http404
+from django.http import Http404, HttpResponse
 from django.db import connection, transaction
 
 def menu(request):
@@ -52,7 +52,7 @@ def crear_persona(request):
                         ruc=form.cleaned_data['ruc']                # None o valor valido
                     )
 
-                return redirect('listar_personas')
+                return redirect('administrador:listar_personas')
 
             except IntegrityError as e:
                 # Maneja errores de unicidad
@@ -159,7 +159,7 @@ def editar_persona(request, id):
                     elif hasattr(persona, 'proveedor'):
                         persona.proveedor.refresh_from_db()
 
-                return redirect('listar_personas')
+                return redirect('administrador:listar_personas')
                 
             except Exception as e:
                 print(f"ERROR EN TRANSACCIÓN: {str(e)}")
@@ -194,4 +194,49 @@ def editar_persona(request, id):
 def eliminar_persona(request, id):
     persona = get_object_or_404(Persona, id=id)
     persona.delete()
-    return redirect('listar_personas')
+    return redirect('administrador:listar_personas')
+
+# PRODUCTOS
+
+def productos(request):
+    return render(request, 'productos/productos.html')
+
+def listar_partial(request):
+    productos = Producto.objects.filter(estado='A').order_by('codigo')
+    return render(request, 'productos/listar_partial.html', {'productos': productos})
+
+def crear_partial(request):
+    form = ProductoForm()
+    return render(request, 'productos/form_partial.html', {'form': form})
+
+def crear_htmx(request):
+    form = ProductoForm(request.POST, request.FILES)
+    if form.is_valid():
+        producto = form.save()
+        return render(request, 'productos/row_partial.html', {'producto': producto})
+    # si hay errores, vuelve a renderizar el mismo partial de formulario
+    return render(request, 'productos/form_partial.html', {'form': form})
+
+def editar_partial(request, pk):
+    producto = get_object_or_404(Producto, pk=pk)
+    form = ProductoForm(instance=producto)
+    return render(request, 'productos/form_partial.html', {
+        'form': form,
+        'producto': producto
+    })
+
+def editar_htmx(request, pk):
+    producto = get_object_or_404(Producto, pk=pk)
+    form = ProductoForm(request.POST, request.FILES, instance=producto)
+    if form.is_valid():
+        producto = form.save()
+        return render(request, 'productos/row_partial.html', {'producto': producto})
+    return render(request, 'productos/form_partial.html', {
+        'form': form,
+        'producto': producto
+    })
+
+def eliminar_htmx(request, pk):
+    producto = get_object_or_404(Producto, pk=pk)
+    producto.delete()
+    return HttpResponse('')
