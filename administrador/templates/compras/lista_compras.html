@@ -9,7 +9,7 @@
 {% block body %}
     <div class="container">
         <h1>Gestión de Compras</h1>
-        <a href="{% url 'crear_compra' %}" class="btn btn-primary mb-3">+ Nueva Compra</a>
+        <a href="{% url 'administrador:crear_compra' %}" class="btn btn-primary mb-3">+ Nueva Compra</a>
         
         <div class="card mb-3">
             <div class="card-body">
@@ -22,7 +22,7 @@
                         <button type="submit" class="btn btn-primary">
                             <i class="bi bi-search"></i> Buscar
                         </button>
-                        <a href="{% url 'lista_compras' %}" class="btn btn-outline-secondary">
+                        <a href="{% url 'administrador:lista_compras' %}" class="btn btn-outline-secondary">
                             <i class="bi bi-arrow-counterclockwise"></i> Limpiar
                         </a>
                     </div>
@@ -55,9 +55,9 @@
                         <td class="text-end">{{ compra.iva_10|intcomma }} Gs.</td>
                         <td class="text-end fw-bold">{{ compra.monto_total|intcomma }} Gs.</td>
                         <td class="text-center">
-                            <a href="{% url 'detalle_compra' compra.id %}" title="Ver detalle" style="color: #333;">ⓘ</a>
-                            <a href="{% url 'editar_compra' compra.id %}" title="Editar" style="color: #333;">🖉</a>
-                            <a href="{% url 'eliminar_compra' compra.id %}" title="Eliminar" style="color: #333;"
+                            <a href="{% url 'administrador:detalle_compra' compra.id %}" title="Ver detalle" style="color: #333;">ⓘ</a>
+                            <a href="{% url 'administrador:editar_compra' compra.id %}" title="Editar" style="color: #333;">🖉</a>
+                            <a href="{% url 'administrador:eliminar_compra' compra.id %}" title="Eliminar" style="color: #333;"
                             onclick="return confirm('¿Estás seguro de eliminar la compra {{ compra.numero_factura }}?')">🗙</a>
                         </td>
                     </tr>

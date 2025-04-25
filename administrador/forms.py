@@ -1,5 +1,5 @@
 from django import forms
-from .models import Persona, Cliente, Empleado, Proveedor # noqa: F401
+from .models import Persona, Cliente, Empleado, Proveedor, Producto # noqa: F401
 from .models import Compra, DetalleCompra, Item
 
 class PersonaForm(forms.ModelForm):
@@ -11,7 +11,7 @@ class PersonaForm(forms.ModelForm):
 
     tipo_persona = forms.ChoiceField(
         choices=TIPO_PERSONA_CHOICES,
-        widget=forms.Select(attrs={'class': 'form-select', 'id': 'form-rol'}),
+        widget=forms.Select(attrs={'class': 'form-select', 'id': 'tipo-persona'}),
         label="Rol"
     )
 
@@ -59,6 +59,72 @@ class PersonaForm(forms.ModelForm):
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Mi Empresa S.A.'}),
         label="Empresa"
     )
+
+# Codigo para manejar los campos dinamicos
+
+def clean(self):
+    cleaned_data = super().clean()
+    tipo_persona = cleaned_data.get('tipo_persona')
+
+    # Limpiar campos no relevantes
+    if tipo_persona == 'cliente':
+        cleaned_data['sueldo'] = None
+        cleaned_data['fecha_contratacion'] = None
+        cleaned_data['t_empleado'] = None
+        cleaned_data['nombre_empresa'] = None
+        
+        # Validación opcional para RUC
+        ruc = cleaned_data.get('ruc', '').strip()
+        if not ruc:
+            cleaned_data['ruc'] = None  # Guardar como NULL si está vacío
+
+    elif tipo_persona == 'empleado':
+        cleaned_data['ruc'] = None
+        cleaned_data['nombre_empresa'] = None
+
+    elif tipo_persona == 'proveedor':
+        cleaned_data['sueldo'] = None
+        cleaned_data['fecha_contratacion'] = None
+        cleaned_data['t_empleado'] = None
+
+    return cleaned_data
+
+# PRODUCTOS
+class ProductoForm(forms.ModelForm):
+    class Meta:
+        model = Producto
+        fields = [
+            'codigo', 'nombre', 'precio', 'imagen', 'descripcion', 'estado', 'categoria',
+        ]
+        widgets = {
+            'codigo': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ingrese codigo',
+            }),
+            'nombre': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ingrese nombre de producto'
+            }),
+            'precio': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ingrese precio',
+                'step': '0.01',
+            }),
+            'imagen': forms.ClearableFileInput(attrs={
+                'class': 'form-control',
+            }),
+            'descripcion': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 2,
+                'placeholder': 'Descripcion del producto',
+            }),
+            'estado': forms.Select(attrs={
+                'class': 'form-select',
+            }),
+            'categoria': forms.Select(attrs={
+                'class': 'form-select',
+            }),
+        }
 
 #Formularios para compras
 class ItemForm(forms.ModelForm):

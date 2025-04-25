@@ -206,7 +206,7 @@ Crear Nueva Compra
 
         <!-- Botones de acción -->
         <div class="d-flex justify-content-between">
-            <a href="{% if editing %}{% url 'detalle_compra' compra.id %}{% else %}{% url 'lista_compras' %}{% endif %}" 
+            <a href="{% if editing %}{% url 'administrador:detalle_compra' compra.id %}{% else %}{% url 'administrador:lista_compras' %}{% endif %}" 
             class="btn btn-secondary">
                 <i class="bi bi-arrow-left"></i> Cancelar
             </a>

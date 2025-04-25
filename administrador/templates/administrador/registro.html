@@ -15,8 +15,22 @@
         Registrar
     </h3>
         <hr>
-    <form method="post" action="{% if persona %}{% url 'editar_persona' persona.id %}{% else %}{% url 'crear_persona' %}{% endif %}" class="shadow p-4 bg-white rounded">
+        <form method="post" action="{% if persona %}{% url 'administrador:editar_persona' persona.id %}{% else %}{% url 'administrador:crear_persona' %}{% endif %}" class="shadow p-4 bg-white rounded" autocomplete="off">
         {% csrf_token %}
+
+        <!-- Mostrar errores generales -->
+        {% if form.errors %}
+        <div class="alert alert-danger">
+            {% for field in form %}
+                {% for error in field.errors %}
+                    <p>{{ error }}</p>
+                {% endfor %}
+            {% endfor %}
+            {% for error in form.non_field_errors %}
+                <p>{{ error }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
 
         <div class="mb-3">
             <label for="{{ form.nombre.id_for_label }}" class="form-label">Nombre</label>
@@ -109,48 +123,67 @@
             <button type="submit" class="btn btn-dark">
                 {% if persona %} Actualizar{% else %}Registrar{% endif %}
             </button>
-            <a href="{% url 'listar_personas' %}" class="btn btn-danger">Cancelar</a>
+            <a href="{% url 'administrador:listar_personas' %}" class="btn btn-danger">Cancelar</a>
         </div>
     </form>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.min.js"></script>
-
 <!-- JavaScript para manejar los campos dinámicos -->
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Usar el ID correcto: 'form-rol'
-        const tipoPersonaDropdown = document.getElementById('form-rol');
-        console.log('Dropdown:', tipoPersonaDropdown);  // Depuración
-    
-        if (tipoPersonaDropdown) {
-            // Registrar el evento 'change' en el dropdown
-            tipoPersonaDropdown.addEventListener('change', function() {
-                console.log('Dropdown cambiado:', this.value);  // Depuración
-    
-                // Ocultar todos los campos dinámicos primero
-                document.querySelectorAll('.campos-dinamicos').forEach(function(campo) {
-                    campo.style.display = 'none';
-                });
-    
-                // Mostrar los campos según la selección
-                if (this.value === 'cliente') {
-                    document.getElementById('clienteFields').style.display = 'block';
-                } else if (this.value === 'empleado') {
-                    document.getElementById('empleadoFields').style.display = 'block';
-                } else if (this.value === 'proveedor') {
-                    document.getElementById('proveedorFields').style.display = 'block';
-                }
+        const tipoPersonaDropdown = document.getElementById('tipo-persona');
+        
+        // Función para mostrar/ocultar campos
+        function actualizarCampos() {
+            // 1. Oculta todos los campos dinámicos
+            document.querySelectorAll('.campos-dinamicos').forEach(div => {
+                div.style.display = 'none';
             });
     
-            // Disparar el evento 'change' si ya hay un valor seleccionado al cargar la página
-            if (tipoPersonaDropdown.value) {
-                tipoPersonaDropdown.dispatchEvent(new Event('change'));
+            // 2. Muestra solo los del tipo seleccionado
+            if (tipoPersonaDropdown.value === 'cliente') {
+                document.getElementById('clienteFields').style.display = 'block';
+            } else if (tipoPersonaDropdown.value === 'empleado') {
+                document.getElementById('empleadoFields').style.display = 'block';
+            } else if (tipoPersonaDropdown.value === 'proveedor') {
+                document.getElementById('proveedorFields').style.display = 'block';
             }
-        } else {
-            console.error('No se encontró el dropdown con ID "form-rol"');  // Depuración
+        }
+    
+        // Evento al cambiar el dropdown
+        tipoPersonaDropdown.addEventListener('change', actualizarCampos);
+    
+        // Evento al enviar el formulario
+        document.querySelector('form').addEventListener('submit', function() {
+            const tipoPersona = tipoPersonaDropdown.value;
+            
+            // Deshabilita TODOS los campos dinámicos primero
+            document.querySelectorAll('.campos-dinamicos input').forEach(input => {
+                input.disabled= true;
+            });
+    
+            // Habilita SOLO los campos relevantes
+            if (tipoPersona === 'cliente') {
+                document.querySelectorAll('#clienteFields input').forEach(input => {
+                    input.disabled = false;
+                });
+            } else if (tipoPersona === 'empleado') {
+                document.querySelectorAll('#empleadoFields input').forEach(input => {
+                    input.disabled = false;
+                });
+            } else if (tipoPersona === 'proveedor') {
+                document.querySelectorAll('#proveedorFields input').forEach(input => {
+                    input.disabled = false;
+                });
+            }
+        });
+    
+        // Inicializa campos al cargar la página
+        if (tipoPersonaDropdown.value) {
+            actualizarCampos();
         }
     });
-</script>
+    </script>
 {% endblock %}
