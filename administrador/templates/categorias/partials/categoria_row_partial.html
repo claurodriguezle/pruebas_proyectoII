@@ -1,0 +1,25 @@
+<tr id="categoria-{{ categoria.id }}">
+    <td>{{ categoria.id }}</td>
+    <td>{{ categoria.nombre_categ }}</td>
+    <td>
+        <!-- Boton Editar -->
+        <button 
+            class="btn btn-sm btn-outline-primary me-2"
+            hx-get="{% url 'administrador:editar_categoria' categoria.id %}"
+            hx-target="#modalCategoriaBody"
+            hx-swap="innerHTML"
+            data-bs-toggle="modal"
+            data-bs-target="#modalCategoria">
+            Editar
+        </button>
+        <!-- Boton Eliminar -->
+        <button 
+            class="btn btn-sm btn-outline-danger"
+            hx-delete="{% url 'administrador:eliminar_categoria' categoria.id %}"
+            hx-target="#categoriaTableBody"
+            hx-swap="innerHTML"
+            hx-confirm="¿Estás seguro de eliminar esta categoría?">
+            Eliminar
+        </button>
+    </td>
+</tr>

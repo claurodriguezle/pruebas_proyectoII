@@ -86,20 +86,13 @@
             });
         </script>   
         
+        <!-- Cierra la ventana modal -->
         <script>
-            document.body.addEventListener('htmx:afterSwap', (e) => {
-                // Cerrar el modal si la respuesta viene del formulario del producto
-                if (e.target.id === "productTableBody") {
-                    const modalEl = document.getElementById('productModal');
-                    const modal = bootstrap.Modal.getInstance(modalEl);
-                    if (modal) {
-                        modal.hide();
-                    }
-        
-                    // Limpieza de clases que a veces deja el modal
-                    document.body.classList.remove('modal-open');
-                    const backdrops = document.querySelectorAll('.modal-backdrop');
-                    backdrops.forEach(b => b.remove());
+            document.addEventListener('htmx:afterOnLoad', function(evt) {
+                if (evt.detail && evt.detail.xhr && evt.detail.xhr.getResponseHeader('HX-Trigger') === 'modalCategoriaCerrado') {
+                    const modalEl = document.getElementById('modalCategoria');
+                    const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                    modal.hide();
                 }
             });
         </script>

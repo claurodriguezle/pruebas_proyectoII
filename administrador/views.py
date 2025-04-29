@@ -4,13 +4,14 @@ from django.contrib import messages
 from django.db import transaction, IntegrityError, connection
 from django.db.models import Q
 from decimal import Decimal, InvalidOperation
-from .models import Persona, Cliente, Empleado, Proveedor, Producto
-from .forms import PersonaForm, ProductoForm
+from .models import Persona, Cliente, Empleado, Proveedor, Producto, CategoriaProducto
+from .forms import PersonaForm, ProductoForm, CategoriaProductoForm 
 from django.http import Http404, HttpResponse
+from django.template.loader import render_to_string
 #Importaciones para Compras
 from .models import Compra, DetalleCompra, Item
 from .forms import CompraForm
-from . import models
+#from . import models 
 
 
 # PERSONAS
@@ -482,3 +483,54 @@ def eliminar_compra(request, compra_id):
     compra.delete()
     messages.success(request, f'Compra #{compra.numero_factura} eliminada correctamente')
     return redirect('administrador:lista_compras')
+
+# CATEGORIAS
+
+def categorias(request):
+    return render(request, 'categorias/categorias.html')
+
+def crear_categorias(request):
+    if request.method == 'POST':
+        form = CategoriaProductoForm(request.POST)
+        if form.is_valid():
+            categoria = form.save()
+            html = render_to_string('categorias/partials/categoria_row_partial.html', {'categoria': categoria})
+            response = HttpResponse(html)
+            response['HX-Trigger'] = 'modalCategoriaCerrado'
+            return response
+        else:
+            return render(request, 'categorias/partials/categoria_form_partial.html', {'form': form})
+    else:
+        form = CategoriaProductoForm()
+        return render(request, 'categorias/partials/categoria_form_partial.html', {'form': form})
+
+def listar_categorias_partial(request):
+    categorias = CategoriaProducto.objects.all().order_by('nombre_categ')
+    return render(request, 'categorias/partials/lista.html', {'categorias': categorias})
+
+def eliminar_categoria(request, pk):
+    if request.method == 'DELETE':
+        try:
+            categoria = CategoriaProducto.objects.get(pk=pk)
+            categoria.delete()
+            categorias = CategoriaProducto.objects.all()
+            return render(request, 'categorias/partials/lista.html', {'categorias': categorias})
+        except CategoriaProducto.DoesNotExist:
+            raise Http404('Categoría no encontrada')
+
+def editar_categoria(request, pk):
+    categoria = get_object_or_404(CategoriaProducto, pk=pk)
+
+    if request.method == 'POST':
+        form = CategoriaProductoForm(request.POST, instance=categoria)
+        if form.is_valid():
+            categoria = form.save()
+            html = render_to_string('categorias/partials/categoria_row_partial.html', {'categoria': categoria})
+            response = HttpResponse(html)
+            response['HX-Trigger'] = 'modalCategoriaCerrado'
+            return response
+        else:
+            return render(request, 'categorias/partials/categoria_form_partial.html', {'form': form})
+    else:
+        form = CategoriaProductoForm(instance=categoria)
+        return render(request, 'categorias/partials/categoria_form_partial.html', {'form': form})

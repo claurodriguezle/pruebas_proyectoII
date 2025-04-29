@@ -1,0 +1,7 @@
+{% for categoria in categorias %}
+    {% include "categorias/partials/categoria_row_partial.html" %}
+{% empty %}
+<tr>
+    <td colspan="3">No hay categorías registradas.</td>
+</tr>
+{% endfor %}

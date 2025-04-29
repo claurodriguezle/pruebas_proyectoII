@@ -1,5 +1,5 @@
 from django import forms
-from .models import Persona, Cliente, Empleado, Proveedor, Producto # noqa: F401
+from .models import Persona, Cliente, Empleado, Proveedor, Producto, CategoriaProducto # noqa: F401
 from .models import Compra, DetalleCompra, Item
 
 class PersonaForm(forms.ModelForm):
@@ -156,3 +156,15 @@ class CompraCompletaForm(forms.Form):
     item = forms.ModelChoiceField(queryset=Item.objects.all())
     cantidad = forms.DecimalField(max_digits=10, decimal_places=2)
     precio_compra = forms.DecimalField(max_digits=10,decimal_places=2)
+
+# CATEGORIAS
+class CategoriaProductoForm(forms.ModelForm):
+    class Meta:
+        model = CategoriaProducto
+        fields = ['nombre_categ']
+        widgets = {
+            'nombre_categ': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Nombre de la categoría'
+            })
+        }
