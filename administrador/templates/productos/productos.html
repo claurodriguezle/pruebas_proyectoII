@@ -15,7 +15,10 @@
         <h2>Productos</h2> 
         <hr>
     </div>
-    <div class="header">
+    <div class="botones">
+
+    </div>
+    <div class="header d-flex gap-2">
         <button class="btn btn-primary"
             data-bs-toggle="modal" data-bs-target="#productModal"
             hx-get="{% url 'administrador:crear_partial' %}"
@@ -23,6 +26,11 @@
             hx-swap="innerHTML">
             + Nuevo
         </button>
+
+        <a class="btn btn-success" href="{% url 'administrador:categorias' %}" role="button">
+            Categorias
+        </a>
+
     </div>
     
     <div class="filters">

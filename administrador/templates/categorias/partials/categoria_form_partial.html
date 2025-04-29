@@ -1,0 +1,30 @@
+<form
+    method="POST"
+    {% if categoria %}
+        hx-post="{% url 'administrador:editar_categoria' categoria.id %}"
+        hx-target="#categoria-{{ categoria.id }}"
+        hx-swap="outerHTML"
+    {% else %}
+        hx-post="{% url 'administrador:crear_categorias' %}"
+        hx-target="#categoriaTableBody"
+        hx-swap="beforeend"
+    {% endif %}
+    hx-on="htmx:afterSwap: window.dispatchEvent(new Event('modalCategoriaCerrado'))"
+    class="form"
+    >
+
+    {% csrf_token %}
+    <div class="mb-3">
+        <label for="id_nombre_categ" class="form-label">Nombre</label>
+        {{ form.nombre_categ }}
+        {% if form.nombre_categ.errors %}
+            <div class="text-danger">{{ form.nombre_categ.errors }}</div>
+        {% endif %}
+    </div>
+    <div class="d-flex justify-content-end gap-2">
+        <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-primary">
+            {% if categoria %}Actualizar{% else %}Guardar{% endif %}
+        </button>
+    </div>
+</form>

@@ -1,0 +1,52 @@
+{% extends "administrador/layout.html" %}
+{% load static %}
+
+{% block title %}
+    Categorías
+{% endblock %}
+
+{% block body %}
+<div class="container">
+    <div class="header d-flex justify-content-between align-items-center mt-4 mb-3">
+        <h2>Categorías</h2>
+        <button class="btn btn-primary" 
+            hx-get="{% url 'administrador:crear_categorias' %}"
+            hx-target="#modalCategoriaBody"
+            hx-swap="innerHTML"
+            data-bs-toggle="modal" data-bs-target="#modalCategoria">
+            + Categoría
+        </button>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-striped align-middle">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="categoriaTableBody"
+                hx-get="{% url 'administrador:listar_categorias_partial' %}"
+                hx-trigger="load"
+                hx-swap="innerHTML"
+                >
+                <!-- Aquí se mostrarán las categorías -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal para añadir/editar categoría -->
+<div class="modal fade" id="modalCategoria" tabindex="-1" aria-labelledby="categoriaModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-body" id="modalCategoriaBody">
+                <!-- Aquí se cargará el formulario dinámicamente -->
+            </div>
+        </div>
+    </div>
+</div>
+    
+{% endblock %}

@@ -16,12 +16,12 @@ urlpatterns = [
     path('productos/', views.productos, name='productos'),
 
     # HTMX partials y endpoints
-    path('producto/partials/listar/', views.listar_partial,   name='listar_partial'),
-    path('producto/partials/crear/', views.crear_partial,    name='crear_partial'),
-    path('producto/crear/htmx/', views.crear_htmx,       name='crear_htmx'),
+    path('producto/partials/listar/', views.listar_partial, name='listar_partial'),
+    path('producto/partials/crear/', views.crear_partial, name='crear_partial'),
+    path('producto/crear/htmx/', views.crear_htmx, name='crear_htmx'),
     path('producto/partials/editar/<int:pk>/', views.editar_partial, name='editar_partial'),
-    path('producto/editar/<int:pk>/htmx/', views.editar_htmx,    name='editar_htmx'),
-    path('producto/eliminar/<int:pk>/', views.eliminar_htmx,  name='eliminar_htmx'),
+    path('producto/editar/<int:pk>/htmx/', views.editar_htmx, name='editar_htmx'),
+    path('producto/eliminar/<int:pk>/', views.eliminar_htmx, name='eliminar_htmx'),
 
     #Rutas para compras
     path('compras/', views.lista_compras, name='lista_compras'),
@@ -35,4 +35,10 @@ urlpatterns = [
     path('stock/crear/',views.crear_stock, name='crear_stock'),
     path('stock/editar/<int:stock_id>',views.editar_stock, name='editar_stock'),
     path('stock/eliminar/<int:stock_id>',views.eliminar_stock, name='eliminar_stock'),
+    # CATEGORIAS
+    path('categorias/', views.categorias, name='categorias'),
+    path('categorias/crear', views.crear_categorias, name='crear_categorias'),
+    path('categorias/listar', views.listar_categorias_partial, name="listar_categorias_partial"),
+    path('categorias/eliminar/<int:pk>/', views.eliminar_categoria, name='eliminar_categoria'),
+    path('categorias/editar/<int:pk>/', views.editar_categoria, name='editar_categoria'),
 ]
