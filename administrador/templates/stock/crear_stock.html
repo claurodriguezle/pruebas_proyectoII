@@ -1,0 +1,154 @@
+{% extends "administrador/layout.html" %}
+{% load static %}
+
+{% block title %}Crear Nuevo Ítem{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">
+                <i class="bi bi-box-seam me-2"></i>Crear Nuevo Ítem
+            </h4>
+        </div>
+        
+        <div class="card-body">
+            {% if messages %}
+            <div class="mb-4">
+                {% for message in messages %}
+                <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            <form method="post" class="needs-validation" novalidate>
+                {% csrf_token %}
+                
+                <div class="row g-3 mb-4">
+                    <!-- Nombre -->
+                    <div class="col-md-6">
+                        <label for="id_nombre" class="form-label">Nombre del ítem*</label>
+                        <input type="text" class="form-control" id="id_nombre" name="nombre" 
+                               value="{{ valores_previos.nombre|default:'' }}" required>
+                        <div class="invalid-feedback">
+                            Por favor ingrese el nombre del ítem.
+                        </div>
+                    </div>
+                    
+                    <!-- Tipo -->
+                    <div class="col-md-6">
+                        <label for="id_tipo" class="form-label">Tipo*</label>
+                        <select class="form-select" id="id_tipo" name="tipo" required>
+                            <option value="" disabled selected>Seleccione un tipo</option>
+                            {% for value, label in tipo_choices %}
+                            <option value="{{ value }}" 
+                                    {% if valores_previos.tipo == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <div class="invalid-feedback">
+                            Seleccione el tipo de ítem.
+                        </div>
+                    </div>
+                    
+                    <!-- Unidad de Medida -->
+                    <div class="col-md-4">
+                        <label for="id_unidad_medida" class="form-label">Unidad de medida*</label>
+                        <select class="form-select" id="id_unidad_medida" name="unidad_medida" required>
+                            <option value="" disabled selected>Seleccione unidad</option>
+                            {% for value, label in unidad_choices %}
+                            <option value="{{ value }}"
+                                    {% if valores_previos.unidad_medida == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <div class="invalid-feedback">
+                            Seleccione la unidad de medida.
+                        </div>
+                    </div>
+                    
+                    <!-- Cantidad Mínima -->
+                    <div class="col-md-4">
+                        <label for="id_cant_minima" class="form-label">Cantidad Mínima*</label>
+                        <input type="number" step="0.01" class="form-control" id="id_cant_minima" 
+                               name="cant_minima" min="0" 
+                               value="{{ valores_previos.cant_minima|default:'0' }}" required>
+                        <div class="invalid-feedback">
+                            Ingrese una cantidad válida (≥0).
+                        </div>
+                    </div>
+                    
+                    <!-- Cantidad Máxima -->
+                    <div class="col-md-4">
+                        <label for="id_cant_maxima" class="form-label">Cantidad Máxima*</label>
+                        <input type="number" step="0.01" class="form-control" id="id_cant_maxima" 
+                               name="cant_maxima" min="0" 
+                               value="{{ valores_previos.cant_maxima|default:'0' }}" required>
+                        <div class="invalid-feedback">
+                            Ingrese una cantidad válida (≥0).
+                        </div>
+                    </div>
+                    <!-- Proveedor -->
+                    <div class="col-md-6">
+                        <label for="id_proveedor" class="form-label">Proveedor Principal</label>
+                        <select class="form-select" id="id_proveedor" name="proveedor">
+                            <option value="" selected>Ninguno</option>
+                            {% for proveedor in proveedores %}
+                            <option value="{{ proveedor.id }}"
+                                    {% if valores_previos.proveedor == proveedor.id|stringformat:"s" %}selected{% endif %}>
+                                {{ proveedor.nombre_empresa }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                </div>
+
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="{% url 'administrador:lista_stock' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i> Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save me-1"></i> Guardar Ítem
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Validación del lado del cliente
+(function () {
+    'use strict'
+    
+    const forms = document.querySelectorAll('.needs-validation')
+    
+    Array.from(forms).forEach(form => {
+        form.addEventListener('submit', event => {
+            if (!form.checkValidity()) {
+                event.preventDefault()
+                event.stopPropagation()
+            }
+            
+            // Validación adicional: cantidad mínima <= máxima
+            const min = parseFloat(document.getElementById('id_cantidad_minima').value)
+            const max = parseFloat(document.getElementById('id_cantidad_maxima').value)
+            
+            if (min > max) {
+                alert('Error: La cantidad mínima no puede ser mayor que la máxima')
+                event.preventDefault()
+                return false
+            }
+            
+            form.classList.add('was-validated')
+        }, false)
+    })
+})()
+</script>
+{% endblock %}

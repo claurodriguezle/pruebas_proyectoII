@@ -29,4 +29,10 @@ urlpatterns = [
     path('compras/<int:compra_id>/',views.detalle_compra, name='detalle_compra'),
     path('compras/editar/<int:compra_id>/', views.editar_compra, name='editar_compra'),
     path('compras/eliminar/<int:compra_id>/', views.eliminar_compra, name='eliminar_compra'),
+
+    #Rutas para stock
+    path('stock/',views.lista_stock, name='lista_stock'),
+    path('stock/crear/',views.crear_stock, name='crear_stock'),
+    path('stock/editar/<int:stock_id>',views.editar_stock, name='editar_stock'),
+    path('stock/eliminar/<int:stock_id>',views.eliminar_stock, name='eliminar_stock'),
 ]

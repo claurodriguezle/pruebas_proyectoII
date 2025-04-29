@@ -81,10 +81,10 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME':'bdburgerapp',
-        'USER':'ruizj',
-        'PASSWORD':'admin',
+        'USER':'crodriguez',
+        'PASSWORD':'12345',
         'HOST':'localhost',
-        'PORT': '5432',
+        'PORT': '5433',
     }
 }
 

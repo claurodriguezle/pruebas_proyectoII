@@ -11,6 +11,9 @@ from django.http import Http404, HttpResponse
 from .models import Compra, DetalleCompra, Item
 from .forms import CompraForm
 from . import models
+#Importaciones para Stock
+from .models import Stock
+from django.db.models import Sum
 
 
 # PERSONAS
@@ -275,76 +278,84 @@ def crear_compra(request):
     TIPO_CHOICES = Item.TIPO_CHOICES
 
     if request.method == 'POST':
-        print("Datos POST recibidos:", request.POST)  # Para depuración
-
-        # 1. Procesar formulario base
         compra_form = CompraForm(request.POST)
         
         if compra_form.is_valid():
             try:
                 with transaction.atomic():
-                    # 2. Guardar compra principal
+                    # Guardar la compra principal
                     compra = compra_form.save()
 
-                    # 3. Procesar ítems dinámicos
+                    # Obtener las listas de ítems, cantidades, precios, tipos y unidades
                     items = request.POST.getlist('items')
                     cantidades = request.POST.getlist('cantidades')
                     precios = request.POST.getlist('precios')
                     tipos = request.POST.getlist('tipos')
                     unidades = request.POST.getlist('unidades')
 
-                    # Validación mejorada
+                    # Validaciones básicas
                     if not items or not any(item.strip() for item in items):
                         raise ValidationError("Debe agregar al menos un ítem válido")
 
                     if len(items) != len(cantidades) or len(items) != len(precios):
                         raise ValidationError("Datos incompletos en los ítems")
 
+                    # Procesar cada ítem
                     for i in range(len(items)):
                         nombre_item = items[i].strip()
                         if not nombre_item:
                             continue
 
                         try:
-                            # Conversión y validación
                             cantidad = Decimal(cantidades[i])
                             precio = int(precios[i])
 
                             if cantidad <= 0 or precio <= 0:
                                 raise ValidationError(f"Ítem {i+1}: Valores deben ser positivos")
 
-                            # Conversión de unidades
+                            # Buscar el item
+                            item = Item.objects.filter(nombre__iexact=nombre_item).first()
+
+                            if not item:
+                                # Crear el ítem si no existe
+                                item = Item.objects.create(
+                                    nombre=nombre_item,
+                                    tipo=tipos[i],
+                                    unidad_medida=unidades[i]
+                                )
+                                # Crear su stock inicial en 0
+                                proveedor = compra.proveedor
+                                Stock.objects.create(
+                                    item=item,
+                                    cant_minima=0,
+                                    cant_maxima=0,
+                                    cant_disponible=0,
+                                    proveedor_principal=proveedor
+                                )
+
+                            # Conversión de unidades: si es kg, pasar a gramos
                             if unidades[i] == 'kg':
-                                #Precio ingresado es por kg, convertimos a precio por gramo
-                                precio_por_gramo = precio/1000
+                                precio_por_gramo = precio / 1000
                                 cantidad_en_gramos = cantidad * 1000
                             else:
-                                #Precio ya esta en gramos (u otras unidades)
                                 precio_por_gramo = precio
                                 cantidad_en_gramos = cantidad
-
-                            # Buscar/crear ítem
-                            item, _ = Item.objects.get_or_create(
-                                nombre=nombre_item,
-                                defaults={
-                                    'tipo': tipos[i],
-                                    'unidad_medida': unidades[i] #Guardamos la unidad original
-                                }
-                            )
 
                             # Crear detalle de compra
                             DetalleCompra.objects.create(
                                 compra=compra,
                                 item=item,
-                                cantidad=cantidad_en_gramos, #Siempre en gramos
-                                precio_compra=precio_por_gramo #Precio por gramo
+                                cantidad=cantidad_en_gramos,
+                                precio_compra=precio_por_gramo
                             )
 
                         except (InvalidOperation, ValueError) as e:
                             raise ValidationError(f"Error en ítem {i+1}: {str(e)}")
 
-                    # Actualizar totales
+                    # Calcular totales y actualizar el stock
                     compra.calcular_totales()
+                    actualizar_stock_desde_compra(compra)
+
                     messages.success(request, '✅ Compra registrada exitosamente!')
                     return redirect('administrador:lista_compras')
 
@@ -352,13 +363,13 @@ def crear_compra(request):
                 messages.error(request, str(e))
             except Exception as e:
                 messages.error(request, '❌ Error al guardar la compra')
-                print(f"Error: {str(e)}")  # Log detallado
+                print(f"Error: {str(e)}")
         else:
             for field, errors in compra_form.errors.items():
                 for error in errors:
                     messages.error(request, f"❌ {field}: {error}")
     
-    # GET request
+    # GET Request
     context = {
         'compra_form': CompraForm(),
         'proveedores': Proveedor.objects.all(),
@@ -377,26 +388,40 @@ def detalle_compra(request, compra_id):
         'detalles':detalles,
     }
     return render(request,'compras/detalles_compra.html',context)
+
 #Editar Compra
+@transaction.atomic
 def editar_compra(request, compra_id):
     compra = get_object_or_404(Compra, pk=compra_id)
-    proveedores = Proveedor.objects.all()  # Asegurarnos de pasar los proveedores
-    
+    proveedores = Proveedor.objects.all()
+
     if request.method == 'POST':
         form = CompraForm(request.POST, instance=compra)
         if form.is_valid():
             try:
                 with transaction.atomic():
+                    # 1️⃣ Revertir el impacto anterior en el stock
+                    for detalle in compra.detalles.all():
+                        stock = Stock.objects.filter(item=detalle.item).first()
+                        if stock:
+                            stock.cant_disponible -= detalle.cantidad
+                            if stock.cant_disponible < 0:
+                                stock.cant_disponible = 0
+                            stock.save()
+
+                    # 2️⃣ Eliminar detalles anteriores
+                    compra.detalles.all().delete()
+
+                    # 3️⃣ Guardar la compra con nuevos datos
                     compra = form.save()
-                    compra.detalles.all().delete()  # Eliminar detalles antiguos
-                    
-                    # Procesar los items como en crear_compra
+
+                    # 4️⃣ Procesar nuevos ítems
                     items = request.POST.getlist('items')
                     cantidades = request.POST.getlist('cantidades')
                     precios = request.POST.getlist('precios')
                     tipos = request.POST.getlist('tipos')
                     unidades = request.POST.getlist('unidades')
-                    
+
                     for i in range(len(items)):
                         nombre_item = items[i].strip()
                         if not nombre_item:
@@ -409,6 +434,7 @@ def editar_compra(request, compra_id):
                             if cantidad <= 0 or precio <= 0:
                                 raise ValidationError(f"Ítem {i+1}: Valores deben ser positivos")
 
+                            # Conversión: si es kg, pasar a gramos
                             if unidades[i] == 'kg':
                                 precio_por_gramo = precio / 1000
                                 cantidad_en_gramos = cantidad * 1000
@@ -416,6 +442,7 @@ def editar_compra(request, compra_id):
                                 precio_por_gramo = precio
                                 cantidad_en_gramos = cantidad
 
+                            # Obtener o crear el ítem
                             item, _ = Item.objects.get_or_create(
                                 nombre=nombre_item,
                                 defaults={
@@ -424,6 +451,7 @@ def editar_compra(request, compra_id):
                                 }
                             )
 
+                            # Crear el detalle de compra
                             DetalleCompra.objects.create(
                                 compra=compra,
                                 item=item,
@@ -433,29 +461,31 @@ def editar_compra(request, compra_id):
 
                         except (InvalidOperation, ValueError) as e:
                             raise ValidationError(f"Error en ítem {i+1}: {str(e)}")
-                    
+
+                    # 5️⃣ Recalcular totales y actualizar stock
                     compra.calcular_totales()
+                    actualizar_stock_desde_compra(compra)
+
                     messages.success(request, '✅ Compra actualizada exitosamente!')
                     return redirect('administrador:detalle_compra', compra_id=compra.id)
-                    
+
             except Exception as e:
                 messages.error(request, f'❌ Error al actualizar: {str(e)}')
     else:
         form = CompraForm(instance=compra)
-        
-        # Preparar datos para el template
+
+        # Preparar los datos para mostrar en el formulario
         detalles = compra.detalles.all().select_related('item')
         items_data = []
-        
+
         for detalle in detalles:
-            # Convertir unidades para mostrar (kg → gramos)
             if detalle.item.unidad_medida == 'kg':
                 cantidad_mostrar = detalle.cantidad / 1000
                 precio_mostrar = detalle.precio_compra * 1000
             else:
                 cantidad_mostrar = detalle.cantidad
                 precio_mostrar = detalle.precio_compra
-                
+
             items_data.append({
                 'nombre': detalle.item.nombre,
                 'tipo': detalle.item.tipo,
@@ -474,6 +504,9 @@ def editar_compra(request, compra_id):
         'tipo_choices': Item.TIPO_CHOICES,
         'items_existentes': Item.objects.all().values_list('nombre', flat=True)
     }
+
+    return render(request, 'compras/crear_compra.html', context)
+
     
     return render(request, 'compras/crear_compra.html', context)
 #ELIMINAR COMPRA
@@ -482,3 +515,204 @@ def eliminar_compra(request, compra_id):
     compra.delete()
     messages.success(request, f'Compra #{compra.numero_factura} eliminada correctamente')
     return redirect('administrador:lista_compras')
+#STOCK
+
+#LISTA DE STOCK
+def lista_stock(request):
+    query = request.GET.get('q', '').strip()
+    
+    stocks = Stock.objects.all().select_related('item', 'proveedor_principal').order_by('item__nombre')
+    
+    if query:
+        stocks = stocks.filter(
+            Q(item__nombre__icontains=query) |
+            Q(proveedor_principal__nombre_empresa__icontains=query)
+        )
+    
+    return render(request, 'stock/lista_stock.html', {
+        'stocks': stocks,
+        'query': query
+    })
+
+
+#CREAR ITEM Y STOCK
+@transaction.atomic
+def crear_stock(request):
+    if request.method == 'POST':
+        try:
+            nombre = request.POST.get('nombre')
+            tipo = request.POST.get('tipo')
+            unidad_medida = request.POST.get('unidad_medida')
+            cant_minima = Decimal(request.POST.get('cant_minima', 0))
+            cant_maxima = Decimal(request.POST.get('cant_maxima', 0))
+            cant_disponible = Decimal(request.POST.get('cant_disponible', 0))
+            proveedor_id = request.POST.get('proveedor')
+
+            if not nombre:
+                raise ValidationError("El nombre del ítem es requerido")
+            if cant_minima < 0 or cant_maxima < 0 or cant_disponible < 0:
+                raise ValidationError("Las cantidades no pueden ser negativas")
+            if cant_minima > cant_maxima:
+                raise ValidationError("La cantidad mínima no puede ser mayor que la máxima")
+
+            #  Conversión automática si unidad es kg
+            if tipo == 'MATERIA_PRIMA' and unidad_medida == 'kg':
+                cant_minima = cant_minima * 1000
+                cant_maxima = cant_maxima * 1000
+                cant_disponible = cant_disponible * 1000
+
+            item, created_item = Item.objects.get_or_create(
+                nombre=nombre,
+                defaults={
+                    'tipo': tipo,
+                    'unidad_medida': unidad_medida
+                }
+            )
+
+            proveedor = None
+            if proveedor_id:
+                proveedor = Proveedor.objects.get(id=proveedor_id)
+
+            # Si ya existe stock no se debe crear otro
+            stock_existente = Stock.objects.filter(item=item).first()
+
+            if stock_existente:
+                stock_existente.cant_minima = cant_minima
+                stock_existente.cant_maxima = cant_maxima
+                stock_existente.cant_disponible = cant_disponible
+                stock_existente.proveedor_principal = proveedor
+                stock_existente.save()
+            else:
+                stock = Stock.objects.create(
+                    item=item,
+                    cant_minima=cant_minima,
+                    cant_maxima=cant_maxima,
+                    cant_disponible=cant_disponible,
+                    proveedor_principal=proveedor
+                )
+
+                #Buscar compras anteriores y sumarlas como stock disponible
+                cantidad_total_comprada = item.detalles_compra.aggregate(
+                    total=Sum('cantidad')
+                )['total'] or 0
+
+                stock.cant_disponible = cantidad_total_comprada
+                stock.save()
+
+
+            messages.success(request, '✅ Ítem y stock creados o actualizados exitosamente')
+            return redirect('administrador:lista_stock')
+
+        except Exception as e:
+            messages.error(request, f'❌ Error al crear o actualizar el ítem: {str(e)}')
+
+    context = {
+        'proveedores': Proveedor.objects.all(),
+        'unidad_choices': Item.UNIDAD_CHOICES,
+        'tipo_choices': Item.TIPO_CHOICES,
+        'items_existentes': Item.objects.all().values_list('nombre', flat=True)
+    }
+    return render(request, 'stock/crear_stock.html', context)
+
+
+# Mejorar la función de actualización de stock desde compras
+def actualizar_stock_desde_compra(compra):
+    """Actualiza el stock disponible cuando se registra una compra"""
+    with transaction.atomic():
+        for detalle_compra in compra.detalles.all():
+            cantidad = detalle_compra.cantidad
+
+            # Buscar el stock correspondiente al item
+            stock = Stock.objects.filter(item=detalle_compra.item).first()
+
+            if not stock:
+                # Crear un stock básico si no existe
+                stock = Stock.objects.create(
+                    item=detalle_compra.item,
+                    cant_minima=0,
+                    cant_maxima=0,
+                    cant_disponible=0,
+                    proveedor_principal=detalle_compra.compra.proveedor
+                )
+
+            # Actualizar los datos del stock
+            stock.cant_disponible += cantidad
+            stock.proveedor_principal = detalle_compra.compra.proveedor
+            stock.detalle_compra = detalle_compra
+            stock.fecha_ultima_entrada = detalle_compra.compra.fecha
+            stock.save()
+
+
+
+
+def ajustar_stock(request, stock_id):
+    stock = get_object_or_404(Stock, id=stock_id)
+    
+    if request.method == 'POST':
+        cantidad = Decimal(request.POST.get('cantidad', 0))
+        
+        if cantidad < 0:
+            messages.error(request, 'La cantidad no puede ser negativa')
+        else:
+            stock.cantidad_disponible = cantidad
+            stock.save()
+            messages.success(request, 'Stock actualizado correctamente')
+            return redirect('lista_stock')
+    
+    return render(request, 'stock/ajustar_stock.html', {'stock': stock})
+
+#Editar Stock 
+@transaction.atomic
+def editar_stock(request, stock_id):
+    stock = get_object_or_404(Stock, id=stock_id)
+
+    if request.method == 'POST':
+        try:
+            cant_minima = Decimal(request.POST.get('cant_minima', 0))
+            cant_maxima = Decimal(request.POST.get('cant_maxima', 0))
+            proveedor_id = request.POST.get('proveedor')
+
+            if cant_minima < 0 or cant_maxima < 0:
+                raise ValidationError("Las cantidades no pueden ser negativas")
+            if cant_minima > cant_maxima:
+                raise ValidationError("La cantidad mínima no puede ser mayor que la máxima")
+
+            if stock.item.tipo == 'MATERIA_PRIMA' and stock.item.unidad_medida == 'kg':
+                cant_minima = cant_minima * 1000
+                cant_maxima = cant_maxima * 1000
+
+            stock.cant_minima = cant_minima
+            stock.cant_maxima = cant_maxima
+            stock.proveedor_principal = Proveedor.objects.get(id=proveedor_id) if proveedor_id else None
+            stock.save()
+
+            messages.success(request, '✅ Stock actualizado correctamente.')
+            return redirect('administrador:lista_stock')
+
+        except Exception as e:
+            messages.error(request, f'❌ Error al editar el stock: {str(e)}')
+
+    context = {
+        'stock': stock,
+        'proveedores': Proveedor.objects.all(),
+        'tipo_choices': Item.TIPO_CHOICES,
+        'unidad_choices': Item.UNIDAD_CHOICES,
+        'valores_previos': {
+            'nombre': stock.item.nombre,
+            'tipo': stock.item.tipo,
+            'unidad_medida': stock.item.unidad_medida,
+            'cant_minima': stock.cant_minima,
+            'cant_maxima': stock.cant_maxima,
+            'proveedor': stock.proveedor_principal.id if stock.proveedor_principal else '',
+        }
+    }
+    return render(request, 'stock/crear_stock.html', context)
+
+#Eliminar Stock
+@transaction.atomic
+def eliminar_stock(request, stock_id):
+    stock = get_object_or_404(Stock, id=stock_id)
+    item_nombre = stock.item.nombre
+    stock.delete()
+    messages.success(request, f'🗑️ Ítem "{item_nombre}" eliminado del stock.')
+    return redirect('administrador:lista_stock')

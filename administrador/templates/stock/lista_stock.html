@@ -1,0 +1,93 @@
+{% extends 'administrador/layout.html' %}
+{% load static %}
+{% load humanize %}
+{% block title %}
+    Lista de stock de items
+{% endblock %}
+
+{% block body %}
+    <div class="container">
+        <h1>Stock de items</h1>
+        <a href="{% url 'administrador:crear_stock' %}" class="btn btn-primary mb-3">+ Nuevo Ítem</a>
+        
+        <div class="card mb-3">
+            <div class="card-body">
+                <form method="get" class="row g-3">
+                    <div class="col-md-8">
+                        <input type="text" name="q" placeholder="Buscar ítem o proveedor..." 
+                        class="form-control" value="{{ query }}">
+                    </div>
+                    <div class="col-md-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-search"></i> Buscar
+                        </button>
+                        <a href="{% url 'administrador:lista_stock' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-counterclockwise"></i> Limpiar
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Ítem</th>
+                        <th>Tipo</th>
+                        <th>Unidad</th>
+                        <th>Proveedor</th>
+                        <th>Min</th>
+                        <th>Max</th>
+                        <th>Disponible</th>
+                        <!--<th>Precio</th>-->
+                        <th>Últ. Entrada</th>
+                        <th>Últ. Salida</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stock in stocks %}
+                    <tr>
+                        <td>{{ stock.item.nombre }}</td>
+                        <td>{{ stock.item.get_tipo_display }}</td>
+                        <td>{{ stock.item.get_unidad_medida_display }}</td>
+                        <td>{{ stock.proveedor_principal.nombre_empresa|default:"-" }}</td>
+                        <td>{{ stock.cant_minima|floatformat:2 }}</td>
+                        <td>{{ stock.cant_maxima|floatformat:2 }}</td>
+                        <td class="font-weight-bold">{{ stock.cant_disponible|floatformat:2 }}</td>
+                        <!--<td class="text-end">{{ stock.precio_unitario_display|intcomma }} Gs./{{ stock.item.get_unidad_medida_display }}</td>-->
+                        <td>{{ stock.fecha_ultima_entrada|date:"d/m/Y"|default:"-" }}</td>
+                        <td>{{ stock.fecha_ultima_salida|date:"d/m/Y"|default:"-" }}</td>
+                        <td>
+                            {% if stock.cant_minima > 0 and stock.cant_disponible < stock.cant_minima %}
+                                <span class="text-warning fw-bold">Stock Bajo ⚠️</span>
+                            {% elif stock.cant_minima == 0 or stock.cant_maxima == 0 %}
+                                <span class="text-danger fw-bold">Incompleto ⚠️</span>
+                            {% else %}
+                                <span class="text-success fw-bold">OK ✅</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'administrador:editar_stock' stock.id %}" class="btn btn-sm btn-primary">Modificar</a>
+                            <a href="{% url 'administrador:eliminar_stock' stock.id %}" class="btn btn-sm btn-danger"
+                               onclick="return confirm('¿Seguro que deseas eliminar este ítem del stock?');">Eliminar</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="text-center py-4">
+                            {% if query %}
+                                No se encontraron items con "{{ query }}"
+                            {% else %}
+                                No hay items en stock
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

@@ -80,8 +80,8 @@ class Item(models.Model):
 #DETALLES_COMPRA
 class DetalleCompra(models.Model):
     compra = models.ForeignKey('Compra', on_delete=models.CASCADE, related_name='detalles')
-    item = models.ForeignKey(Item, on_delete=models.PROTECT)
-    cantidad = models.DecimalField(max_digits=10,decimal_places=2, verbose_name="Cantidad")
+    item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name='detalles_compra')
+    cantidad = models.DecimalField(max_digits=15,decimal_places=2, verbose_name="Cantidad")
     precio_compra = models.BigIntegerField(verbose_name="Precio en Gs.",validators=[MinValueValidator(1)])
     subtotal = models.BigIntegerField()
     def clean(self):
@@ -205,3 +205,42 @@ class Producto(models.Model):
   )
   def __str__(self):
     return f"{self.codigo} - {self.nombre}"
+
+#STOCK
+class Stock(models.Model):
+    item = models.ForeignKey(Item, on_delete=models.CASCADE,related_name='stocks')
+    detalle_compra = models.ForeignKey(DetalleCompra,on_delete=models.SET_NULL, null=True, blank=True, related_name='stocks')
+    cant_disponible = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    cant_minima = models.DecimalField(max_digits=15,decimal_places=2,default=0)
+    cant_maxima= models.DecimalField(max_digits=15,decimal_places=2,default=0)
+    proveedor_principal = models.ForeignKey(Proveedor, on_delete=models.SET_NULL,null=True, blank=True)
+    fecha_ultima_entrada = models.DateField(auto_now_add=True)
+    fecha_ultima_salida = models.DateField(null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+
+    @property
+    def cantidad_display(self):
+        """Devuelve la cantidad en la unidad original para mostrar"""
+        if self.item.tipo == 'MATERIA_PRIMA' and self.item.unidad_medida == 'kg':
+            return self.cant_disponible/1000
+        return self.cant_disponible
+    @property
+    def precio_unitario(self):
+        """Obtiene el precio unitario desde la última compra"""
+        if self.detalle_compra:
+            return self.detalle_compra.precio_compra
+
+        ultima_compra = DetalleCompra.objects.filter(
+            item=self.item
+        ).order_by('-compra__fecha').first()
+
+        return ultima_compra.precio_compra if ultima_compra else 0
+
+    @property
+    def precio_unitario_display(self):
+        """Devuelve el precio en la unidad original para mostrar"""
+        if self.item.tipo == 'MATERIA_PRIMA' and self.item.unidad_medida == 'kg':
+            return self.precio_unitario * 1000  # Convertir de gramo a kg
+        return self.precio_unitario
