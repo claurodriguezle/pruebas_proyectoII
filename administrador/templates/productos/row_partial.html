@@ -1,3 +1,4 @@
+{% load humanize custom_filters %}
 <tr id="producto-{{ producto.id }}">
     <td>
         {% if producto.imagen %}
@@ -8,7 +9,7 @@
     </td>
     <td>{{ producto.codigo }}</td>
     <td>{{ producto.nombre }}</td>
-    <td>${{ producto.precio }}</td>
+    <td>{{ producto.precio|intcomma|punto_miles}}</td>
     <td>{{ producto.categoria }}</td>
     <td>{{ producto.descripcion }}</td>
     <td>

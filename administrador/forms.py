@@ -126,6 +126,12 @@ class ProductoForm(forms.ModelForm):
             }),
         }
 
+    def clean_precio(self):
+        precio = self.cleaned_data.get('precio')
+        if precio is None or precio <= 0:
+            raise forms.ValidationError("El precio debe ser mayor a cero.")
+        return precio
+
 #Formularios para compras
 class ItemForm(forms.ModelForm):
     class Meta:

@@ -174,10 +174,9 @@ class Producto(models.Model):
         max_length=100,
         unique=True
     )
-    precio = models.DecimalField(
+    precio = models.PositiveIntegerField(
         verbose_name='Precio',
-        max_digits=10,
-        decimal_places=2
+        validators=[MinValueValidator(1)]
     )
     imagen = models.ImageField(
         verbose_name='Imagen',
@@ -205,6 +204,11 @@ class Producto(models.Model):
     )
     def __str__(self):
         return f"{self.codigo} - {self.nombre}"
+    
+    def clean(self):
+        super().clean()
+        if self.precio == 0:
+            raise ValidationError({'precio': 'El precio no puede ser cero.'})
 
 #STOCK
 class Stock(models.Model):
