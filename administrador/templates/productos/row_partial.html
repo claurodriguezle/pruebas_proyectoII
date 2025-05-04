@@ -9,7 +9,7 @@
     </td>
     <td>{{ producto.codigo }}</td>
     <td>{{ producto.nombre }}</td>
-    <td>{{ producto.precio|intcomma|punto_miles}}</td>
+    <td>{{ producto.precio|intcomma|punto_miles}} ₲</td>
     <td>{{ producto.categoria }}</td>
     <td>{{ producto.descripcion }}</td>
     <td>
@@ -28,5 +28,9 @@
             hx-confirm="¿Quieres eliminar este producto?">
             Eliminar
         </button>
+
+        <a class="btn btn-outline-info" href="{% url 'administrador:ingredientes' producto.id %}" role="button">
+            Ingredientes
+        </a>
     </td>
 </tr>

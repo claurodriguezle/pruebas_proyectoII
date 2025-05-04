@@ -770,3 +770,8 @@ def editar_categoria(request, pk):
     else:
         form = CategoriaProductoForm(instance=categoria)
         return render(request, 'categorias/partials/categoria_form_partial.html', {'form': form})
+
+# INGREDIENTES DE PRODUCTOS
+def ingredientes(request, id):
+    producto = get_object_or_404(Producto, id=id)
+    return render(request, 'ingredientes/ingredientes.html', {'producto': producto})
