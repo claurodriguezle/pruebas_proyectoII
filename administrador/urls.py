@@ -43,5 +43,8 @@ urlpatterns = [
     path('categorias/editar/<int:pk>/', views.editar_categoria, name='editar_categoria'),
 
     # INGREDIENTES DE PRODUCTOS
-    path('ingredientes/<int:id>/', views.ingredientes, name='ingredientes')
+    path('ingredientes/<int:id>/', views.ingredientes, name='ingredientes'),
+    path('cargar-items/', views.cargar_items, name="cargar_items"),
+    path('ingredientes/<int:producto_id>/agregar', views.agregar_ingredientes, name='agregar_ingredientes'),
+    path('ingredientes/<int:producto_id>/listar/', views.listar_ingredientes, name='listar_ingredientes'),
 ]

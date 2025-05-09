@@ -1,0 +1,8 @@
+<tr data-item-id="{{ ingrediente.item.id }}">
+    <td>{{ ingrediente.item.nombre }}</td>
+    <td>{{ ingrediente.cantidad }}</td>
+    <td>
+        <button class="btn btn-sm btn-outline-primary me-2">Editar</button>
+        <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('tr').remove()">Eliminar</button>
+    </td>
+</tr>

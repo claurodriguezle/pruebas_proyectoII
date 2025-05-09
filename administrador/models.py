@@ -18,16 +18,16 @@ class Persona(models.Model):
         return f"{self.nombre} {self.apellido}"
 
 class Cliente(Persona):
-  ruc = models.CharField(
+    ruc = models.CharField(
     max_length=20,
     unique=True,
     blank=True,
     null=True,
     default=None
-  )
+    )
 
-  def __str__(self):
-    return f"Cliente: {self.nombre} {self.apellido}"
+    def __str__(self):
+        return f"Cliente: {self.nombre} {self.apellido}"
 
 class Empleado(Persona):
     sueldo = models.DecimalField(max_digits=12, decimal_places=2)
@@ -249,3 +249,32 @@ class Stock(models.Model):
         if self.item.tipo == 'MATERIA_PRIMA' and self.item.unidad_medida == 'kg':
             return self.precio_unitario * 1000  # Convertir de gramo a kg
         return self.precio_unitario
+
+# Ingredientes - Producto
+
+class IngredienteProducto(models.Model):
+    producto = models.ForeignKey(
+        'Producto', 
+        on_delete=models.CASCADE, 
+        related_name='ingredientes', 
+        verbose_name="Producto"
+        )
+    item = models.ForeignKey(
+        'Item',
+        on_delete=models.CASCADE,
+        verbose_name="Ingrediente (Item)"
+    )
+
+    cantidad = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        verbose_name="cantidad en gramos",
+        help_text="Cantidad usada en gramos(ej: 150) "
+    )
+
+    class Meta:
+        unique_together = ('producto', 'item')
+        verbose_name = "Ingrediente del producto"
+
+    def __str__(self):
+        return f"{self.cantidad}g de {self.item.nombre} para {self.producto.nombre}"

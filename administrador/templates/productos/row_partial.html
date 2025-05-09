@@ -21,7 +21,7 @@
             hx-swap="innerHTML">
             Editar
         </button>
-        <button class="btn btn-sm btn-outline-danger"
+        <button class="btn btn-sm btn-outline-danger me-2"
             hx-post="{% url 'administrador:eliminar_htmx' producto.id %}"
             hx-target="#producto-{{ producto.id }}"
             hx-swap="outerHTML"

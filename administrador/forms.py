@@ -1,5 +1,5 @@
 from django import forms
-from .models import Persona, Cliente, Empleado, Proveedor, Producto, CategoriaProducto # noqa: F401
+from .models import Persona, Cliente, Empleado, Proveedor, Producto, CategoriaProducto, IngredienteProducto # noqa: F401
 from .models import Compra, DetalleCompra, Item
 
 class PersonaForm(forms.ModelForm):
@@ -174,3 +174,10 @@ class CategoriaProductoForm(forms.ModelForm):
                 'placeholder': 'Nombre de la categoría'
             })
         }
+
+# FORMULARIO DE INGREDIENTES
+
+class IngredienteProductoForm(forms.ModelForm):
+    class Meta:
+        model = IngredienteProducto
+        fields = ['item', 'cantidad']

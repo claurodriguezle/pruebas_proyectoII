@@ -1,0 +1,21 @@
+{% for ingrediente in ingredientes %}
+<tr data-item-id="{{ ingrediente.item.id }}">
+    <td>
+        {{ ingrediente.item.nombre }}
+        <input type="hidden" name="ingredientes[]" value="{{ ingrediente.item.id }},{{ ingrediente.cantidad }}">
+    </td>
+    <td>{{ ingrediente.cantidad }}</td>
+    <td>
+        <button class="btn btn-sm btn-outline-danger">
+            Eliminar
+        </button>
+        <button class="btn btn-info">
+            Editar
+        </button>
+    </td>
+</tr>
+{% empty %}
+<tr>
+    <td colspan="3">No hay ingredientes aún.</td>
+</tr>
+{% endfor %}

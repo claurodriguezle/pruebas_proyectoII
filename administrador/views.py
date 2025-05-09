@@ -2,11 +2,11 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.core.exceptions import ValidationError
 from django.contrib import messages
 from django.db import transaction, IntegrityError, connection
-from django.db.models import Q
+from django.db.models import Q, Value, CharField
 from decimal import Decimal, InvalidOperation
-from .models import Persona, Cliente, Empleado, Proveedor, Producto, CategoriaProducto
-from .forms import PersonaForm, ProductoForm, CategoriaProductoForm 
-from django.http import Http404, HttpResponse
+from .models import Persona, Cliente, Empleado, Proveedor, Producto, CategoriaProducto, IngredienteProducto
+from .forms import PersonaForm, ProductoForm, CategoriaProductoForm, IngredienteProductoForm 
+from django.http import Http404, HttpResponse, HttpResponseBadRequest
 from django.template.loader import render_to_string
 #Importaciones para Compras
 from .models import Compra, DetalleCompra, Item
@@ -23,10 +23,34 @@ def menu(request):
     return render(request, 'administrador/menu.html')
 
 def listar_personas(request):
-    personas = Persona.objects.all()
-    return render(request, 'administrador/listar.html', {
-        'personas': personas
-    })
+    grupo = request.GET.get('grupo')
+    search = request.GET.get('search')
+
+    personas = []
+
+    if not grupo or grupo == 'Clientes':
+        clientes = Cliente.objects.annotate(tipo=Value("Cliente", output_field=CharField()))
+        personas.extend(clientes)
+    
+    if not grupo or grupo == 'Empleados':
+        empleados = Empleado.objects.annotate(tipo=Value("Empleado", output_field=CharField()))
+        personas.extend(empleados)
+    
+    if not grupo or grupo == 'Proveedores':
+        proveedores = Proveedor.objects.annotate(tipo=Value("Proveedor", output_field=CharField()))
+        personas.extend(proveedores)
+    
+    # Filtro de busqueda
+
+    if search:
+        personas = [
+            p for p in personas
+            if search.lower() in p.nombre.lower() or search in p.cedula
+        ]
+    
+    if request.htmx:
+        return render(request, 'administrador/partials/persona_table.html', {'personas': personas})
+    return render(request, 'administrador/listar.html', {'personas': personas})
 
 def crear_persona(request):
     if request.method == 'POST':
@@ -772,6 +796,48 @@ def editar_categoria(request, pk):
         return render(request, 'categorias/partials/categoria_form_partial.html', {'form': form})
 
 # INGREDIENTES DE PRODUCTOS
+
+# OBTENEMOS LA PAGINA PRINCIPAL
 def ingredientes(request, id):
     producto = get_object_or_404(Producto, id=id)
-    return render(request, 'ingredientes/ingredientes.html', {'producto': producto})
+    ingredientes = IngredienteProducto.objects.filter(producto=producto)
+    return render(request, 'ingredientes/ingredientes.html',{
+        'producto': producto,
+        'ingredientes': ingredientes                                               
+    })
+
+# TRAE LOS ITEM DE LA BD
+def cargar_items(request):
+    items = Item.objects.all()
+    return render(request, 'ingredientes/partials/select_items.html', {"items": items})
+
+# GUARDA LOS INGREDIENTES
+
+def agregar_ingredientes(request, producto_id):
+    if request.method == 'POST':
+
+        producto = get_object_or_404(Producto, pk=producto_id)
+
+        item_id = request.POST.get('item')
+        cantidad = request.POST.get('cantidad')
+
+        if not item_id or not cantidad:
+            return HttpResponseBadRequest('Faltan datos')
+        
+        try:
+            item = Item.objects.get(pk=item_id)
+        except Item.DoesNotExist:
+            return HttpResponseBadRequest('Ingrediente inválido')
+        
+        ingrediente = IngredienteProducto(producto=producto, item=item, cantidad=cantidad)
+        ingrediente.save()
+
+        return render(request, 'ingredientes/partials/fila_ingrediente.html', {'ingrediente': ingrediente})
+    return HttpResponseBadRequest("Petición inválida")
+
+# LISTAR LOS INGREDIENTES
+
+def listar_ingredientes(request, producto_id):
+    producto = get_object_or_404(Producto, id=producto_id)
+    ingredientes = IngredienteProducto.objects.filter(producto=producto)
+    return render(request, 'ingredientes/partials/tabla_ingredientes.html', {'ingredientes': ingredientes})
