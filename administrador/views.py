@@ -829,15 +829,36 @@ def agregar_ingredientes(request, producto_id):
         except Item.DoesNotExist:
             return HttpResponseBadRequest('Ingrediente inválido')
         
-        ingrediente = IngredienteProducto(producto=producto, item=item, cantidad=cantidad)
-        ingrediente.save()
+        #ingrediente = IngredienteProducto(producto=producto, item=item, cantidad=cantidad)
+        #ingrediente.save()
 
-        return render(request, 'ingredientes/partials/fila_ingrediente.html', {'ingrediente': ingrediente})
+        IngredienteProducto.objects.create(producto=producto, item=item, cantidad=cantidad)
+
+        ingredientes = IngredienteProducto.objects.filter(producto=producto)
+
+        return render(request, 'ingredientes/partials/lista_ingredientes.html', {'ingredientes': ingredientes})
     return HttpResponseBadRequest("Petición inválida")
 
-# LISTAR LOS INGREDIENTES
+# LISTAR INGREDIENTES
 
 def listar_ingredientes(request, producto_id):
     producto = get_object_or_404(Producto, id=producto_id)
     ingredientes = IngredienteProducto.objects.filter(producto=producto)
-    return render(request, 'ingredientes/partials/tabla_ingredientes.html', {'ingredientes': ingredientes})
+    return render(request, 'ingredientes/partials/lista_ingredientes.html', {
+        'ingredientes': ingredientes
+    })
+
+# ELIMINAR INGREDIENTE
+
+def eliminar_ingrediente(request, pk):
+    if request.method == 'DELETE':
+        try:
+            ingrediente = IngredienteProducto.objects.get(pk=pk)
+            producto_id = ingrediente.producto.id
+            ingrediente.delete()
+            ingredientes = IngredienteProducto.objects.filter(producto_id=producto_id)
+            return render(request, 'ingredientes/partials/lista_ingredientes.html', {
+                'ingredientes': ingredientes
+            })
+        except IngredienteProducto.DoesNotExist:
+            raise Http404('El ingrediente no se encontró.')

@@ -47,4 +47,5 @@ urlpatterns = [
     path('cargar-items/', views.cargar_items, name="cargar_items"),
     path('ingredientes/<int:producto_id>/agregar', views.agregar_ingredientes, name='agregar_ingredientes'),
     path('ingredientes/<int:producto_id>/listar/', views.listar_ingredientes, name='listar_ingredientes'),
+    path('ingredientes/eliminar/<int:pk>/', views.eliminar_ingrediente, name='eliminar_ingrediente'),
 ]

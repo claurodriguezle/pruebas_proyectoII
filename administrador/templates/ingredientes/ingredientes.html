@@ -18,7 +18,7 @@
         <form id="form-ingrediente"
             hx-post="{% url 'administrador:agregar_ingredientes' producto.id %}"
             hx-target="#tbody-ingredientes"
-            hx-swap="beforeend"
+            hx-swap="innerHTML  "
             hx-on::after-request="this.reset()"
             method="POST">
             {% csrf_token %}
@@ -58,14 +58,12 @@
                             <th>Acción</th>
                         </tr>
                     </thead>
-                    <tbody id="tbody-ingredientes">
-                        {% for ingrediente in ingredientes %}
-                            {% include 'ingredientes/partials/fila_ingrediente.html' %}
-                        {% empty %}
-                            <tr>
-                                <td colspan="3">No hay ingredientes que mostar.</td>
-                            </tr>
-                        {% endfor %}
+                    <tbody id="tbody-ingredientes"
+                        hx-get="{% url 'administrador:listar_ingredientes' producto.id %}"
+                        hx-trigger="load"
+                        hx-swap="innerHTML"
+                        >
+                        <!-- Se insertan los datos con HTMX -->
                     </tbody>
                 </table>
             </div>
@@ -76,40 +74,5 @@
             </div>
         </form>
     </div>
-        
-    <script  cript>
-        function agregarIngrediente() {
-            const tabla = document.querySelector("#tabla-ingredientes tbody");
-            const select = document.getElementById("item");
-            const cantidadInput = document.getElementById("cantidad");
 
-            const itemId = select.value;
-            const itemNombre = select.options[select.selectedIndex]?.dataset.nombre;
-            const cantidad = cantidadInput.value.trim();
-
-            if (!itemId || !cantidad) {
-                alert("Selecciona un ingrediente y especifica la cantidad.");
-            return;
-        }
-
-        const yaExiste = Array.from(tabla.children).some(row => row.dataset.itemId === itemId);
-        if (yaExiste) {
-            alert("Ese ingrediente ya fue agregado.");
-            return;
-        }
-
-        const row = document.createElement("tr");
-        row.dataset.itemId = itemId;
-
-        row.innerHTML = `
-            <td>${itemNombre}<input type="hidden" name="ingredientes[]" value="${itemId},${cantidad}"></td>
-            <td>${cantidad}</td>
-            <td><button type="button" class="btn btn-danger btn-sm" onclick="this.closest('tr').remove()">Eliminar</button></td>
-        `;
-
-        tabla.appendChild(row);
-        select.selectedIndex = 0;
-        cantidadInput.value = "";
-        }
-    </script>
 {% endblock %}

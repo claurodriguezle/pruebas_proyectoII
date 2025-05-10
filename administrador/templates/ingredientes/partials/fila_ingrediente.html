@@ -3,6 +3,14 @@
     <td>{{ ingrediente.cantidad }}</td>
     <td>
         <button class="btn btn-sm btn-outline-primary me-2">Editar</button>
-        <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('tr').remove()">Eliminar</button>
+        <button
+            class="btn btn-sm btn-outline-danger"
+            hx-delete="{% url 'administrador:eliminar_ingrediente' ingrediente.id %}"
+            hx-target="#tbody-ingredientes"
+            hx-swap="innerHTML"
+            hx-confirm="¿Estás seguro de eliminar este ingrediente?"
+            >
+            Eliminar
+        </button>
     </td>
 </tr>
