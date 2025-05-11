@@ -48,4 +48,9 @@ urlpatterns = [
     path('ingredientes/<int:producto_id>/agregar', views.agregar_ingredientes, name='agregar_ingredientes'),
     path('ingredientes/<int:producto_id>/listar/', views.listar_ingredientes, name='listar_ingredientes'),
     path('ingredientes/eliminar/<int:pk>/', views.eliminar_ingrediente, name='eliminar_ingrediente'),
+
+    path('ingredientes/<int:pk>/editar-form/', views.editar_ingrediente_form, name='editar_ingrediente_form'),
+    path('ingredientes/<int:pk>/actualizar/', views.actualizar_ingrediente, name='actualizar_ingrediente'),
+    path('ingredientes/<int:pk>/ver/', views.ver_fila_ingrediente, name='ver_fila_ingrediente'),
+
 ]

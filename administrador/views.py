@@ -8,6 +8,7 @@ from .models import Persona, Cliente, Empleado, Proveedor, Producto, CategoriaPr
 from .forms import PersonaForm, ProductoForm, CategoriaProductoForm, IngredienteProductoForm 
 from django.http import Http404, HttpResponse, HttpResponseBadRequest
 from django.template.loader import render_to_string
+from django.views.decorators.http import require_POST
 #Importaciones para Compras
 from .models import Compra, DetalleCompra, Item
 from .forms import CompraForm
@@ -862,3 +863,26 @@ def eliminar_ingrediente(request, pk):
             })
         except IngredienteProducto.DoesNotExist:
             raise Http404('El ingrediente no se encontró.')
+        
+# VISTA PARA MOSTRAR EL FORM DE EDICION(INLINE)
+def editar_ingrediente_form(request, pk):
+    ingrediente = get_object_or_404(IngredienteProducto, pk=pk)
+    return render(request, 'ingredientes/partials/editar_fila_ingrediente.html', {'ingrediente': ingrediente})
+
+
+@require_POST
+def actualizar_ingrediente(request, pk):
+    ingrediente = get_object_or_404(IngredienteProducto, pk=pk)
+    cantidad = request.POST.get('cantidad')
+
+    if not cantidad:
+        return HttpResponseBadRequest('Cantidad faltante')
+    
+    ingrediente.cantidad = cantidad
+    ingrediente.save()
+
+    return render(request, 'ingredientes/partials/fila_ingrediente.html', {'ingrediente': ingrediente})
+
+def ver_fila_ingrediente(request, pk):
+    ingrediente = get_object_or_404(IngredienteProducto, pk=pk)
+    return render(request, 'ingredientes/partials/fila_ingrediente.html', {'ingrediente': ingrediente})
