@@ -145,6 +145,13 @@ class ItemForm(forms.ModelForm):
     class Meta:
         model = Item
         fields = ['nombre','tipo','unidad_medida']
+
+    def clean_nombre(self):
+        nombre = self.cleaned_data['nombre']
+        #Validar longitud minima
+        if len(nombre) < 3:
+            raise ValidationError('El nombre debe tener al menos 3 caracteres')
+        return nombre
 class DetalleCompraForm(forms.ModelForm):
     class Meta:
         model = DetalleCompra

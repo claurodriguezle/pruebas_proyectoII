@@ -16,7 +16,8 @@ from . import models
 #Importaciones para Stock
 from .models import Stock
 from django.db.models import Sum
-#from . import models 
+#from . import models {}
+from .forms import ItemForm
 
 
 # PERSONAS
@@ -355,8 +356,9 @@ def crear_compra(request):
                                 raise ValidationError(f"Ítem {i+1}: Valores deben ser positivos")
 
                             # Buscar el item
-                            item = Item.objects.filter(nombre__iexact=nombre_item).first()
+                            item = Item.objects.get(id=int(items[i]))
 
+                            '''
                             if not item:
                                 # Crear el ítem si no existe
                                 item = Item.objects.create(
@@ -373,7 +375,7 @@ def crear_compra(request):
                                     cant_disponible=0,
                                     proveedor_principal=proveedor
                                 )
-
+                            '''
                             # Conversión de unidades: si es kg, pasar a gramos
                             if unidades[i] == 'kg':
                                 precio_por_gramo = precio / 1000
@@ -416,7 +418,7 @@ def crear_compra(request):
         'proveedores': Proveedor.objects.all(),
         'unidad_choices': UNIDAD_CHOICES,
         'tipo_choices': TIPO_CHOICES,
-        'items_existentes': Item.objects.all().values_list('nombre', flat=True)
+        'items_existentes': Item.objects.all(),
     }
     return render(request, 'compras/crear_compra.html', context)
 
@@ -581,7 +583,9 @@ def lista_stock(request):
 def crear_stock(request):
     if request.method == 'POST':
         try:
-            nombre = request.POST.get('nombre')
+            nombre = request.POST.get('nombre', '').strip()
+            #Aplicar estandarizacion antes de guardar
+            nombre = Item.estandarizar_nombre(nombre)
             tipo = request.POST.get('tipo')
             unidad_medida = request.POST.get('unidad_medida')
             cant_minima = Decimal(request.POST.get('cant_minima', 0))
@@ -898,3 +902,61 @@ def actualizar_ingrediente(request, pk):
 def ver_fila_ingrediente(request, pk):
     ingrediente = get_object_or_404(IngredienteProducto, pk=pk)
     return render(request, 'ingredientes/partials/fila_ingrediente.html', {'ingrediente': ingrediente})
+
+#ITEMS
+def lista_items(request):
+    query = request.GET.get('q', '').strip()
+
+    items = Item.objects.all().order_by('nombre')
+
+    if query:
+        items = items.filter(
+            Q(nombre__icontains=query)
+        )
+
+    return render(request, 'items/lista_items.html', {
+        'items': items,
+        'query': query
+    })
+
+def editar_item(request, pk):
+    item = get_object_or_404(Item, pk=pk)
+    
+    if request.method == 'POST':
+        # Procesar el formulario cuando se envía
+        form = ItemForm(request.POST, instance=item)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Ítem actualizado correctamente')
+            return redirect('administrador:lista_items')
+    else:
+        # Mostrar el formulario con datos actuales
+        form = ItemForm(instance=item)
+    
+    # Preparamos los datos para el template
+    valores_previos = {
+        'nombre': item.nombre,
+        'tipo': item.tipo,
+        'unidad_medida': item.unidad_medida,
+        # No incluimos datos de stock aquí
+    }
+    
+    return render(request, 'stock/crear_stock.html', {
+        'modo_edicion': True,  # Flag clave para el template
+        'valores_previos': valores_previos,
+        'tipo_choices': Item.TIPO_CHOICES,
+        'unidad_choices': Item.UNIDAD_CHOICES,
+        'proveedores': Proveedor.objects.all()
+    })
+
+def eliminar_item(request, pk):
+    item = get_object_or_404(Item, pk=pk)
+    
+    if request.method == 'POST':
+        item.delete()
+        messages.success(request, 'Ítem eliminado correctamente')
+        return redirect('administrador:lista_items')
+    
+    return render(request, 'items/eliminar_item.html', {
+        'item': item
+    })

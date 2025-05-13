@@ -1,0 +1,104 @@
+{% extends "administrador/layout.html" %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}
+    Lista de Ítems
+{% endblock %}
+
+{% block body %}
+    <div class="container mt-4">
+        <!-- Flecha y título EN LA MISMA LÍNEA -->
+        <div class="d-flex align-items-center mb-4">  <!-- Contenedor flex -->
+            <!-- Flecha de volver (estilo minimalista) -->
+            <a href="{% url 'administrador:lista_stock' %}" class="text-decoration-none me-2">
+                <i class="bi bi-arrow-left fs-3"></i>  <!-- Ícono de Bootstrap Icons -->
+            </a>
+            <!-- Título "Ítems" pegado a la flecha -->
+            <h1 class="mb-0">Ítems</h1>  <!-- mb-0 para eliminar margen inferior -->
+        </div>
+
+        <!-- Buscador (opcional, ahora en una fila SEPARADA) -->
+        <form method="get" class="mb-4">
+            <div class="input-group">
+                <input type="text" name="q" class="form-control" placeholder="Buscar ítem..." value="{{ query }}">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-search"></i>
+                </button>
+            </div>
+        </form>
+
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Tipo</th>
+                        <th>Unidad de Medida</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                    <tr>
+                        <td>{{ item.nombre }}</td>
+                        <td>{{ item.get_tipo_display }}</td>
+                        <td>{{ item.get_unidad_medida_display }}</td>
+                        <td>
+                            <!-- Botón Editar -->
+                            <a href="{% url 'administrador:editar_item' item.id %}" 
+                                class="btn btn-sm btn-primary me-1"
+                                title="Editar">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+
+                            <!-- Botón Eliminar (dispara el modal) -->
+                            <button type="button" 
+                                class="btn btn-sm btn-danger" 
+                                data-bs-toggle="modal" 
+                                data-bs-target="#eliminarModal{{ item.id }}"
+                                title="Eliminar">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                            <!-- Modal de Eliminación (para cada ítem) -->
+                        <div class="modal fade" id="eliminarModal{{ item.id }}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header bg-danger text-white">
+                                        <h5 class="modal-title">Confirmar Eliminación</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <p>¿Estás seguro de eliminar el ítem <strong>"{{ item.nombre }}"</strong>?</p>
+                                        <p class="text-danger"><i class="bi bi-exclamation-triangle"></i> Esta acción no se puede deshacer.</p>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                        <form method="post" action="{% url 'administrador:eliminar_item' item.id %}" class="d-inline">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-danger">
+                                                <i class="bi bi-trash"></i> Eliminar
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center py-4">
+                            {% if query %}
+                                No se encontraron items con "{{ query }}"
+                            {% else %}
+                                No hay items registrados
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

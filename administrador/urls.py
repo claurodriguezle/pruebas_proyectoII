@@ -35,6 +35,11 @@ urlpatterns = [
     path('stock/crear/',views.crear_stock, name='crear_stock'),
     path('stock/editar/<int:stock_id>',views.editar_stock, name='editar_stock'),
     path('stock/eliminar/<int:stock_id>',views.eliminar_stock, name='eliminar_stock'),
+
+    #Rutas para items
+    path ('items/',views.lista_items, name='lista_items'),
+    path('items/editar/<int:pk>/', views.editar_item, name='editar_item'),
+    path('items/eliminar/<int:pk>/', views.eliminar_item, name='eliminar_item'),
     # CATEGORIAS
     path('categorias/', views.categorias, name='categorias'),
     path('categorias/crear', views.crear_categorias, name='crear_categorias'),
