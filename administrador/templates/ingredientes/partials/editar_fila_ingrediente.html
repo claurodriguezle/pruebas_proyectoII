@@ -1,0 +1,32 @@
+<tr id="ingrediente-{{ ingrediente.id }}">
+    <td>{{ ingrediente.item.nombre }}</td>
+    <td>
+        <form
+            hx-post="{% url 'administrador:actualizar_ingrediente' ingrediente.id %}"
+            hx-target="#ingrediente-{{ ingrediente.id }}"
+            hx-swap="outerHTML"
+        >
+            {% csrf_token %}
+            <input 
+                type="number"
+                name="cantidad"
+                value="{{ ingrediente.cantidad }}"
+                class="form-control form-control-sm"
+                required
+                min="1"
+                style="width: 100px; display: inline-block;">
+            <button type="submit" class="btn btn-sm btn-success">Guardar</button>
+
+            <button 
+                type="button"
+                class="btn btn-sm btn-secondary"
+                hx-get="{% url 'administrador:ver_fila_ingrediente' ingrediente.id %}"
+                hx-target="#ingrediente-{{ ingrediente.id }}"
+                hx-swap="outerHTML"
+            >
+                Cancelar
+            </button>
+        </form>
+    </td>
+    <td></td>
+</tr>

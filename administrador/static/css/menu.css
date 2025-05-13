@@ -18,7 +18,7 @@ span{
 
 nav {
   width: 240px;
-  background-color: #000;
+  background-color: #03071e;
   color: #fff;
   height: 100vh;
   position: fixed;
@@ -35,11 +35,11 @@ ul{
 }
 .nav-item {
   display: block;
-  text-align: left;
+  text-align: center;
   text-decoration: none;
-  padding: 10px 20px;
+  padding: 8px 18px;
   margin-bottom: 10px;
-  transition: background-color 0.3s;
+  transition: background-color 0.3s, border 0.3s;
 }
 
 .nav-link{
@@ -47,14 +47,21 @@ ul{
   color: #ddd;
   font-size: 16px;
   font-weight: 600;
+  border-radius: 0.375rem;
+  padding: 0.5rem 1rem;
 }
 
-nav .nav-item:hover {
-  background-color: #444;
+.nav-link:hover {
+  border: 1px solid #0c0d0e !important;
+  border-radius: 0.375rem !important;
+  background-color: #dee2e6 !important;
+  padding: 0.5rem 1rem !important;
+  color: #000 !important;
 }
 
 .dropdown-menu .dropdown-item:hover {
   background-color: #eee !important;
+  border-radius: 0.375rem !important;
 }
 
 .dropdown-menu .dropdown-item:active {
@@ -68,7 +75,7 @@ main {
 }
 
 .topbar {
-  background-color: #212529;
+  background-color: #03071e;
   color: #fff;
   padding: 10px;
   display: flex;

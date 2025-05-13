@@ -1,0 +1,7 @@
+{% for ingrediente in ingredientes %}
+    {% include 'ingredientes/partials/fila_ingrediente.html' %}
+{% empty %}
+    <tr>
+        <td colspan="3">No hay ingredientes que mostrar.</td>
+    </tr>
+{% endfor %}

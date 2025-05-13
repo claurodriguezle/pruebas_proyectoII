@@ -7,8 +7,9 @@
 
 {% block body %}
 <div class="container">
-    <div class="header d-flex justify-content-between align-items-center mt-4 mb-3">
+    <div class="header mt-4 mb-3">
         <h2>Categorías</h2>
+        
         <button class="btn btn-primary" 
             hx-get="{% url 'administrador:crear_categorias' %}"
             hx-target="#modalCategoriaBody"
@@ -16,6 +17,7 @@
             data-bs-toggle="modal" data-bs-target="#modalCategoria">
             + Categoría
         </button>
+        
     </div>
 
     <div class="table-responsive">
@@ -35,7 +37,9 @@
                 <!-- Aquí se mostrarán las categorías -->
             </tbody>
         </table>
+        
     </div>
+    <a href="{% url 'administrador:productos' %}" class="btn btn-secondary">Volver</a>
 </div>
 
 <!-- Modal para añadir/editar categoría -->

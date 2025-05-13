@@ -1,5 +1,5 @@
 from django import forms
-from .models import Persona, Cliente, Empleado, Proveedor, Producto, CategoriaProducto # noqa: F401
+from .models import Persona, Cliente, Empleado, Proveedor, Producto, CategoriaProducto, IngredienteProducto # noqa: F401
 from .models import Compra, DetalleCompra, Item
 
 class PersonaForm(forms.ModelForm):
@@ -126,6 +126,12 @@ class ProductoForm(forms.ModelForm):
             }),
         }
 
+    def clean_precio(self):
+        precio = self.cleaned_data.get('precio')
+        if precio is None or precio <= 0:
+            raise forms.ValidationError("El precio debe ser mayor a cero.")
+        return precio
+
 #Formularios para compras
 class ItemForm(forms.ModelForm):
     class Meta:
@@ -175,3 +181,10 @@ class CategoriaProductoForm(forms.ModelForm):
                 'placeholder': 'Nombre de la categoría'
             })
         }
+
+# FORMULARIO DE INGREDIENTES
+
+class IngredienteProductoForm(forms.ModelForm):
+    class Meta:
+        model = IngredienteProducto
+        fields = ['item', 'cantidad']

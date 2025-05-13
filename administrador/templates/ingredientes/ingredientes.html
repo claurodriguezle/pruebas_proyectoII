@@ -1,0 +1,78 @@
+{% extends "administrador/layout.html" %}
+{% load static %}
+{% load humanize custom_filters %}
+
+{% block body %}
+    <div class="container py-2">
+        <h3 class="mb-2"><strong>Ingredientes</strong></h3>
+        <!-- Info del producto -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <h4 class="card-text">{{ producto.nombre }}</h4>
+                <h4 class="card-text">Codigo: {{ producto.codigo }}</h4>
+                <p class="card-text">{{ producto.descripcion }}</p>
+                <p class="card-text"><strong>Precio Venta:</strong> {{ producto.precio|intcomma|punto_miles }} ₲</p>
+            </div>
+        </div>
+
+        <form id="form-ingrediente"
+            hx-post="{% url 'administrador:agregar_ingredientes' producto.id %}"
+            hx-target="#tbody-ingredientes"
+            hx-swap="innerHTML  "
+            hx-on::after-request="this.reset()"
+            method="POST">
+            {% csrf_token %}
+        
+            <!-- Agregar nuevo ingrediente -->
+            <div class="row g-3 align-items-end mb-4">
+                <div class="col-md-5">
+                    <label for="item" class="form-label">Ingrediente</label>
+                    <div
+                        id="contenedor-select"
+                        hx-get="{% url 'administrador:cargar_items' %}"
+                        hx-trigger="load"
+                        hx-target="#contenedor-select"
+                        hx-swap="outerHTML"
+                        >
+                        <div class="form-text">Cargando ingredientes...</div>
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <label for="cantidad" class="form-label">Cantidad</label>
+                    <input type="text" name="cantidad" class="form-control" id="cantidad" placeholder="ej: 150g">
+                </div>
+
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">Agregar</button>
+                </div>
+            </div>
+        
+            <!-- Tabla de ingredientes actuales -->
+            <div class="table-responsive">
+                <table class="table table-striped table-hover w-100" id="tabla-ingredientes">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Ingrediente</th>
+                            <th>Cantidad</th>
+                            <th>Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-ingredientes"
+                        hx-get="{% url 'administrador:listar_ingredientes' producto.id %}"
+                        hx-trigger="load"
+                        hx-swap="innerHTML"
+                        >
+                        <!-- Se insertan los datos con HTMX -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="d-flex justify-content-between mt-4">
+                <a href="{% url 'administrador:productos' %}" class="btn btn-secondary">Volver</a>
+                <button type="submit" class="btn btn-success">Guardar Cambios</button>
+            </div>
+        </form>
+    </div>
+
+{% endblock %}

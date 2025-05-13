@@ -1,12 +1,13 @@
 from django.db import models
 from django.core.validators import MinValueValidator
 from django.core.exceptions import ValidationError
+from django.core.validators import EmailValidator
 
 class Persona(models.Model):
     nombre = models.CharField(max_length=100)
     apellido = models.CharField(max_length=100)
     telefono = models.CharField(max_length=15)
-    email = models.EmailField(unique=True)
+    email = models.EmailField(unique=True, validators=[EmailValidator()])
     fecha_nacimiento = models.DateField()
     cedula = models.CharField(max_length=15, unique=True)
     ciudad = models.CharField(max_length=100)
@@ -17,16 +18,16 @@ class Persona(models.Model):
         return f"{self.nombre} {self.apellido}"
 
 class Cliente(Persona):
-  ruc = models.CharField(
+    ruc = models.CharField(
     max_length=20,
     unique=True,
     blank=True,
     null=True,
     default=None
-  )
+    )
 
-  def __str__(self):
-    return f"Cliente: {self.nombre} {self.apellido}"
+    def __str__(self):
+        return f"Cliente: {self.nombre} {self.apellido}"
 
 class Empleado(Persona):
     sueldo = models.DecimalField(max_digits=12, decimal_places=2)
@@ -37,17 +38,17 @@ class Empleado(Persona):
         return f"Empleado:{self.nombre} {self.apellido} "
 
 class Proveedor(Persona):
-  nombre_empresa = models.CharField(max_length=150)
-  ruc = models.CharField(
+    nombre_empresa = models.CharField(max_length=150)
+    ruc = models.CharField(
     max_length=20, 
     unique=True,
     blank=True,
     null=True,
     default=None
-  )
+    )
 
-  def __str__(self):
-    return f"Proveedor: {self.nombre_empresa}"
+    def __str__(self):
+        return f"Proveedor: {self.nombre_empresa}"
 
 #Modelos para compras
 #ITEM
@@ -188,59 +189,63 @@ class Compra(models.Model):
 # PRODUCTOS
 
 class CategoriaProducto(models.Model):
-  nombre_categ = models.CharField(
+    nombre_categ = models.CharField(
     verbose_name="Nombre de categoría",
     max_length=100,
     unique=True
-  )
+    )
 
-  def __str__(self):
-    return self.nombre_categ
+    def __str__(self):
+        return self.nombre_categ
 
 class Producto(models.Model):
-  ESTADOS = [('A', 'Activo'), ('I', 'Inactivo')
+    ESTADOS = [('A', 'Activo'), ('I', 'Inactivo')
     ]
-  codigo = models.CharField(
-      verbose_name= 'Código',
-      max_length=20,
-      unique=True,
-  )
-  nombre = models.CharField(
-    verbose_name='Nombre del producto',
-    max_length=100,
-    unique=True
-  )
-  precio = models.DecimalField(
-    verbose_name='Precio',
-    max_digits=10,
-    decimal_places=2
-  )
-  imagen = models.ImageField(
-    verbose_name='Imagen',
-    upload_to='producto/',
-    blank=True,
-    null=True
-  )
-  descripcion = models.TextField(
-    verbose_name="Descripción",
-    blank=True,
-    max_length=500
-  )
-  estado = models.CharField(
-    verbose_name='Estado',
-    max_length=1,
-    choices=ESTADOS,
-    default='A'
-  )
-  categoria = models.ForeignKey(
+    codigo = models.CharField(
+        verbose_name= 'Código',
+        max_length=20,
+        unique=True,
+    )
+    nombre = models.CharField(
+        verbose_name='Nombre del producto',
+        max_length=100,
+        unique=True
+    )
+    precio = models.PositiveIntegerField(
+        verbose_name='Precio',
+        validators=[MinValueValidator(1)]
+    )
+    imagen = models.ImageField(
+        verbose_name='Imagen',
+        upload_to='producto/',
+        blank=True,
+        null=True
+    )
+    descripcion = models.TextField(
+        verbose_name="Descripción",
+        blank=True,
+        max_length=500
+    )
+    estado = models.CharField(
+        verbose_name='Estado',
+        max_length=1,
+        choices=ESTADOS,
+        default='A'
+    )
+    categoria = models.ForeignKey(
     CategoriaProducto,
-    verbose_name='Categoría',
-    on_delete=models.SET_NULL,
-    null=True,
-    blank=True
-  )
-  def __str__(self):
-    return f"{self.codigo} - {self.nombre}"
+        verbose_name='Categoría',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True
+    )
+    def __str__(self):
+        return f"{self.codigo} - {self.nombre}"
+    
+    def clean(self):
+        super().clean()
+        if self.precio == 0:
+            raise ValidationError({'precio': 'El precio no puede ser cero.'})
 
 #STOCK
 class Stock(models.Model):
@@ -280,3 +285,32 @@ class Stock(models.Model):
         if self.item.tipo == 'MATERIA_PRIMA' and self.item.unidad_medida == 'kg':
             return self.precio_unitario * 1000  # Convertir de gramo a kg
         return self.precio_unitario
+
+# Ingredientes - Producto
+
+class IngredienteProducto(models.Model):
+    producto = models.ForeignKey(
+        'Producto', 
+        on_delete=models.CASCADE, 
+        related_name='ingredientes', 
+        verbose_name="Producto"
+        )
+    item = models.ForeignKey(
+        'Item',
+        on_delete=models.CASCADE,
+        verbose_name="Ingrediente (Item)"
+    )
+
+    cantidad = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        verbose_name="cantidad en gramos",
+        help_text="Cantidad usada en gramos(ej: 150) "
+    )
+
+    class Meta:
+        unique_together = ('producto', 'item')
+        verbose_name = "Ingrediente del producto"
+
+    def __str__(self):
+        return f"{self.cantidad}g de {self.item.nombre} para {self.producto.nombre}"

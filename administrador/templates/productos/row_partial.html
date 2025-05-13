@@ -1,3 +1,4 @@
+{% load humanize custom_filters %}
 <tr id="producto-{{ producto.id }}">
     <td>
         {% if producto.imagen %}
@@ -8,7 +9,8 @@
     </td>
     <td>{{ producto.codigo }}</td>
     <td>{{ producto.nombre }}</td>
-    <td>${{ producto.precio }}</td>
+    <td>{{ producto.precio|intcomma|punto_miles}} ₲</td>
+    <td>{{ producto.categoria }}</td>
     <td>{{ producto.descripcion }}</td>
     <td>
         <button class="btn btn-sm btn-outline-primary me-2"
@@ -19,12 +21,16 @@
             hx-swap="innerHTML">
             Editar
         </button>
-        <button class="btn btn-sm btn-outline-danger"
+        <button class="btn btn-sm btn-outline-danger me-2"
             hx-post="{% url 'administrador:eliminar_htmx' producto.id %}"
             hx-target="#producto-{{ producto.id }}"
             hx-swap="outerHTML"
             hx-confirm="¿Quieres eliminar este producto?">
             Eliminar
         </button>
+
+        <a class="btn btn-outline-info" href="{% url 'administrador:ingredientes' producto.id %}" role="button">
+            Ingredientes
+        </a>
     </td>
 </tr>

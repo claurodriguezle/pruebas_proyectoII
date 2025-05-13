@@ -1,0 +1,24 @@
+<tr id="ingrediente-{{ ingrediente.id }}" data-item-id="{{ ingrediente.item.id }}">
+    <td>{{ ingrediente.item.nombre }}</td>
+    <td>{{ ingrediente.cantidad }}</td>
+    <td>
+        <button 
+            class="btn btn-sm btn-outline-primary me-2"
+            hx-get="{% url 'administrador:editar_ingrediente_form' ingrediente.id %}"
+            hx-target="#ingrediente-{{ ingrediente.id }}"
+            hx-swap="outerHTML"
+            >
+            Editar
+        </button>
+
+        <button
+            class="btn btn-sm btn-outline-danger"
+            hx-delete="{% url 'administrador:eliminar_ingrediente' ingrediente.id %}"
+            hx-target="#tbody-ingredientes"
+            hx-swap="innerHTML"
+            hx-confirm="¿Estás seguro de eliminar este ingrediente?"
+            >
+            Eliminar
+        </button>
+    </td>
+</tr>
