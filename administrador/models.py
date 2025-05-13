@@ -77,6 +77,42 @@ class Item(models.Model):
             return 'unidades'
         return self.unidad_medida or ''
 
+    #Estandarizar el nombre del item ante de guardar
+    def clean(self):
+        if self.nombre:
+            self.nombre = self.estandarizar_nombre(self.nombre)
+        super().clean()
+    #Aseguramos que el nombre este estandarizado al guardar
+    def save(self, *args, **kwargs):
+        self.nombre = self.estandarizar_nombre(self.nombre)
+        super().save(*args, **kwargs)
+
+    @staticmethod
+    def estandarizar_nombre(nombre):
+        '''
+        Estandariza el formato de los nombres de items:
+        1. Primera letra en mayuscula
+        2. Elimina espacios extras
+        3. Convierte a singular si termina en 's'
+        '''
+        nombre = nombre.strip()
+        if not nombre:
+            return nombre
+        
+        #Capitalizar primera letra y minusculas el resto
+        nombre = nombre[0].upper() + nombre[1:].lower()
+        #Eliminar espacios multiples
+        nombre=' '.join(nombre.split())
+        #Conversion basica a singular
+        if nombre.endswith('s') and len(nombre) > 3:
+            nombre = nombre[:-1]
+        return nombre
+    
+    class Meta:
+        verbose_name = "Item"
+        verbose_name_plural = "Items"
+        ordering = ['nombre']
+
 #DETALLES_COMPRA
 class DetalleCompra(models.Model):
     compra = models.ForeignKey('Compra', on_delete=models.CASCADE, related_name='detalles')

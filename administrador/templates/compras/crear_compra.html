@@ -86,13 +86,15 @@ Crear Nueva Compra
                         <div class="item-row row g-3 mb-3" id="item-{{ forloop.counter0 }}">
                             <div class="col-md-4">
                                 <label class="form-label">Nombre del artículo</label>
-                                <input type="text" class="form-control item-nombre" name="items" 
-                                    value="{{ item.nombre }}" list="items-list" required>
-                                <datalist id="items-list">
+                                <select class="form-select item-nombre" id="item" name="items" required>
+                                    <option value="">Seleccionar un item</option>
                                     {% for item in items_existentes %}
-                                        <option value="{{ item }}">
+                                        <option value="{{ item.id }}"
+                                                {% if compra_form.instance.item.id == item.id %}selected{% endif %}>
+                                            {{ item.nombre }}
+                                        </option>
                                     {% endfor %}
-                                </datalist>
+                                </select>
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label">Tipo</label>
@@ -131,12 +133,12 @@ Crear Nueva Compra
                         <div class="item-row row g-3 mb-3" id="item-0">
                             <div class="col-md-4">
                                 <label class="form-label">Nombre del artículo</label>
-                                <input type="text" class="form-control item-nombre" name="items" list="items-list" required>
-                                <datalist id="items-list">
+                                <select class="form-select item-nombre" name="items" required>
+                                    <option value="">Seleccionar un item</option>
                                     {% for item in items_existentes %}
-                                        <option value="{{ item }}">
+                                        <option value="{{item.id}}">{{item.nombre}}</option>
                                     {% endfor %}
-                                </datalist>
+                                </select>
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label">Tipo</label>
@@ -333,12 +335,12 @@ Crear Nueva Compra
             newItemRow.innerHTML = `
                 <div class="col-md-4">
                     <label class="form-label">Nombre del artículo</label>
-                    <input type="text" class="form-control item-nombre" name="items" list="items-list" required>
-                    <datalist id="items-list">
+                    <select class="form-select item-nombre" name="items" required>
+                        <option value="">Seleccionar un item</option>
                         {% for item in items_existentes %}
-                            <option value="{{ item }}">
+                            <option value="{{ item.id }}">{{ item.nombre }}</option>
                         {% endfor %}
-                    </datalist>
+                    </select>
                     <div class="error" id="error-nombre-${itemCount}"></div>
                 </div>
                 <div class="col-md-2">
