@@ -65,6 +65,7 @@ class PersonaForm(forms.ModelForm):
 def clean(self):
     cleaned_data = super().clean()
     tipo_persona = cleaned_data.get('tipo_persona')
+    ruc = cleaned_data.get('ruc', '').strip()
 
     # Limpiar campos no relevantes
     if tipo_persona == 'cliente':
@@ -73,10 +74,17 @@ def clean(self):
         cleaned_data['t_empleado'] = None
         cleaned_data['nombre_empresa'] = None
         
-        # Validación opcional para RUC
-        ruc = cleaned_data.get('ruc', '').strip()
+        # Guardar como NULL si ruc está vacío
         if not ruc:
-            cleaned_data['ruc'] = None  # Guardar como NULL si está vacío
+            cleaned_data['ruc'] = None
+        else:
+            # Validar unicidad manual del RUC entre clientes
+            from .models import Cliente  # evitar import circular
+            qs = Cliente.objects.filter(ruc=ruc)
+            if self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                self.add_error('ruc', 'Ya existe un cliente con este RUC.')
 
     elif tipo_persona == 'empleado':
         cleaned_data['ruc'] = None

@@ -33,7 +33,8 @@ ALLOWED_HOSTS = []
 
 INSTALLED_APPS = [
     'personas',
-    'administrador', #Las app podemos agregar arriba para ver mas rapido
+    'administrador',
+    'pedidos',
     'django.contrib.humanize',
     'django.contrib.admin',
     'django.contrib.auth',

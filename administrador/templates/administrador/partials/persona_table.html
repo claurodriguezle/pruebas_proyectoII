@@ -1,5 +1,4 @@
-<tbody>
-    {% for persona in personas %}
+{% for persona in personas %}
     <tr>
         <td>{{ forloop.counter }}</td>
         <td>{{ persona.cedula }}</td>
@@ -13,5 +12,4 @@
             <a href="{% url 'administrador:eliminar_persona' persona.id %}" class="btn btn-sm btn-outline-danger me-2">Eliminar</a>
         </td>
     </tr>
-    {% endfor %}
-</tbody>
+{% endfor %}
