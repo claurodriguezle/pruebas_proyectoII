@@ -34,66 +34,39 @@
   <div class="container my-4 bg-dark w-50 p-2 rounded">
     <ul class="nav nav-pills justify-content-center" id="menu-categorias">
       <li class="nav-item">
-        <button class="nav-link active bg-dark">Todo</button>
+        <button class="nav-link active bg-dark"
+            hx-get="{% url 'pedidos:lista_productos' %}"
+            hx-target="#productos-lista"
+            hx-swap="innerHTML">
+          Todo
+        </button>
       </li>
-      <li class="nav-item">
-        <button class="nav-link bg-dark text-white">Hamburguesas</button>
-      </li>
-      <li class="nav-item">
-        <button class="nav-link bg-dark text-white">Papas Fritas</button>
-      </li>
-      <li class="nav-item">
-        <button class="nav-link bg-dark text-white">Bebidas</button>
-      </li>
-      <li class="nav-item">
-        <button class="nav-link bg-dark text-white">Combos</button>
-      </li>
-      <li class="nav-item">
-        <button class="nav-link bg-dark text-white">Promo</button>
-      </li>
+      {% for categoria in categorias %}
+        <li class="nav-item">
+          <button class="nav-link bg-dark text-white"
+            hx-get="{% url 'pedidos:lista_productos' %}?categoria={{ categoria.nombre_categ|urlencode }}"
+            hx-target="#productos-lista"
+            hx-swap="innerHTML">
+            {{ categoria.nombre_categ }}
+          </button>
+        </li>
+      {% endfor %}
     </ul>
   </div>
 
   <!-- Productos -->
   <section id="productos" class="container">
     <h2 class="text-center mb-4">Nuestros Productos</h2>
-    <div id="productos-lista" class="productos-grid">
-      <!-- Productos simulados -->
-      <div class="producto-card">
-        <img src="{% static 'img/baby.jpg' %}" alt="Baby Burger">
-        <h3>Baby Burger</h3>
-        <p>Pan artesanal, carne, queso cheddar, bacon, salsa especial, lechuga, tomate.</p>
-        <p class="precio">10.000 Gs</p>
-        <button class="btn btn-success">Añadir al carrito</button>
-      </div>
-      <div class="producto-card">
-        <img src="{% static 'img/doble.jpg' %}" alt="Brother Burger">
-        <h3>Brother Burger</h3>
-        <p>Pan artesanal, doble carne, queso cheddar, bacon, salsa especial, lechuga, tomate.</p>
-        <p class="precio">15.000 Gs</p>
-        <button class="btn btn-success">Añadir al carrito</button>
-      </div>
-      <div class="producto-card">
-        <img src="{% static 'img/papasFritas.png' %}" alt="Papas Fritas">
-        <h3>Papas Fritas Medianas</h3>
-        <p>Crocantes y doradas, perfectas como acompañamiento.</p>
-        <p class="precio">10.000 Gs</p>
-        <button class="btn btn-success">Añadir al carrito</button>
-      </div>
-      <div class="producto-card">
-        <img src="{% static 'img/coca-cola.jpg' %}" alt="Coca-Cola">
-        <h3>Coca-Cola 310ml</h3>
-        <p>Para acompañar las deliciosas hamburguesas.</p>
-        <p class="precio">7.000 Gs</p>
-        <button class="btn btn-success">Añadir al carrito</button>
-      </div>
-      <div class="producto-card">
-        <img src="{% static 'img/combo.jpg' %}" alt="Combo">
-        <h3>Combo</h3>
-        <p>Hamburguesa, papas fritas y Coca-Cola, ¡el trío perfecto para disfrutar al máximo!</p>
-        <p class="precio">35.000 Gs</p>
-        <button class="btn btn-success">Añadir al carrito</button>
-      </div>
+    <!-- Contenedor para htmx -->
+    <div 
+        hx-get="{% url 'pedidos:lista_productos' %}"
+        hx-trigger="load"
+        hx-target="#productos-lista"
+        hx-swap="innerHTML">
+        <!-- Se insertan los productos dinamicamente -->
+        <div  id="productos-lista" class="productos-grid">
+          
+        </div>
     </div>
   </section>
 
@@ -101,5 +74,6 @@
     <p>Contacto: +595 971 123 456</p>
     <p>© 2024 The Burger. Todos los derechos reservados.</p>
   </footer>
+  <script src="https://unpkg.com/htmx.org"></script>
 </body>
 </html>
