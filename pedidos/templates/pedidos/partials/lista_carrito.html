@@ -1,0 +1,6 @@
+
+<div id="carrito-lista">
+    {% for item in carrito %}
+        {% include 'pedidos/partials/item_carrito.html' with item=item item_index=forloop.counter0 %}
+    {% endfor %}
+</div>

@@ -27,33 +27,38 @@ def menu(request):
     return render(request, 'administrador/menu.html')
 
 def listar_personas(request):
-    grupo = request.GET.get('grupo')
-    search = request.GET.get('search')
+    grupo = request.GET.get('grupo')  # Captura el grupo seleccionado del select
+    search = request.GET.get('search')  # Captura el texto de búsqueda ingresado
 
+    # Inicializamos la variable personas como lista vacía
     personas = []
 
-    if not grupo or grupo == 'Clientes':
-        clientes = Cliente.objects.annotate(tipo=Value("Cliente", output_field=CharField()))
-        personas.extend(clientes)
-    
-    if not grupo or grupo == 'Empleados':
-        empleados = Empleado.objects.annotate(tipo=Value("Empleado", output_field=CharField()))
-        personas.extend(empleados)
-    
-    if not grupo or grupo == 'Proveedores':
-        proveedores = Proveedor.objects.annotate(tipo=Value("Proveedor", output_field=CharField()))
-        personas.extend(proveedores)
-    
-    # Filtro de busqueda
+    # FILTRO POR GRUPO
+    if grupo == 'Clientes':
+        personas = Cliente.objects.annotate(tipo=Value("Cliente", output_field=CharField()))
+    elif grupo == 'Empleados':
+        personas = Empleado.objects.annotate(tipo=Value("Empleado", output_field=CharField()))
+    elif grupo == 'Proveedores':
+        personas = Proveedor.objects.annotate(tipo=Value("Proveedor", output_field=CharField()))
+    else:
+        # Si no se seleccionó ningún grupo, traemos todos
+        personas = list(Cliente.objects.annotate(tipo=Value("Cliente", output_field=CharField())))
+        personas += list(Empleado.objects.annotate(tipo=Value("Empleado", output_field=CharField())))
+        personas += list(Proveedor.objects.annotate(tipo=Value("Proveedor", output_field=CharField())))
 
+    # FILTRO POR BÚSQUEDA
     if search:
         personas = [
             p for p in personas
             if search.lower() in p.nombre.lower() or search in p.cedula
         ]
-    
-    if request.htmx:
+
+    # RENDERIZADO
+    if hasattr(request, "htmx") and request.htmx:
+        # Si el request viene de HTMX, devolvemos solo el fragmento de tabla (HTMX parcial)
         return render(request, 'administrador/partials/persona_table.html', {'personas': personas})
+
+    # Si es una carga normal, renderizamos toda la página
     return render(request, 'administrador/listar.html', {'personas': personas})
 
 def crear_persona(request):
@@ -77,7 +82,9 @@ def crear_persona(request):
             try:
                 if tipo_persona == 'cliente':
                     # cleaned_data['ruc'] ya será None si está vacío (gracias al form.clean())
-                    Cliente.objects.create(**persona_data, ruc=form.cleaned_data['ruc'])
+                    cliente= Cliente(**persona_data, ruc=form.cleaned_data['ruc'])
+                    cliente.full_clean()
+                    cliente.save()
 
                 elif tipo_persona == 'empleado':
                     Empleado.objects.create(
@@ -100,6 +107,7 @@ def crear_persona(request):
                 # Maneja errores de unicidad
                 form.add_error(None, "Error al guardar. Verifica los datos únicos.")
                 print(f"Error de integridad: {e}")
+        return render(request, 'administrador/registro.html', {'form': form})
 
     else:
         form = PersonaForm()
@@ -239,18 +247,21 @@ def eliminar_persona(request, id):
     return redirect('administrador:listar_personas')
 
 # PRODUCTOS
-
+# PAGINA PRINCIPAL
 def productos(request):
     return render(request, 'productos/productos.html')
 
+# RENDERIZA LA LISTA DE PRODUCTOS ACTIVOS (estado='A') ORDENADOS POR CÓDIGO
 def listar_partial(request):
     productos = Producto.objects.filter(estado='A').order_by('codigo')
     return render(request, 'productos/listar_partial.html', {'productos': productos})
 
+# RENDERIZA EL FORMULARIO VACÍO PARA CREAR UN NUEVO PRODUCTO
 def crear_partial(request):
     form = ProductoForm()
     return render(request, 'productos/form_partial.html', {'form': form})
 
+# GUARDA UN NUEVO PRODUCTO DESDE EL FORMULARIO (HTMX POST)
 def crear_htmx(request):
     form = ProductoForm(request.POST, request.FILES)
     if form.is_valid():
@@ -259,6 +270,7 @@ def crear_htmx(request):
     # si hay errores, vuelve a renderizar el mismo partial de formulario
     return render(request, 'productos/form_partial.html', {'form': form})
 
+# RENDERIZA EL FORMULARIO CON LOS DATOS DE UN PRODUCTO EXISTENTE PARA EDITAR
 def editar_partial(request, pk):
     producto = get_object_or_404(Producto, pk=pk)
     form = ProductoForm(instance=producto)
@@ -267,6 +279,7 @@ def editar_partial(request, pk):
         'producto': producto
     })
 
+# ACTUALIZA UN PRODUCTO EXISTENTE CON LOS DATOS DEL FORMULARIO (HTMX POST)
 def editar_htmx(request, pk):
     producto = get_object_or_404(Producto, pk=pk)
     form = ProductoForm(request.POST, request.FILES, instance=producto)
@@ -278,6 +291,7 @@ def editar_htmx(request, pk):
         'producto': producto
     })
 
+# ELIMINA UN PRODUCTO Y DEVUELVE UNA RESPUESTA VACÍA PARA QUE HTMX ELIMINE LA FILA EN LA VISTA
 def eliminar_htmx(request, pk):
     producto = get_object_or_404(Producto, pk=pk)
     producto.delete()
@@ -793,7 +807,7 @@ def eliminar_stock(request, stock_id):
 
 
 # CATEGORIAS
-
+# PAGINA PRINCIPAL
 def categorias(request):
     return render(request, 'categorias/categorias.html')
 
@@ -854,13 +868,12 @@ def ingredientes(request, id):
         'ingredientes': ingredientes
     })
 
-# TRAE LOS ITEM DE LA BD
+# TRAE LOS ITEM DE LA BD Y LOS MUESTRA EN EL SELECT DEL FORM
 def cargar_items(request):
     items = Item.objects.all()
     return render(request, 'ingredientes/partials/select_items.html', {"items": items})
 
 # GUARDA LOS INGREDIENTES
-
 def agregar_ingredientes(request, producto_id):
     if request.method == 'POST':
 
@@ -887,8 +900,7 @@ def agregar_ingredientes(request, producto_id):
         return render(request, 'ingredientes/partials/lista_ingredientes.html', {'ingredientes': ingredientes})
     return HttpResponseBadRequest("Petición inválida")
 
-# LISTAR INGREDIENTES
-
+# LISTAR TODOS LOS INGREDIENTES
 def listar_ingredientes(request, producto_id):
     producto = get_object_or_404(Producto, id=producto_id)
     ingredientes = IngredienteProducto.objects.filter(producto=producto)
@@ -897,7 +909,6 @@ def listar_ingredientes(request, producto_id):
     })
 
 # ELIMINAR INGREDIENTE
-
 def eliminar_ingrediente(request, pk):
     if request.method == 'DELETE':
         try:
@@ -916,7 +927,7 @@ def editar_ingrediente_form(request, pk):
     ingrediente = get_object_or_404(IngredienteProducto, pk=pk)
     return render(request, 'ingredientes/partials/editar_fila_ingrediente.html', {'ingrediente': ingrediente})
 
-
+# ACTUALIZA CANTIDAD DE INGREDIENTE
 @require_POST
 def actualizar_ingrediente(request, pk):
     ingrediente = get_object_or_404(IngredienteProducto, pk=pk)
@@ -930,6 +941,7 @@ def actualizar_ingrediente(request, pk):
 
     return render(request, 'ingredientes/partials/fila_ingrediente.html', {'ingrediente': ingrediente})
 
+# Renderiza la fila al cancelar la edicion inline 
 def ver_fila_ingrediente(request, pk):
     ingrediente = get_object_or_404(IngredienteProducto, pk=pk)
     return render(request, 'ingredientes/partials/fila_ingrediente.html', {'ingrediente': ingrediente})

@@ -6,7 +6,8 @@
 {% endblock %}
 
 {% block extra_css %}
-    <link rel="stylesheet" href="{% static 'css/productos.css' %}">
+    <link rel="stylesheet" href="{% static 'css/productos.css' %}?v={{ timestamp }}">
+    <!-- El timestamp es temporal para desarrollo -->
 {% endblock %}
 
 {% block body %}
@@ -35,16 +36,23 @@
     </div>
     
     <div class="filters">
-        <input type="text" placeholder="Buscar..." class="form-control w-auto" id="searchInput">
-        <input type="text" placeholder="Código" class="form-control w-auto" id="codeInput">
-        <div class="filter-section">
-            
-            <select class="form-select" id="categorySelect">
-                <option selected>Todo</option>
-                <option>Hamburguesas</option>
-                <option>Bebidas</option>
-                <option>Papas Fritas</option>
+        <div class="d-flex align-items-center gap-2 mb-2 w-75">
+            <select 
+                class="form-select w-auto" 
+                style="min-width: 150px" 
+                name="categoria">
+                <option value="">Categorías</option>
+                <option value="Clientes">Hamburguesas</option>
+                <option value="Empleados">Papas Fritas</option>
+                <option value="Proveedores">Bebidas</option>
             </select>
+
+            <input 
+                type="search" 
+                placeholder="Buscar por nombre o código..." 
+                class="form-control w-100" 
+                id="searchInput" 
+                name="search">
         </div>
     </div>
     

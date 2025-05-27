@@ -13,24 +13,25 @@
     <td>{{ producto.categoria }}</td>
     <td>{{ producto.descripcion }}</td>
     <td>
-        <button class="btn btn-sm btn-outline-primary me-2"
+        <button class="btn btn-outline-primary btn-sm" title="Editar"
             data-bs-toggle="modal"
             data-bs-target="#productModal"
             hx-get="{% url 'administrador:editar_partial' producto.id %}"
             hx-target="#productFormBody"
             hx-swap="innerHTML">
-            Editar
+            <i class="bi bi-pencil-square"></i>
         </button>
-        <button class="btn btn-sm btn-outline-danger me-2"
+        <button class="btn btn-outline-danger btn-sm" title="Eliminar"
             hx-post="{% url 'administrador:eliminar_htmx' producto.id %}"
             hx-target="#producto-{{ producto.id }}"
             hx-swap="outerHTML"
             hx-confirm="¿Quieres eliminar este producto?">
-            Eliminar
+            <i class="bi bi-trash"></i>
         </button>
 
-        <a class="btn btn-outline-info" href="{% url 'administrador:ingredientes' producto.id %}" role="button">
-            Ingredientes
+        <a class="btn btn-outline-success btn-sm" title="Ver ingredientes" href="{% url 'administrador:ingredientes' producto.id %}" role="button">
+            <i class="bi bi-basket"></i>
+            
         </a>
     </td>
 </tr>

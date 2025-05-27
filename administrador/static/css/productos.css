@@ -30,11 +30,6 @@ body {
     margin-bottom: 20px;
     flex-wrap: wrap;
 }
-.filters input, .filters select {
-    border: 1px solid #000;
-    border-radius: 5px;
-    padding: 5px 10px;
-}
 
 #categorySelect {
     padding: 5px 10px;

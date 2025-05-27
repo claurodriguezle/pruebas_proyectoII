@@ -1,3 +1,4 @@
+from xml.dom import ValidationErr
 from django import forms
 from django.utils import timezone
 from .models import Persona, Cliente, Empleado, Proveedor, Producto, CategoriaProducto, IngredienteProducto # noqa: F401
@@ -66,6 +67,7 @@ class PersonaForm(forms.ModelForm):
 def clean(self):
     cleaned_data = super().clean()
     tipo_persona = cleaned_data.get('tipo_persona')
+    ruc = cleaned_data.get('ruc', '').strip()
 
     # Limpiar campos no relevantes
     if tipo_persona == 'cliente':
@@ -74,10 +76,17 @@ def clean(self):
         cleaned_data['t_empleado'] = None
         cleaned_data['nombre_empresa'] = None
         
-        # Validación opcional para RUC
-        ruc = cleaned_data.get('ruc', '').strip()
+        # Guardar como NULL si ruc está vacío
         if not ruc:
-            cleaned_data['ruc'] = None  # Guardar como NULL si está vacío
+            cleaned_data['ruc'] = None
+        else:
+            # Validar unicidad manual del RUC entre clientes
+            from .models import Cliente  # evitar import circular
+            qs = Cliente.objects.filter(ruc=ruc)
+            if self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                self.add_error('ruc', 'Ya existe un cliente con este RUC.')
 
     elif tipo_persona == 'empleado':
         cleaned_data['ruc'] = None
@@ -95,7 +104,7 @@ class ProductoForm(forms.ModelForm):
     class Meta:
         model = Producto
         fields = [
-            'codigo', 'nombre', 'precio', 'imagen', 'descripcion', 'estado', 'categoria',
+            'codigo', 'nombre', 'precio', 'imagen', 'descripcion', 'estado', 'personalizable', 'categoria',
         ]
         widgets = {
             'codigo': forms.TextInput(attrs={
@@ -122,6 +131,10 @@ class ProductoForm(forms.ModelForm):
             'estado': forms.Select(attrs={
                 'class': 'form-select',
             }),
+            'personalizable': forms.Select(choices=[(True, 'Sí'), (False, 'No')], attrs={
+                'class': 'form-select',
+            }),
+
             'categoria': forms.Select(attrs={
                 'class': 'form-select',
             }),
@@ -143,7 +156,7 @@ class ItemForm(forms.ModelForm):
         nombre = self.cleaned_data['nombre']
         #Validar longitud minima
         if len(nombre) < 3:
-            raise ValidationError('El nombre debe tener al menos 3 caracteres')
+            raise ValidationErr('El nombre debe tener al menos 3 caracteres')
         return nombre
 class DetalleCompraForm(forms.ModelForm):
     class Meta:

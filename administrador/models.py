@@ -20,7 +20,6 @@ class Persona(models.Model):
 class Cliente(Persona):
     ruc = models.CharField(
     max_length=20,
-    unique=True,
     blank=True,
     null=True,
     default=None
@@ -239,6 +238,8 @@ class Producto(models.Model):
         choices=ESTADOS,
         default='A'
     )
+    personalizable = models.BooleanField(default=False)
+    
     categoria = models.ForeignKey(
     CategoriaProducto,
         verbose_name='Categoría',
