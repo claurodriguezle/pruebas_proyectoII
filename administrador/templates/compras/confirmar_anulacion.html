@@ -1,0 +1,34 @@
+{% extends "administrador/layout.html" %}
+{% load static %}
+
+{% block body %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header bg-warning">
+            <h4>Anular Compra #{{ compra.numero_factura }}</h4>
+        </div>
+        <div class="card-body">
+            <p>Estás a punto de anular la compra del proveedor <strong>{{ compra.proveedor.nombre_empresa }}</strong> 
+               con fecha <strong>{{ compra.fecha|date:"d/m/Y" }}</strong>.</p>
+            <p>Esta acción revertirá el stock y no se podrá deshacer.</p>
+            
+            <form method="post" action="{% url 'administrador:anular_compra' compra.id %}">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label for="motivo" class="form-label">Motivo de anulación:</label>
+                    <textarea class="form-control" id="motivo" name="motivo_anulacion" 
+                              rows="3" required></textarea>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'administrador:detalle_compra' compra.id %}" class="btn btn-secondary">
+                        Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-danger">
+                        Confirmar Anulación
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

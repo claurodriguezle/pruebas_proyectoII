@@ -2,6 +2,7 @@ from django.views.generic import TemplateView
 from django.urls import path
 from . import views
 
+
 app_name = 'administrador'
 
 urlpatterns = [
@@ -23,12 +24,15 @@ urlpatterns = [
     path('producto/editar/<int:pk>/htmx/', views.editar_htmx, name='editar_htmx'),
     path('producto/eliminar/<int:pk>/', views.eliminar_htmx, name='eliminar_htmx'),
 
+
     #Rutas para compras
     path('compras/', views.lista_compras, name='lista_compras'),
     path('compras/crear/', views.crear_compra, name='crear_compra'),
     path('compras/<int:compra_id>/',views.detalle_compra, name='detalle_compra'),
     path('compras/editar/<int:compra_id>/', views.editar_compra, name='editar_compra'),
     path('compras/eliminar/<int:compra_id>/', views.eliminar_compra, name='eliminar_compra'),
+    path('compras/<int:compra_id>/anular/', views.anular_compra, name='anular_compra'),
+
 
     #Rutas para stock
     path('stock/',views.lista_stock, name='lista_stock'),

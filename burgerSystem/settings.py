@@ -32,6 +32,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'facturacion',
     'personas',
     'administrador', #Las app podemos agregar arriba para ver mas rapido
     'django.contrib.humanize',
@@ -82,10 +83,10 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME':'bdburgerapp',
-        'USER':'ruizj',
-        'PASSWORD':'admin',
+        'USER':'crodriguez',
+        'PASSWORD':'12345',
         'HOST':'localhost',
-        'PORT': '5432',
+        'PORT': '5433',
     }
 }
 

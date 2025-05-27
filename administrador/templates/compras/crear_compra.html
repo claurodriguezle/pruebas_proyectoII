@@ -53,7 +53,8 @@ Crear Nueva Compra
                     <div class="col-md-4 mb-3">
                         <label for="fecha" class="form-label">Fecha</label>
                         <input type="date" class="form-control" id="fecha" name="fecha" 
-                            value="{{ compra_form.instance.fecha|date:'Y-m-d' }}" required>
+                            value="{{ compra_form.instance.fecha|date:'Y-m-d' }}" 
+                            max="{% now 'Y-m-d' %}" required>
                     </div>
                     <div class="col-md-4 mb-3">
                         <label for="proveedor" class="form-label">Proveedor</label>
@@ -224,7 +225,38 @@ Crear Nueva Compra
         const agregarBtn = document.getElementById("add-item");
         const itemsContainer = document.getElementById("items-container");
         let itemCount = 1;
-    
+        // Validación de fecha en el cliente
+        const fechaInput = document.getElementById('fecha');
+        if (fechaInput) {
+            const today = new Date().toISOString().split('T')[0];
+            fechaInput.setAttribute('max', today);
+            
+            fechaInput.addEventListener('change', function() {
+                const selectedDate = new Date(this.value);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                
+                if (selectedDate > today) {
+                    alert('La fecha no puede ser posterior a hoy');
+                    this.value = today.toISOString().split('T')[0];
+                }
+            });
+        }
+
+        // Validación adicional al enviar el formulario
+        document.getElementById("compra-form").addEventListener("submit", function(e) {
+            const fechaInput = document.getElementById('fecha');
+            const selectedDate = new Date(fechaInput.value);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            if (selectedDate > today) {
+                e.preventDefault();
+                alert('Error: La fecha de compra no puede ser posterior a hoy');
+                return false;
+            }
+        });
+        
         // Función para actualizar el subtotal, IVA y total
         function updateTotals() {
             let subtotal = 0, iva5 = 0, iva10 = 0;

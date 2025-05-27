@@ -1,4 +1,5 @@
 from django import forms
+from django.utils import timezone
 from .models import Persona, Cliente, Empleado, Proveedor, Producto, CategoriaProducto, IngredienteProducto # noqa: F401
 from .models import Compra, DetalleCompra, Item
 
@@ -156,10 +157,19 @@ class DetalleCompraForm(forms.ModelForm):
 class CompraForm(forms.ModelForm):
     class Meta:
         model = Compra
-        fields = ['numero_factura','fecha','proveedor']
+        fields = ['numero_factura', 'fecha', 'proveedor']
         widgets = {
-            'fecha': forms.DateInput(attrs={'type':'date'}),
+            'fecha': forms.DateInput(attrs={
+                'type': 'date',
+                'max': timezone.now().date().isoformat()  # Establece el máximo como hoy
+            }),
         }
+
+    def clean_fecha(self):
+        fecha = self.cleaned_data.get('fecha')
+        if fecha and fecha > timezone.now().date():
+            raise forms.ValidationError("La fecha de compra no puede ser posterior a hoy.")
+        return fecha
 class CompraCompletaForm(forms.Form):
     numero_factura = forms.CharField(max_length=50)
     fecha = forms.DateField(widget=forms.DateInput(attrs={'type':'date'}))
