@@ -231,6 +231,8 @@ class Producto(models.Model):
         choices=ESTADOS,
         default='A'
     )
+    personalizable = models.BooleanField(default=False)
+    
     categoria = models.ForeignKey(
     CategoriaProducto,
         verbose_name='Categoría',

@@ -1,37 +1,21 @@
+{% extends 'pedidos/menu_layout.html' %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Productos - Brother's Burger</title>
-  <!-- Fuente-->
-   <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
 
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <!-- Estilos -->
-  <link rel="stylesheet" href="{% static 'css/menu_productos.css' %}">
-</head>
-<body>
-  <header class="header bg-dark">
-    <h1>BROTHER'S BURGER</h1>
-    <nav class="nav justify-content-center">
-      <a href="{% url 'pedidos:index' %}">Inicio</a>
-      <a href="{% url 'pedidos:menu_productos' %}">Productos</a>
-      <a href="contacto.html">Contacto</a>
-    </nav>
-    <div class="contenedor">
-      <input type="text" id="buscar" class="form-control w-50" placeholder="Buscar productos..." />
-      <button id="carrito-btn" class="btn btn-warning ms-3">
-        🛒 (<span id="carrito-contador">0</span>)
-      </button>
-    </div>
-  </header>
+{% block title %}
+Menu
+{% endblock %}
 
+{% block carrito %}
+  <button id="carrito-btn" class="btn btn-warning ms-3">
+    <a href="{% url 'pedidos:carrito' %}" class="text-dark text-decoration-none">
+        <i class="bi bi-cart3"></i> (<span id="carrito-contador">0</span>)
+    </a>
+</button>
+{% endblock %}
+
+{% block body %}
   <!-- Menú de categorías -->
-  <div class="container my-4 bg-dark w-50 p-2 rounded">
+  <div class="my-4 bg-dark p-2 rounded" style="width: 60%; margin: 0 auto;">
     <ul class="nav nav-pills justify-content-center" id="menu-categorias">
       <li class="nav-item">
         <button class="nav-link active bg-dark"
@@ -53,7 +37,6 @@
       {% endfor %}
     </ul>
   </div>
-
   <!-- Productos -->
   <section id="productos" class="container">
     <h2 class="text-center mb-4">Nuestros Productos</h2>
@@ -65,15 +48,75 @@
         hx-swap="innerHTML">
         <!-- Se insertan los productos dinamicamente -->
         <div  id="productos-lista" class="productos-grid">
-          
         </div>
+    </div>
+      <!-- Modal -->
+    <div class="modal fade" id="personalizarModal" tabindex="-1" aria-labelledby="personalizarModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <form action="{% url 'pedidos:agregar_al_carrito' %}" method="post">
+            <input type="hidden" name="producto_id" id="input-producto-id">
+            {% csrf_token %}
+            <div class="modal-header">
+              <h5 class="modal-title" id="personalizarModalLabel">Personalizar Pedido</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+              <!-- Adicionales -->
+              <div class="mb-4">
+                <h6 class="fw-bold">Adicionales</h6>
+                {% for adicional in adicionales %}
+                  <div class="form-check">
+                      <input class="form-check-input" type="checkbox" name="adicional[]" value="{{ adicional.id }}" id="adicional-{{ adicional.id }}">
+                      <label class="form-check-label" for="adicional-{{ adicional.id }}">{{ adicional.nombre }} <span class="text-muted">+ Gs{{ adicional.precio }}</span>
+                      </label>
+                  </div>
+                {% endfor %}
+              </div>
+              <!-- Sin -->
+              <div class="mb-4">
+                <h6 class="fw-bold">Sin</h6>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="sin[]" value="lechuga" id="lechuga">
+                  <label class="form-check-label" for="lechuga">Sin lechuga</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="sin[]" value="cebolla" id="cebolla">
+                  <label class="form-check-label" for="cebolla">Sin cebolla</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="sin[]" value="tomate" id="tomate">
+                  <label class="form-check-label" for="tomate">Sin tomate</label>
+                </div>
+              </div>
+              <!-- Comentarios -->
+              <div class="mb-3">
+                <label for="comentarios" class="form-label">Nota especial (comentario)</label>
+                <input type="text" class="form-control" id="comentarios" name="comentarios" placeholder="Nota del producto">
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+              <button type="submit" class="btn btn-primary">Agregar al carrito</button>
+            </div>
+          </form>
+        </div>
+      </div>
     </div>
   </section>
 
-  <footer class="footer">
-    <p>Contacto: +595 971 123 456</p>
-    <p>© 2024 The Burger. Todos los derechos reservados.</p>
-  </footer>
-  <script src="https://unpkg.com/htmx.org"></script>
-</body>
-</html>
+  <!-- Carga el input con el producto_id seleccionado -->
+  <script>
+    function cargarDatosProducto(boton) {
+      const productoId = boton.getAttribute('data-producto-id');
+      const productoNombre = boton.getAttribute('data-producto-nombre');
+
+      // Rellenar el campo hidden con el ID del producto
+      document.getElementById('input-producto-id').value = productoId;
+
+      // (Opcional) Cambiar el título del modal
+      document.getElementById('personalizarModalLabel').textContent = "Personalizar " + productoNombre;
+    }
+  </script>
+{% endblock %}
+

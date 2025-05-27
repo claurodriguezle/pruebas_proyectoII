@@ -1,14 +1,42 @@
+{% load static %}
 <div id="productos-lista" class="productos-grid">
     {% for producto in productos %}
 
-    <div class="producto-card">
-        <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}">
-        <h3>{{ producto.nombre }}</h3>
-        <p>{{ producto.descripcion }}</p>
-        <p class="precio">{{ producto.precio}} ₲</p>
-        <button class="btn btn-success">Añadir al carrito</button>
-    </div>
+        <div class="producto-card">
+            {% if producto.imagen %}
+                <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}">
+            {% else %}
+                <img src="{% static 'img/sin_imagen.jpg' %}" alt="Imagen no disponible.">
+            {% endif %}
+            
+            <h3>{{ producto.nombre }}</h3>
+            <p>{{ producto.descripcion }}</p>
+            <p class="precio">{{ producto.precio}} ₲</p>
 
+            <div class="d-flex justify-content-center gap-3">
+                {% if producto.personalizable %}
+                    <!-- Botón que abre el modal -->
+                    <button 
+                        type="button" 
+                        class="btn btn-success" data-bs-toggle="modal" 
+                        data-bs-target="#personalizarModal"
+                        data-producto-id="{{ producto.id }}"
+                        data-producto-nombre="{{ producto.nombre }}"
+                        onclick="cargarDatosProducto(this)"
+                        title="Agregar">
+                            <i class="bi bi-cart-plus-fill"></i> Agregar
+                    </button>
+                {% else %}
+                    <form action="{% url 'pedidos:agregar_al_carrito' %}" method="POST">
+                        {% csrf_token %}
+                        <input type="hidden" name="producto_id" value="{{ producto.id }}">
+                        <button type="submit" class="btn btn-success" title="Agregar">
+                            <i class="bi bi-cart-plus-fill"></i> Agregar
+                        </button>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
     {% empty %}
         <p class="text-center">No hay productos disponibles.</p>
     {% endfor %}

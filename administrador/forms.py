@@ -102,7 +102,7 @@ class ProductoForm(forms.ModelForm):
     class Meta:
         model = Producto
         fields = [
-            'codigo', 'nombre', 'precio', 'imagen', 'descripcion', 'estado', 'categoria',
+            'codigo', 'nombre', 'precio', 'imagen', 'descripcion', 'estado', 'personalizable', 'categoria',
         ]
         widgets = {
             'codigo': forms.TextInput(attrs={
@@ -129,6 +129,10 @@ class ProductoForm(forms.ModelForm):
             'estado': forms.Select(attrs={
                 'class': 'form-select',
             }),
+            'personalizable': forms.Select(choices=[(True, 'Sí'), (False, 'No')], attrs={
+                'class': 'form-select',
+            }),
+
             'categoria': forms.Select(attrs={
                 'class': 'form-select',
             }),
