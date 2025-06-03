@@ -10,4 +10,6 @@ urlpatterns = [
     path('timbrado/editar/<int:pk>/', views.TimbradoUpdateView.as_view(), name='timbrado_update'),
     path('timbrado/toggle-active/<int:pk>/', views.timbrado_toggle_active, name='timbrado_toggle_active'),
     path('timbrados/eliminar/<int:pk>/', views.timbrado_soft_delete, name='timbrado_soft_delete'),
+    #Rutas para pruebas de Factura
+    path('factura/factura_view/', views.factura_view, name='factura_view'),
 ]

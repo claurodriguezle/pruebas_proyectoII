@@ -12,4 +12,9 @@ urlpatterns = [
     path('carrito/incrementar/<int:item_index>/', views.incrementar_cantidad, name='incrementar_cantidad'),
     path('carrito/decrementar/<int:item_index>/', views.decrementar_cantidad, name='decrementar_cantidad'),
     path('carrito/eliminar/<int:item_index>/', views.eliminar_item, name='eliminar_item'),
+    #Rutas para pruebas de orden de pedidos
+    #Empleado/Cajero
+    path('orden/', views.ordenes_view, name='ordenes_view'),
+    #Cocina
+    path('cocina/', views.cocina_view, name='cocina_view'),
 ]

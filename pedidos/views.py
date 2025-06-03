@@ -150,3 +150,12 @@ def eliminar_item(request, item_index):
     }
     
     return render(request, 'pedidos/partials/contenido_carrito.html', context)
+
+#Orden de pedidos
+#Empleado/Cajero
+def ordenes_view(request):
+    return render(request, 'orden_pedidos/orden.html')
+
+#Cocina
+def cocina_view(request):
+    return render(request,'orden_pedidos/cocina.html')

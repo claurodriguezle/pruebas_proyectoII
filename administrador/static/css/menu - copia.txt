@@ -73,7 +73,6 @@ main {
   padding: 20px;
 }
 
-
 .topbar {
   background-color: #03071e;
   color: #fff;

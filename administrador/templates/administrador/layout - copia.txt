@@ -52,7 +52,7 @@
                     <ul class="dropdown-menu">
                         <li><a class="dropdown-item" href="{% url 'pedidos:index' %}">Clientes</a></li>
                         <li><a class="dropdown-item" href="{% url 'pedidos:ordenes_view' %}">Orden de Pedidos</a></li>
-                        <li><a class="dropdown-item" href="{%url 'pedidos:cocina_view'%}">Cocina</a></li>
+                        <li><a class="dropdown-item" href="#">Cocina</a></li>
                     </ul>
                 </li>
 
@@ -95,7 +95,7 @@
                 <span>Panel de Control</span>
                 <div>
                     <span>Admin</span>
-                    <button type="button" class="btn btn-dark"><a href="{% url 'administrador:menu' %}" class="nav-link">Cerrar</a></button>
+                    <button type="button" class="btn btn-dark">Cerrar</button>
                 </div>
             </div>
             {% block body %}

@@ -42,7 +42,11 @@ class Factura(models.Model):
     cliente = models.ForeignKey('administrador.Cliente', on_delete=models.PROTECT, related_name='facturas')
 
     # Datos legales
-    timbrado = models.ForeignKey(Timbrado, on_delete=models.PROTECT)
+    timbrado = models.ForeignKey(
+        Timbrado, 
+        on_delete=models.PROTECT,
+        limit_choices_to={'activo': True, 'eliminado': False}
+    )
 
     # Datos del cliente para la factura (puede facturar a otro nombre)
     nombre_cliente = models.CharField(max_length=100)
