@@ -19,7 +19,7 @@
                         <h4><strong>Total: <span id="total-carrito">{{ total }} Gs</span></strong></h4>
                         <div class="d-flex gap-2 justify-content-end mt-2">
                             <a href="{% url 'pedidos:menu_productos' %}" class="btn btn-danger">Seguir comprando</a>
-                            <a href="" class="btn btn-success">Confirmar Compra</a>
+                            <a href="{% url 'usuarios:sesion' %}" class="btn btn-success">Confirmar Compra</a>
                         </div>
                     </div>
                 </div>

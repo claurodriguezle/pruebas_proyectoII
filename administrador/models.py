@@ -1,13 +1,12 @@
 from django.db import models
 from django.core.validators import MinValueValidator
 from django.core.exceptions import ValidationError
-from django.core.validators import EmailValidator
+from django.contrib.auth.models import User
 
 class Persona(models.Model):
     nombre = models.CharField(max_length=100)
     apellido = models.CharField(max_length=100)
     telefono = models.CharField(max_length=15)
-    email = models.EmailField(unique=True, validators=[EmailValidator()])
     fecha_nacimiento = models.DateField()
     cedula = models.CharField(max_length=15, unique=True)
     ciudad = models.CharField(max_length=100)
@@ -18,6 +17,7 @@ class Persona(models.Model):
         return f"{self.nombre} {self.apellido}"
 
 class Cliente(Persona):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
     ruc = models.CharField(
     max_length=20,
     blank=True,
@@ -29,6 +29,8 @@ class Cliente(Persona):
         return f"Cliente: {self.nombre} {self.apellido}"
 
 class Empleado(Persona):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
     sueldo = models.DecimalField(max_digits=12, decimal_places=2)
     fecha_contratacion = models.DateField()
     t_empleado = models.CharField(max_length=100)

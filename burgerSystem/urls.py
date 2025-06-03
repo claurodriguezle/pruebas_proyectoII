@@ -25,7 +25,7 @@ urlpatterns = [
     path('',include('administrador.urls')),
     path('facturacion/', include('facturacion.urls')),
     path('pedidos/', include(('pedidos.urls', 'pedidos'), namespace='pedidos')),
-
+    path('usuarios/', include('usuarios.urls')),
 ]
 
 if settings.DEBUG:

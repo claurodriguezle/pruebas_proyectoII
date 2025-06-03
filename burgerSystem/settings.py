@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'personas',
     'administrador',
     'pedidos',
+    'usuarios',
     'django.contrib.humanize',
     'django.contrib.admin',
     'django.contrib.auth',
