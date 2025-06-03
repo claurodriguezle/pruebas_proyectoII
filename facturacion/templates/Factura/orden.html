@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brother's Burger - Gestión de Pedidos</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome para iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        .badge-paid {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .badge-pending {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        .badge-failed {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .badge-processing {
+            background-color: #cce5ff;
+            color: #004085;
+        }
+        .badge-delivered {
+            background-color: #d1ecf1;
+            color: #0c5460;
+        }
+        .badge-cancelled {
+            background-color: #e2e3e5;
+            color: #383d41;
+        }
+        .filter-tabs .nav-link {
+            color: #495057;
+            border: none;
+            padding: 8px 15px;
+        }
+        .filter-tabs .nav-link.active {
+            color: #dc3545;
+            border-bottom: 2px solid #dc3545;
+            background: transparent;
+            font-weight: 600;
+        }
+        .order-row:hover {
+            background-color: #f8f9fa;
+            cursor: pointer;
+        }
+        .product-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .product-actions {
+            margin-left: auto;
+        }
+        .invoice-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid #ddd;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid mt-3">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>Gestión de Pedidos</h2>
+            <div>
+                <button class="btn btn-secondary me-2" id="cashRegisterBtn">
+                    <i class="fas fa-cash-register me-2"></i>Abrir Caja
+                </button>
+                <button class="btn btn-danger" id="newOrderBtn">
+                    <i class="fas fa-plus me-2"></i>Nuevo Pedido
+                </button>
+            </div>
+        </div>
+        
+        <!-- Filtros -->
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <ul class="nav filter-tabs">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#" data-filter="all">Todos</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-filter="pending">Pago pendiente <span class="badge bg-secondary">6</span></a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-filter="completed">Completado <span class="badge bg-secondary">5,816</span></a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-filter="failed">Incumplido <span class="badge bg-secondary">17</span></a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-filter="refunded">Reembolsado <span class="badge bg-secondary">8</span></a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Filtros adicionales -->
+        <div class="row mb-3">
+            <div class="col-md-12">
+                <div class="d-flex align-items-center">
+                    <div class="form-check me-3">
+                        <input class="form-check-input" type="checkbox" id="searchCheck">
+                        <label class="form-check-label" for="searchCheck">Búsqueda avanzada</label>
+                    </div>
+                    <div class="form-check me-3">
+                        <input class="form-check-input" type="checkbox" id="paymentStatusCheck" checked>
+                        <label class="form-check-label" for="paymentStatusCheck">Estado de pago</label>
+                    </div>
+                    <div class="form-check me-3">
+                        <input class="form-check-input" type="checkbox" id="fulfillmentStatusCheck">
+                        <label class="form-check-label" for="fulfillmentStatusCheck">Estado de cumplimiento</label>
+                    </div>
+                    <button class="btn btn-sm btn-outline-secondary ms-auto">
+                        <i class="fas fa-filter"></i> Más filtros
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tabla de pedidos -->
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>ORDEN</th>
+                        <th>TOTAL</th>
+                        <th>CLIENTE</th>
+                        <th>ESTADO DE PAGO</th>
+                        <th>ESTADO DE CUMPLIMIENTO</th>
+                        <th>TIPO DE ENTREGA</th>
+                        <th>FECHA</th>
+                        <th>ACCIONES</th>
+                    </tr>
+                </thead>
+                <tbody id="ordersTableBody">
+                    <!-- Las filas se generarán dinámicamente con JavaScript -->
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Paginación -->
+        <div class="row mt-3">
+            <div class="col-md-12">
+                <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-center">
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#" tabindex="-1">Anterior</a>
+                        </li>
+                        <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                        <li class="page-item"><a class="page-link" href="#">2</a></li>
+                        <li class="page-item"><a class="page-link" href="#">3</a></li>
+                        <li class="page-item">
+                            <a class="page-link" href="#">Siguiente</a>
+                        </li>
+                    </ul>
+                </nav>
+                <div class="text-center text-muted">
+                    Mostrando 1 a 10 de 30 pedidos
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para cambiar estado -->
+    <div class="modal fade" id="statusModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Cambiar estado del pedido <span id="modalOrderId"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Estado de pago</label>
+                        <select class="form-select" id="paymentStatusSelect">
+                            <option value="paid">Pagado</option>
+                            <option value="pending">Pago pendiente</option>
+                            <option value="failed">Pago fallido</option>
+                            <option value="refunded">Reembolsado</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Estado de cumplimiento</label>
+                        <select class="form-select" id="fulfillmentStatusSelect">
+                            <option value="processing">En preparación</option>
+                            <option value="ready">Listo para entrega</option>
+                            <option value="delivered">Entregado</option>
+                            <option value="cancelled">Cancelado</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="saveStatusBtn">Guardar cambios</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para nuevo pedido -->
+    <div class="modal fade" id="newOrderModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Crear Nuevo Pedido</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="newOrderForm">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Cliente</label>
+                                <input type="text" class="form-control" id="customerName" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Teléfono</label>
+                                <input type="tel" class="form-control" id="customerPhone" required>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Tipo de entrega</label>
+                                <select class="form-select" id="deliveryType" required>
+                                    <option value="delivery">Delivery</option>
+                                    <option value="pickup">Recogida en local</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Dirección (si es delivery)</label>
+                                <input type="text" class="form-control" id="deliveryAddress">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Productos</label>
+                            <div class="card p-3">
+                                <div id="productListContainer">
+                                    <!-- Productos se añadirán aquí dinámicamente -->
+                                </div>
+                                <div class="d-flex mt-3">
+                                    <select class="form-select me-2" id="productSelect">
+                                        <option value="">Seleccione un producto</option>
+                                        <option value="classic">Hamburguesa Clásica - $8.50</option>
+                                        <option value="cheese">Hamburguesa con Queso - $9.50</option>
+                                        <option value="bacon">Hamburguesa Bacon - $10.50</option>
+                                        <option value="veggie">Hamburguesa Vegana - $9.00</option>
+                                        <option value="fries">Papas Fritas - $3.50</option>
+                                        <option value="onion">Onion Rings - $4.50</option>
+                                        <option value="soda">Refresco - $2.50</option>
+                                        <option value="shake">Batido - $4.00</option>
+                                    </select>
+                                    <input type="number" class="form-control me-2" id="productQuantity" min="1" value="1" style="width: 80px;">
+                                    <button type="button" class="btn btn-sm btn-success" id="addProductBtn">
+                                        <i class="fas fa-plus"></i> Añadir
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Estado de pago</label>
+                                <select class="form-select" id="newPaymentStatus">
+                                    <option value="paid">Pagado</option>
+                                    <option value="pending" selected>Pago pendiente</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Método de pago</label>
+                                <select class="form-select" id="paymentMethod">
+                                    <option value="cash">Efectivo</option>
+                                    <option value="card">Tarjeta</option>
+                                    <option value="transfer">Transferencia</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4" id="cashAmountContainer" style="display: none;">
+                                <label class="form-label">Monto recibido</label>
+                                <input type="number" class="form-control" id="cashReceived" step="0.01">
+                            </div>
+                        </div>
+                        <div class="row mb-3" id="changeContainer" style="display: none;">
+                            <div class="col-md-12">
+                                <div class="alert alert-success">
+                                    <strong>Cambio:</strong> <span id="changeAmount">$0.00</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Notas adicionales</label>
+                            <textarea class="form-control" id="orderNotes" rows="2"></textarea>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <strong>Total estimado: </strong><span id="orderTotalPreview">$0.00</span>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" id="saveNewOrderBtn">Guardar Pedido</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para cierre de caja -->
+    <div class="modal fade" id="cashRegisterModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Cierre de Caja</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p><strong>Fecha y hora de apertura:</strong> <span id="openTime"></span></p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Fecha y hora de cierre:</strong> <span id="closeTime"></span></p>
+                        </div>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Método de Pago</th>
+                                    <th>Cantidad de Transacciones</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody id="cashSummaryBody">
+                                <!-- Se llenará dinámicamente -->
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <th>Total General</th>
+                                    <th id="totalTransactions">0</th>
+                                    <th id="totalAmount">$0.00</th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Efectivo en caja al inicio:</label>
+                        <input type="number" class="form-control" id="initialCash" step="0.01">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Efectivo en caja al final:</label>
+                        <input type="number" class="form-control" id="finalCash" step="0.01">
+                    </div>
+                    <div class="alert alert-info">
+                        <strong>Diferencia:</strong> <span id="cashDifference">$0.00</span>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Notas:</label>
+                        <textarea class="form-control" id="cashNotes" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="closeRegisterBtn">Cerrar Caja</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Datos de productos
+        const products = {
+            classic: { name: "Hamburguesa Clásica", price: 8.50 },
+            cheese: { name: "Hamburguesa con Queso", price: 9.50 },
+            bacon: { name: "Hamburguesa Bacon", price: 10.50 },
+            veggie: { name: "Hamburguesa Vegana", price: 9.00 },
+            fries: { name: "Papas Fritas", price: 3.50 },
+            onion: { name: "Onion Rings", price: 4.50 },
+            soda: { name: "Refresco", price: 2.50 },
+            shake: { name: "Batido", price: 4.00 }
+        };
+
+        // Datos de ejemplo para los pedidos
+        let orders = [
+            {
+                id: "#BB-243",
+                total: "$87.00",
+                customer: "Libra a Anna",
+                phone: "555-1234",
+                paymentStatus: "paid",
+                paymentMethod: "card",
+                fulfillmentStatus: "delivered",
+                deliveryType: "Contra reembolso",
+                date: "12 de diciembre, 12:56 p.m.",
+                items: [
+                    { product: "Hamburguesa Clásica", quantity: 2, price: 8.50 },
+                    { product: "Papas fritas grande", quantity: 1, price: 4.50 },
+                    { product: "Refresco", quantity: 1, price: 2.50 }
+                ],
+                notes: "Sin cebolla en las hamburguesas"
+            },
+            {
+                id: "#BB-242",
+                total: "$75.50",
+                customer: "Metro-Milial-Minja",
+                phone: "555-5678",
+                paymentStatus: "pending",
+                fulfillmentStatus: "processing",
+                deliveryType: "Delivery",
+                date: "9 de diciembre, 14:00",
+                items: [
+                    { product: "Hamburguesa BBQ", quantity: 1, price: 9.50 },
+                    { product: "Onion rings", quantity: 1, price: 4.50 },
+                    { product: "Batido de vainilla", quantity: 1, price: 4.00 }
+                ],
+                notes: "Llamar antes de entregar"
+            }
+        ];
+
+        // Variables para el nuevo pedido
+        let currentOrderItems = [];
+        let nextOrderId = 244; // Para generar IDs secuenciales
+
+        // Variables para el control de caja
+        let cashRegister = {
+            isOpen: false,
+            openTime: null,
+            closeTime: null,
+            initialCash: 0,
+            finalCash: 0,
+            transactions: [],
+            paymentMethods: {
+                cash: { count: 0, total: 0 },
+                card: { count: 0, total: 0 },
+                transfer: { count: 0, total: 0 }
+            }
+        };
+
+        // Función para calcular el total
+        function calculateTotal(items) {
+            return items.reduce((total, item) => total + (item.price * item.quantity), 0);
+        }
+
+        // Función para formatear moneda
+        function formatCurrency(amount) {
+            return `$${amount.toFixed(2)}`;
+        }
+
+        // Función para renderizar la tabla
+        function renderOrdersTable(filter = 'all') {
+            const tbody = document.getElementById('ordersTableBody');
+            tbody.innerHTML = '';
+            
+            let filteredOrders = orders;
+            if (filter !== 'all') {
+                filteredOrders = orders.filter(order => {
+                    if (filter === 'pending') return order.paymentStatus === 'pending';
+                    if (filter === 'completed') return order.fulfillmentStatus === 'delivered';
+                    if (filter === 'failed') return order.paymentStatus === 'failed' || order.fulfillmentStatus === 'cancelled';
+                    if (filter === 'refunded') return order.paymentStatus === 'refunded';
+                    return true;
+                });
+            }
+            
+            filteredOrders.forEach(order => {
+                const row = document.createElement('tr');
+                row.className = 'order-row';
+                row.dataset.id = order.id;
+                
+                // Mapeo de estados a clases y texto
+                const paymentStatusMap = {
+                    'paid': {class: 'badge-paid', text: 'Pagado', icon: 'fa-check-circle'},
+                    'pending': {class: 'badge-pending', text: 'Pendiente', icon: 'fa-clock'},
+                    'failed': {class: 'badge-failed', text: 'Fallido', icon: 'fa-times-circle'},
+                    'processing': {class: 'badge-processing', text: 'Procesando', icon: 'fa-sync-alt'},
+                    'refunded': {class: 'badge-cancelled', text: 'Reembolsado', icon: 'fa-undo'}
+                };
+                
+                const fulfillmentStatusMap = {
+                    'processing': {class: 'badge-processing', text: 'En preparación', icon: 'fa-utensils'},
+                    'ready': {class: 'badge-paid', text: 'Listo', icon: 'fa-check'},
+                    'delivered': {class: 'badge-delivered', text: 'Entregado', icon: 'fa-truck'},
+                    'cancelled': {class: 'badge-cancelled', text: 'Cancelado', icon: 'fa-ban'}
+                };
+                
+                row.innerHTML = `
+                    <td>${order.id}</td>
+                    <td>${order.total}</td>
+                    <td>${order.customer}</td>
+                    <td>
+                        <span class="status-badge ${paymentStatusMap[order.paymentStatus].class}">
+                            <i class="fas ${paymentStatusMap[order.paymentStatus].icon} me-1"></i>
+                            ${paymentStatusMap[order.paymentStatus].text}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="status-badge ${fulfillmentStatusMap[order.fulfillmentStatus].class}">
+                            <i class="fas ${fulfillmentStatusMap[order.fulfillmentStatus].icon} me-1"></i>
+                            ${fulfillmentStatusMap[order.fulfillmentStatus].text}
+                        </span>
+                    </td>
+                    <td>${order.deliveryType}</td>
+                    <td>${order.date}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary change-status-btn" data-id="${order.id}">
+                            <i class="fas fa-edit"></i> Cambiar
+                        </button>
+                    </td>
+                `;
+                
+                tbody.appendChild(row);
+            });
+            
+            // Agregar event listeners a los botones de cambiar estado
+            document.querySelectorAll('.change-status-btn').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const orderId = this.dataset.id;
+                    const order = orders.find(o => o.id === orderId);
+                    
+                    document.getElementById('modalOrderId').textContent = orderId;
+                    document.getElementById('paymentStatusSelect').value = order.paymentStatus;
+                    document.getElementById('fulfillmentStatusSelect').value = order.fulfillmentStatus;
+                    
+                    const modal = new bootstrap.Modal(document.getElementById('statusModal'));
+                    modal.show();
+                });
+            });
+            
+            // Agregar event listener para ver detalles al hacer clic en la fila
+            document.querySelectorAll('.order-row').forEach(row => {
+                row.addEventListener('click', function() {
+                    const orderId = this.dataset.id;
+                    const order = orders.find(o => o.id === orderId);
+                    const itemsList = order.items.map(item => `${item.product} x${item.quantity} - ${formatCurrency(item.price * item.quantity)}`).join('\n- ');
+                    
+                    alert(`Detalles del pedido ${orderId}:\nCliente: ${order.customer}\nTeléfono: ${order.phone}\nTotal: ${order.total}\nTipo de entrega: ${order.deliveryType}\nProductos:\n- ${itemsList}\nNotas: ${order.notes || 'Ninguna'}`);
+                });
+            });
+        }
+        
+        // Función para renderizar los productos en el nuevo pedido
+        function renderOrderItems() {
+            const container = document.getElementById('productListContainer');
+            container.innerHTML = '';
+            
+            if (currentOrderItems.length === 0) {
+                container.innerHTML = '<p class="text-muted">No hay productos añadidos</p>';
+                document.getElementById('orderTotalPreview').textContent = '$0.00';
+                return;
+            }
+            
+            currentOrderItems.forEach((item, index) => {
+                const productItem = document.createElement('div');
+                productItem.className = 'product-item';
+                
+                productItem.innerHTML = `
+                    <div>
+                        <strong>${item.product}</strong>
+                        <div class="text-muted">Cantidad: ${item.quantity} - ${formatCurrency(item.price * item.quantity)}</div>
+                    </div>
+                    <div class="product-actions">
+                        <button class="btn btn-sm btn-outline-danger remove-product-btn" data-index="${index}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+                
+                container.appendChild(productItem);
+            });
+            
+            // Actualizar el total
+            const total = calculateTotal(currentOrderItems);
+            document.getElementById('orderTotalPreview').textContent = formatCurrency(total);
+            
+            // Agregar event listeners a los botones de eliminar
+            document.querySelectorAll('.remove-product-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const index = parseInt(this.dataset.index);
+                    currentOrderItems.splice(index, 1);
+                    renderOrderItems();
+                });
+            });
+        }
+        
+        // Función para abrir la caja
+        function openCashRegister(initialAmount) {
+            cashRegister.isOpen = true;
+            cashRegister.openTime = new Date();
+            cashRegister.initialCash = initialAmount || 0;
+            cashRegister.transactions = [];
+            cashRegister.paymentMethods = {
+                cash: { count: 0, total: 0 },
+                card: { count: 0, total: 0 },
+                transfer: { count: 0, total: 0 }
+            };
+            
+            // Actualizar UI
+            document.getElementById('cashRegisterBtn').innerHTML = '<i class="fas fa-cash-register me-2"></i>Cerrar Caja';
+            document.getElementById('cashRegisterBtn').classList.remove('btn-secondary');
+            document.getElementById('cashRegisterBtn').classList.add('btn-success');
+        }
+
+        // Función para cerrar la caja
+        function closeCashRegister(finalAmount, notes) {
+            if (!cashRegister.isOpen) return;
+            
+            cashRegister.isOpen = false;
+            cashRegister.closeTime = new Date();
+            cashRegister.finalCash = finalAmount || 0;
+            
+            // Mostrar resumen en el modal
+            showCashRegisterSummary();
+            
+            // Aquí podrías guardar el cierre en una base de datos
+            // Por ahora solo mostramos el modal
+            const modal = new bootstrap.Modal(document.getElementById('cashRegisterModal'));
+            modal.show();
+            
+            // Resetear UI del botón
+            document.getElementById('cashRegisterBtn').innerHTML = '<i class="fas fa-cash-register me-2"></i>Abrir Caja';
+            document.getElementById('cashRegisterBtn').classList.remove('btn-success');
+            document.getElementById('cashRegisterBtn').classList.add('btn-secondary');
+        }
+
+        // Función para mostrar el resumen de caja
+        function showCashRegisterSummary() {
+            document.getElementById('openTime').textContent = formatDateTime(cashRegister.openTime);
+            document.getElementById('closeTime').textContent = formatDateTime(new Date());
+            document.getElementById('initialCash').value = cashRegister.initialCash.toFixed(2);
+            
+            const tbody = document.getElementById('cashSummaryBody');
+            tbody.innerHTML = '';
+            
+            let totalTransactions = 0;
+            let totalAmount = 0;
+            
+            for (const method in cashRegister.paymentMethods) {
+                if (cashRegister.paymentMethods[method].count > 0) {
+                    totalTransactions += cashRegister.paymentMethods[method].count;
+                    totalAmount += cashRegister.paymentMethods[method].total;
+                    
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${getPaymentMethodName(method)}</td>
+                        <td>${cashRegister.paymentMethods[method].count}</td>
+                        <td>${formatCurrency(cashRegister.paymentMethods[method].total)}</td>
+                    `;
+                    tbody.appendChild(row);
+                }
+            }
+            
+            document.getElementById('totalTransactions').textContent = totalTransactions;
+            document.getElementById('totalAmount').textContent = formatCurrency(totalAmount);
+            
+            // Calcular diferencia cuando se ingrese el efectivo final
+            document.getElementById('finalCash').addEventListener('input', function() {
+                const finalCash = parseFloat(this.value) || 0;
+                const difference = finalCash - (cashRegister.initialCash + cashRegister.paymentMethods.cash.total);
+                document.getElementById('cashDifference').textContent = formatCurrency(difference);
+            });
+        }
+
+        // Función para registrar una transacción
+        function registerTransaction(orderId, amount, paymentMethod, change = 0) {
+            if (!cashRegister.isOpen) {
+                alert('La caja no está abierta. Por favor abra la caja antes de registrar transacciones.');
+                return false;
+            }
+            
+            const transaction = {
+                id: generateTransactionId(),
+                orderId: orderId,
+                date: new Date(),
+                amount: amount,
+                paymentMethod: paymentMethod,
+                change: change
+            };
+            
+            cashRegister.transactions.push(transaction);
+            cashRegister.paymentMethods[paymentMethod].count++;
+            cashRegister.paymentMethods[paymentMethod].total += amount;
+            
+            return true;
+        }
+
+        // Función para generar factura
+        function generateInvoice(order) {
+            const invoiceNumber = `FAC-${new Date().getFullYear()}-${String(order.id).slice(4)}`;
+            
+            // Crear contenido de la factura
+            let invoiceContent = `
+                <div class="invoice-container">
+                    <h3 class="text-center">Brother's Burger</h3>
+                    <p class="text-center">Factura: ${invoiceNumber}</p>
+                    <p class="text-center">Fecha: ${order.date}</p>
+                    
+                    <hr>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Cliente:</strong> ${order.customer}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Teléfono:</strong> ${order.phone}</p>
+                        </div>
+                    </div>
+                    
+                    <p><strong>Tipo de entrega:</strong> ${order.deliveryType}</p>
+                    
+                    <hr>
+                    
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Producto</th>
+                                <th>Cantidad</th>
+                                <th>P. Unitario</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            order.items.forEach(item => {
+                invoiceContent += `
+                    <tr>
+                        <td>${item.product}</td>
+                        <td>${item.quantity}</td>
+                        <td>${formatCurrency(item.price)}</td>
+                        <td>${formatCurrency(item.price * item.quantity)}</td>
+                    </tr>
+                `;
+            });
+            
+            invoiceContent += `
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <th colspan="3">Total:</th>
+                                <th>${order.total}</th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                    
+                    <hr>
+                    
+                    <p><strong>Estado de pago:</strong> ${order.paymentStatus === 'paid' ? 'Pagado' : 'Pendiente'}</p>
+                    ${order.paymentMethod ? `<p><strong>Método de pago:</strong> ${getPaymentMethodName(order.paymentMethod)}</p>` : ''}
+                    
+                    ${order.notes ? `<p><strong>Notas:</strong> ${order.notes}</p>` : ''}
+                    
+                    <hr>
+                    
+                    <p class="text-center">¡Gracias por su compra!</p>
+                </div>
+            `;
+            
+            // Abrir ventana con la factura para imprimir
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <html>
+                    <head>
+                        <title>Factura ${invoiceNumber}</title>
+                        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+                        <style>
+                            body { padding: 20px; }
+                            @media print {
+                                .no-print { display: none; }
+                                body { padding: 0; }
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        ${invoiceContent}
+                        <div class="no-print text-center mt-3">
+                            <button onclick="window.print()" class="btn btn-primary">Imprimir Factura</button>
+                            <button onclick="window.close()" class="btn btn-secondary">Cerrar</button>
+                        </div>
+                    </body>
+                </html>
+            `);
+            printWindow.document.close();
+        }
+
+        // Funciones auxiliares adicionales
+        function getPaymentMethodName(method) {
+            const methods = {
+                cash: 'Efectivo',
+                card: 'Tarjeta',
+                transfer: 'Transferencia'
+            };
+            return methods[method] || method;
+        }
+
+        function generateTransactionId() {
+            return `TRX-${Date.now()}`;
+        }
+
+        function formatDateTime(date) {
+            return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()} ${formatTime(date)}`;
+        }
+        
+        // Event listeners para los filtros
+        document.querySelectorAll('.filter-tabs .nav-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                document.querySelector('.filter-tabs .nav-link.active').classList.remove('active');
+                this.classList.add('active');
+                renderOrdersTable(this.dataset.filter);
+            });
+        });
+        
+        // Event listener para guardar cambios de estado
+        document.getElementById('saveStatusBtn').addEventListener('click', function() {
+            const orderId = document.getElementById('modalOrderId').textContent;
+            const newPaymentStatus = document.getElementById('paymentStatusSelect').value;
+            const newFulfillmentStatus = document.getElementById('fulfillmentStatusSelect').value;
+            
+            const order = orders.find(o => o.id === orderId);
+            if (order) {
+                order.paymentStatus = newPaymentStatus;
+                order.fulfillmentStatus = newFulfillmentStatus;
+                renderOrdersTable(document.querySelector('.filter-tabs .nav-link.active').dataset.filter);
+            }
+            
+            bootstrap.Modal.getInstance(document.getElementById('statusModal')).hide();
+        });
+        
+        // Event listener para abrir modal de nuevo pedido
+        document.getElementById

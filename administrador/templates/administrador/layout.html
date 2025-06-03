@@ -38,6 +38,14 @@
                 <li class="nav-item"><a href="#" class="nav-link">Perfil</a></li>
                 <li class="nav-item"><a href="{% url 'usuarios:index' %}" class="nav-link">Usuarios</a></li>
                 <li class="nav-item"><a href="#" class="nav-link">Ventas</a></li>
+                <li class="nav-item"><a href="#" class="nav-link">Pedido</a></li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Facturación</a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{% url 'facturacion:timbrado_list'%}" >Timbrado</a></li>
+                        <li><a class="dropdown-item" href="#">Factura</a></li>
+                    </ul>
+                </li>
 
                 <!-- Menu desplegable: Pedidos -->
                 <li class="nav-item dropdown">

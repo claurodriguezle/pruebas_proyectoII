@@ -59,14 +59,26 @@ Detalles de Compra #{{ compra.numero_factura }}
                             <td>{{ detalle.item.get_tipo_display }}</td>
                             <td>
                                 {% if detalle.item.unidad_medida == 'kg' %}
-                                    {{ detalle.cantidad|floatformat:3 }} kg
+                                    {{ detalle.cantidad|floatformat:0 }} g
+                                {% elif detalle.item.unidad_medida == 'gr' %}
+                                    {{ detalle.cantidad|floatformat:0 }} g
+                                {% elif detalle.item.unidad_medida == 'lt' %}
+                                    {{ detalle.cantidad|floatformat:0 }} ml
+                                {% elif detalle.item.unidad_medida == 'ml' %}
+                                    {{ detalle.cantidad|floatformat:0 }} ml
                                 {% else %}
-                                    {{ detalle.cantidad|floatformat:2 }} {{ detalle.item.get_unidad_medida_display }}
+                                    {{ detalle.cantidad|floatformat:0 }} {{ detalle.item.get_unidad_medida_display }}
                                 {% endif %}
                             </td>
                             <td>
                                 {% if detalle.item.unidad_medida == 'kg' %}
                                     {{ detalle.precio_compra|floatformat:0|intcomma }} Gs/kg
+                                {% elif detalle.item.unidad_medida == 'gr' %}
+                                    {{ detalle.precio_compra|floatformat:0|intcomma }} Gs/g
+                                {% elif detalle.item.unidad_medida == 'lt' %}
+                                    {{ detalle.precio_compra|floatformat:0|intcomma }} Gs/lt
+                                {% elif detalle.item.unidad_medida == 'ml' %}
+                                    {{ detalle.precio_compra|floatformat:0|intcomma }} Gs/ml
                                 {% else %}
                                     {{ detalle.precio_compra|floatformat:0|intcomma }} Gs/{{ detalle.item.get_unidad_medida_display }}
                                 {% endif %}

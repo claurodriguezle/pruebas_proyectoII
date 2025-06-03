@@ -47,6 +47,7 @@
                         <th class="text-nowrap">Mín</th>
                         <th class="text-nowrap">Máx</th>
                         <th class="text-nowrap">Disponible</th>
+                        <th class="text-nowrap">Precio Unitario</th>
                         <th class="text-nowrap">Últ. Entrada</th>
                         <th class="text-nowrap">Últ. Salida</th>
                         <th class="text-nowrap">Estado</th>
@@ -63,6 +64,7 @@
                         <td class="text-end">{{ stock.cant_minima|floatformat:2 }}</td>
                         <td class="text-end">{{ stock.cant_maxima|floatformat:2 }}</td>
                         <td class="text-end fw-bold">{{ stock.cant_disponible|floatformat:2 }}</td>
+                        <td class="text-end">{{ stock.precio_unitario|floatformat:0|intcomma }} Gs</td>
                         <td>{{ stock.fecha_ultima_entrada|date:"d/m/Y"|default:"-" }}</td>
                         <td>{{ stock.fecha_ultima_salida|date:"d/m/Y"|default:"-" }}</td>
                         <td>

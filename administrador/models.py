@@ -137,6 +137,10 @@ class DetalleCompra(models.Model):
         return f"{self.item.nombre} - {self.cantidad} {self.item.get_unidad_medida_display()}"
 #COMPRAS
 class Compra(models.Model):
+    ESTADO_CHOICES = [
+        ('ACTIVA', 'Activa'),
+        ('ANULADA', 'Anulada'),
+    ]
     numero_factura = models.CharField(
         max_length= 50,
         unique= True,  #El numero de factura debe ser unico
@@ -154,6 +158,9 @@ class Compra(models.Model):
     total_sin_iva = models.BigIntegerField(default=0)
     total_iva = models.BigIntegerField(default=0)
     monto_total = models.BigIntegerField(default=0)
+    estado = models.CharField(max_length=10, choices=[('ACTIVA','Activa'),('ANULADA','Anulada')], default='ACTIVA')
+    motivo_anulacion = models.TextField(null=True, blank=True)
+    fecha_anulacion = models.DateTimeField(null=True, blank=True)
     def __str__(self):
         return f"Factura {self.numero_factura} - {self.proveedor.nombre if self.proveedor else 'Proveedor Eliminado'}(self.fecha)"
     def calcular_totales(self):

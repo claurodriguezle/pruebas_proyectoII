@@ -13,6 +13,8 @@ from django.views.decorators.http import require_POST
 from .models import Compra, DetalleCompra, Item
 from .forms import CompraForm
 from . import models
+from django.utils import timezone
+from django.contrib.auth.decorators import login_required
 #Importaciones para Stock
 from .models import Stock
 from django.db.models import Sum
@@ -554,6 +556,47 @@ def eliminar_compra(request, compra_id):
     compra.delete()
     messages.success(request, f'Compra #{compra.numero_factura} eliminada correctamente')
     return redirect('administrador:lista_compras')
+#ANULAR COMPRA
+def anular_compra(request, compra_id):
+    compra = get_object_or_404(Compra, pk=compra_id)
+    
+    if compra.estado == 'ANULADA':
+        messages.warning(request, 'Esta compra ya está anulada')
+        return redirect('administrador:detalle_compra', compra_id=compra_id)
+    
+    if request.method == 'POST':
+        motivo = request.POST.get('motivo_anulacion', '').strip()
+        
+        if not motivo:
+            messages.error(request, 'Debe especificar un motivo de anulación')
+            return redirect('administrador:detalle_compra', compra_id=compra_id)
+        
+        try:
+            with transaction.atomic():
+                # Revertir el stock (esta es la parte crítica)
+                for detalle in compra.detalles.all():
+                    stock = Stock.objects.filter(item=detalle.item).first()
+                    if stock:
+                        # Restamos la cantidad (en lugar de sumar)
+                        stock.cant_disponible = max(0, stock.cant_disponible - detalle.cantidad)
+                        stock.save()
+                
+                # Marcar como anulada
+                compra.estado = 'ANULADA'
+                compra.motivo_anulacion = motivo
+                compra.fecha_anulacion = timezone.now()
+                compra.save()
+                
+                messages.success(request, '✅ Compra anulada correctamente')
+                return redirect('administrador:detalle_compra', compra_id=compra.id)
+        
+        except Exception as e:
+            messages.error(request, f'❌ Error al anular la compra: {str(e)}')
+            return redirect('administrador:detalle_compra', compra_id=compra_id)
+    
+    # Si llega aquí por GET, redirigir a detalles
+    return redirect('administrador:detalle_compra', compra_id=compra_id)
+
 #STOCK
 
 #LISTA DE STOCK
@@ -818,7 +861,7 @@ def ingredientes(request, id):
     ingredientes = IngredienteProducto.objects.filter(producto=producto)
     return render(request, 'ingredientes/ingredientes.html',{
         'producto': producto,
-        'ingredientes': ingredientes                                               
+        'ingredientes': ingredientes
     })
 
 # TRAE LOS ITEM DE LA BD Y LOS MUESTRA EN EL SELECT DEL FORM

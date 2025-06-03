@@ -1,0 +1,104 @@
+{% extends "administrador/layout.html" %}
+{% load static %}
+
+{% block body %}
+    <div class="container mt-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h2 class="mb-0">Listado de Timbrados</h2>
+                <a href="{% url 'facturacion:timbrado_create' %}" class="btn btn-success">
+                    <i class="bi bi-plus-circle"></i> Nuevo Timbrado
+                </a>
+            </div>
+            
+            <div class="card-body">
+                {% if messages %}
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    {% endfor %}
+                {% endif %}
+
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Número</th>
+                                <th>RUC</th>
+                                <th>Vigencia</th>
+                                <th>Estado</th>
+                                <th class="text-end">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for timbrado in timbrados %}
+                            <tr>
+                                <td>{{ timbrado.numero }}</td>
+                                <td>{{ timbrado.ruc }}</td>
+                                <td>
+                                    <span class="badge bg-light text-dark">
+                                        {{ timbrado.fecha_inicio_vigencia|date:"d/m/Y" }} al {{ timbrado.fecha_fin_vigencia|date:"d/m/Y" }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if timbrado.activo %}
+                                        <span class="badge bg-success rounded-pill">
+                                            <i class="bi bi-check-circle"></i> Activo
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-secondary rounded-pill">
+                                            <i class="bi bi-x-circle"></i> Inactivo
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    <div class="btn-group" role="group">
+                                        <a href="{% url 'facturacion:timbrado_update' timbrado.pk %}" class="btn btn-sm btn-outline-warning" title="Editar">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <a href="{% url 'facturacion:timbrado_soft_delete' timbrado.pk %}" class="btn btn-sm btn-danger">Eliminar</a>
+                                        <form method="post" action="{% url 'facturacion:timbrado_toggle_active' timbrado.pk %}" class="d-inline">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-sm btn-{% if timbrado.activo %}outline-danger{% else %}outline-success{% endif %}" title="{% if timbrado.activo %}Desactivar{% else %}Activar{% endif %}">
+                                                {% if timbrado.activo %}
+                                                    <i class="bi bi-toggle-off"></i>
+                                                {% else %}
+                                                    <i class="bi bi-toggle-on"></i>
+                                                {% endif %}
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-4">No hay timbrados registrados.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Agregar estilos adicionales -->
+    <style>
+        .table th {
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 0.5px;
+        }
+        .badge {
+            padding: 0.35em 0.65em;
+            font-size: 0.85em;
+        }
+        .table-hover tbody tr:hover {
+            background-color: rgba(13, 110, 253, 0.05);
+        }
+    </style>
+
+{% endblock %}
