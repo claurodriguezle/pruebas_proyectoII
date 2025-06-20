@@ -1,0 +1,149 @@
+{% extends "administrador/layout.html" %}
+{% load static %}
+
+{% block title %}
+Panel de órdenes - Brother's Burger
+{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Estilos para los badges */
+.status-badge {
+    padding: 0.35em 0.65em;
+    font-size: 0.75em;
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 0.25rem;
+    display: inline-flex;
+    align-items: center;
+}
+
+/* Estados de pago */
+.badge-pending {
+    color: #664d03;
+    background-color: #fff3cd;
+}
+
+.badge-paid {
+    color: #0f5132;
+    background-color: #d1e7dd;
+}
+
+.badge-cancelled {
+    color: #842029;
+    background-color: #f8d7da;
+}
+
+/* Estados de cumplimiento */
+.badge-processing {
+    color: #084298;
+    background-color: #cfe2ff;
+}
+
+.badge-ready {
+    color: #055160;
+    background-color: #cff4fc;
+}
+
+.badge-delivered {
+    color: #0f5132;
+    background-color: #d1e7dd;
+}
+
+/* Iconos */
+.status-badge i {
+    margin-right: 0.3rem;
+}
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="container mt-5 orders-container">
+    <h2 class="mb-4">Órdenes de Pedidos - Brother's Burger</h2>
+    
+    <!-- Filtros mejorados -->
+    <div class="row mb-3">
+        <div class="col-md-4">
+            <input type="text" id="filtroCliente" class="form-control" placeholder="Buscar por cliente...">
+        </div>
+        <div class="col-md-4">
+            <select id="filtroPago" class="form-select">
+                <option value="">Todos los estados de pago</option>
+                <option value="Pendiente">Pendiente</option>
+                <option value="Pagado">Pagado</option>
+                <option value="Cancelado">Cancelado</option>
+            </select>
+        </div>
+        <div class="col-md-4">
+            <select id="filtroEntrega" class="form-select">
+                <option value="">Todos los tipos de entrega</option>
+                <option value="Delivery">Delivery</option>
+                <option value="Local">Recogida en local</option>
+            </select>
+        </div>
+    </div>
+    
+    <!-- Tabla de pedidos -->
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead class="table-light">
+                <tr>
+                    <th>ORDEN</th>
+                    <th>TOTAL</th>
+                    <th>CLIENTE</th>
+                    <th>ESTADO DE PAGO</th>
+                    <th>ESTADO DE CUMPLIMIENTO</th>
+                    <th>TIPO DE ENTREGA</th>
+                    <th>FECHA</th>
+                    <th>ACCIONES</th>
+                </tr>
+            </thead>
+            <tbody id="ordersTableBody">
+                <!-- Datos generados por JavaScript -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal para cambiar estados -->
+<div class="modal fade" id="statusModal" tabindex="-1" aria-labelledby="statusModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="statusModalLabel">Cambiar estado del pedido <span id="modalOrderId"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="modalPaymentStatus" class="form-label">Estado de pago</label>
+                    <select class="form-select" id="modalPaymentStatus">
+                        <option value="pending">Pendiente</option>
+                        <option value="paid">Pagado</option>
+                        <option value="cancelled">Cancelado</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="modalFulfillmentStatus" class="form-label">Estado de cumplimiento</label>
+                    <select class="form-select" id="modalFulfillmentStatus">
+                        <option value="processing">En preparación</option>
+                        <option value="ready">Listo para entregar</option>
+                        <option value="delivered">Entregado</option>
+                        <option value="cancelled">Cancelado</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="saveStatusBtn">Guardar cambios</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script src="{% static 'js/ordenes.js' %}"></script>
+{% endblock %}
+{% endblock %}

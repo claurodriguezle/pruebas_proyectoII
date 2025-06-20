@@ -17,4 +17,9 @@ urlpatterns = [
     path('resumen/', views.resumen_pedido, name='resumen_pedido'),
     path('pedido/confirmar-pedido/', views.confirmar_pedido, name='confirmar_pedido'), 
     path('pedido/pedido-confirmado/', views.confirmacion_pedido, name='pedido_confirmado'),
+    #Rutas para pruebas de orden de pedidos
+    #Empleado/Cajero
+    path('orden/', views.ordenes_view, name='ordenes_view'),
+    #Cocina
+    path('cocina/', views.cocina_view, name='cocina_view'),
 ]

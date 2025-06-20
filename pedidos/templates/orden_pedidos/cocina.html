@@ -1,0 +1,246 @@
+{% extends "administrador/layout.html" %}
+{% load static %}
+{% load humanize custom_filters %}
+
+{% block title %}Panel de Cocina{% endblock %}
+
+{% block extra_css %}
+    <style>
+        .cocina-container {
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .page-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .page-header img {
+            width: 50px;
+            height: 50px;
+            margin-right: 15px;
+        }
+        
+        .header-text h1 {
+            margin: 0;
+            font-size: 24px;
+            color: #333;
+        }
+        
+        .header-text p {
+            margin: 0;
+            color: #666;
+            font-size: 16px;
+        }
+        
+        .pedido-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .pedido-card {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-left: 4px solid #ff6b00;
+            position: relative;
+        }
+        
+        .corner-icon {
+            position: absolute;
+            right: 15px;
+            top: 15px;
+            opacity: 0.1;
+            width: 40px;
+            height: 40px;
+        }
+        
+        .pedido-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .pedido-title {
+            font-weight: bold;
+            font-size: 18px;
+            color: #333;
+        }
+        
+        .pedido-cliente {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .pedido-items {
+            margin: 15px 0;
+        }
+        
+        .pedido-item {
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        .pedido-tiempo {
+            font-weight: bold;
+            color: #ff6b00;
+            margin: 15px 0;
+            text-align: center;
+        }
+        
+        .pedido-actions {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+        }
+        
+        .btn-preparar {
+            background-color: #ff6b00;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            flex: 1;
+            margin-right: 5px;
+        }
+        
+        .btn-entregar {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            flex: 1;
+            margin-left: 5px;
+        }
+        
+        .status-ready {
+            border-left-color: #4CAF50;
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+    <div class="cocina-container">
+        <div class="page-header">
+            <img src="{% static 'hamburguesa.svg' %}" alt="Ícono de hamburguesa">
+            <div class="header-text">
+                <h1>Panel de Cocina</h1>
+                <p>Gestión de pedidos en preparación</p>
+            </div>
+        </div>
+        
+        <div class="pedido-grid">
+            <!-- Pedido #1 -->
+            <div class="pedido-card">
+                <img class="corner-icon" src="{% static 'hamburguesa.svg' %}" alt="Ícono decorativo">
+                <div class="pedido-header">
+                    <span class="pedido-title">Pedido #1</span>
+                    <span class="pedido-cliente">Juan Alberto Perez</span>
+                </div>
+                <div class="pedido-items">
+                    <div class="pedido-item">1x Hamburguesa Clásica</div>
+                    <div class="pedido-item">1x Papas Fritas</div>
+                    <div class="pedido-item">1x Coca Cola</div>
+                </div>
+                <div class="pedido-tiempo">Tiempo estimado: 15 min</div>
+                <div class="pedido-actions">
+                    <button class="btn-preparar">INICIAR PREPARACIÓN</button>
+                </div>
+            </div>
+            
+            <!-- Pedido #2 -->
+            <div class="pedido-card status-ready">
+                <img class="corner-icon" src="{% static 'hamburguesa.svg' %}" alt="Ícono decorativo">
+                <div class="pedido-header">
+                    <span class="pedido-title">Pedido #2</span>
+                    <span class="pedido-cliente">Juan Perez</span>
+                </div>
+                <div class="pedido-items">
+                    <div class="pedido-item">1x Internacional Clásica</div>
+                    <div class="pedido-item">1x Plaza Plaza</div>
+                </div>
+                <div class="pedido-tiempo">Tiempo estimado: 8 min (Listo)</div>
+                <div class="pedido-actions">
+                    <button class="btn-entregar">MARCAR COMO ENTREGADO</button>
+                </div>
+            </div>
+            
+            <!-- Pedido #3 -->
+            <div class="pedido-card">
+                <img class="corner-icon" src="{% static 'hamburguesa.svg' %}" alt="Ícono decorativo">
+                <div class="pedido-header">
+                    <span class="pedido-title">Pedido #3</span>
+                    <span class="pedido-cliente">María González</span>
+                </div>
+                <div class="pedido-items">
+                    <div class="pedido-item">2x Hamburguesa Clásica</div>
+                    <div class="pedido-item">1x Ensalada César</div>
+                    <div class="pedido-item">2x Agua Mineral</div>
+                </div>
+                <div class="pedido-tiempo">Tiempo estimado: 20 min</div>
+                <div class="pedido-actions">
+                    <button class="btn-preparar">INICIAR PREPARACIÓN</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Lógica para cambiar estados
+        document.querySelectorAll('.btn-preparar').forEach(button => {
+            button.addEventListener('click', function() {
+                const card = this.closest('.pedido-card');
+                const timeElement = card.querySelector('.pedido-tiempo');
+                const actionsDiv = card.querySelector('.pedido-actions');
+                
+                // Cambiar a estado "En preparación"
+                this.textContent = 'EN PREPARACIÓN';
+                this.style.backgroundColor = '#ff9800';
+                
+                // Actualizar tiempo estimado
+                const currentTime = parseInt(timeElement.textContent.match(/\d+/)[0]);
+                timeElement.textContent = `Tiempo estimado: ${Math.max(5, currentTime - 5)} min`;
+                
+                // Cambiar a estado "Listo" después de 3 segundos (simulación)
+                setTimeout(() => {
+                    this.textContent = 'MARCAR COMO LISTO';
+                    this.style.backgroundColor = '#4CAF50';
+                    card.classList.add('status-ready');
+                    
+                    // Reemplazar botón
+                    actionsDiv.innerHTML = '<button class="btn-entregar">MARCAR COMO ENTREGADO</button>';
+                    
+                    // Agregar evento al nuevo botón
+                    actionsDiv.querySelector('.btn-entregar').addEventListener('click', function() {
+                        card.style.transform = 'translateX(100%)';
+                        card.style.opacity = '0';
+                        setTimeout(() => card.remove(), 500);
+                    });
+                }, 3000);
+            });
+        });
+        
+        // Evento para botones de entregar
+        document.querySelectorAll('.btn-entregar').forEach(button => {
+            button.addEventListener('click', function() {
+                const card = this.closest('.pedido-card');
+                card.style.transform = 'translateX(100%)';
+                card.style.opacity = '0';
+                setTimeout(() => card.remove(), 500);
+            });
+        });
+    </script>
+{% endblock %}

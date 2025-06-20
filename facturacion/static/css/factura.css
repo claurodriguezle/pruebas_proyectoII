@@ -1,0 +1,165 @@
+/* Estilos Generales */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    line-height: 1.6;
+    background-color: #f9f9f9;
+    color: #333;
+    margin: 20px;
+    padding: 10px;
+    width: 800px;
+    margin: 20px auto;
+}
+
+.encabezado-factura {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid #000;
+    padding: 10px;
+    width: 800px;
+    margin: 20px auto;
+    background-color: #fff;
+}
+
+/* Columna Izquierda */
+.columna-izquierda {
+    width: 60%;
+    text-align: center;
+}
+
+.logo {
+    width: 80px; /* Ajusta el tamaño del logo */
+    margin-bottom: 10px;
+}
+
+.columna-izquierda p {
+    margin: 3px 0;
+    font-size: 14px;
+}
+
+/* Columna Derecha */
+.columna-derecha {
+    width: 40%;
+    text-align: left;
+}
+
+.columna-derecha p {
+    margin: 5px 0;
+    font-size: 14px;
+}
+
+.factura-electronica {
+    text-align: center;
+    font-size: 16px;
+    font-weight: bold;
+    margin-top: 10px;
+}
+
+.numero-factura {
+    text-align: center;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+/* Información del Cliente */
+/*.cliente-info {
+    background-color: #f5f5f5;
+    padding: 10px;
+    border: 1px solid #ddd;
+    margin-bottom: 20px;
+    border-radius: 5px;
+}
+
+.cliente-info p {
+    margin: 5px 0;
+}
+*/
+.datos-cliente {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start; /* Alinea al inicio (arriba) */
+    margin-bottom: 20px;
+}
+
+.grupo-izquierda {
+    width: 60%; /* Ocupa más espacio */
+    text-align: left;
+}
+
+.grupo-derecha {
+    width: 35%; /* Espacio menor */
+    text-align: right;
+    margin-top: 1.5em; /* Empuja hacia abajo para alinear con contenido */
+}
+
+/* Estilo opcional para mejor visualización */
+.datos-cliente p {
+    margin: 5px 0;
+    line-height: 1.4;
+}
+
+/* Tabla de Pedido */
+.pedido-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+}
+
+.pedido-table th, .pedido-table td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: right;
+}
+
+.pedido-table th {
+    background-color: #f5f5f5;
+    font-weight: bold;
+}
+
+.pedido-table td {
+    background-color: #fff;
+}
+
+.pedido-table td:first-child, 
+.pedido-table th:first-child {
+    text-align: left;
+}
+
+/* Totales */
+.totales {
+    text-align: right;
+    margin-top: 20px;
+}
+
+.totales p {
+    margin: 5px 0;
+}
+
+.totales span {
+    display: inline-block;
+    width: 200px;
+    text-align: left;
+}
+
+.total-final {
+    font-size: 1.2em;
+    font-weight: bold;
+}
+
+/* Condiciones del Servicio */
+.condiciones {
+    font-size: 0.9em;
+    margin-top: 20px;
+    text-align: justify;
+}
+
+.condiciones hr {
+    margin: 10px 0;
+}

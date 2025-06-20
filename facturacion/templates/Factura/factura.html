@@ -1,0 +1,89 @@
+{% extends "administrador/layout.html" %}
+{% load static %}
+{% block title %}Factura{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/factura.css' %}">
+{% endblock %}
+
+
+{% block body %}
+<!-- Encabezado -->
+    <div class="encabezado-factura">
+        <!-- Columna Izquierda -->
+        <div class="columna-izquierda">
+            <img src="{%static 'img/logo.jpg'%}" alt="Logo de la empresa" class="logo">
+            <p><strong>Brother´s Burger</strong></p>
+            <p><strong>Titular: Juan Perez Lopez</strong></p>
+            <p><strong>Tel.: 0971607003</strong></p>
+            <p>Coronel Oviedo - Paraguay</p>
+        </div>
+        <!-- Columna Derecha -->
+        <div class="columna-derecha">
+            <p><strong>RUC:</strong>{% if timbrado %}{{ timbrado.ruc }}{% else %}12345678-9{% endif %}</p>
+            <p><strong>Timbrado:</strong> {% if timbrado %}{{ timbrado.numero }}{% else %}15391119{% endif %}</p>
+            <p><strong>Fecha de Inicio de Vigencia:</strong>{% if timbrado %}{{ timbrado.fecha_inicio_vigencia|date:"d/m/Y" }}{% else %}20/12/2024{% endif %}</p>
+            <p><strong>Fecha de Fin de Vigencia:</strong>{% if timbrado %}{{ timbrado.fecha_fin_vigencia|date:"d/m/Y" }}{% else %}20/12/2025{% endif %}</p>
+            <p class="factura-electronica"><strong>FACTURA ELECTRÓNICA</strong></p>
+            <p class="numero-factura">{{factura.nro_fact}}</p>
+        </div>
+    </div>
+    <!-- Información del Cliente -->
+    <section class="datos-cliente">
+        <!-- Datos izquierda -->
+        <div class="grupo-izquierda">
+            <p><strong>Fecha de emisión:</strong> {{ factura.fecha_emision|date:"d/m/Y" }}</p>
+            <p><strong>RUC:</strong> {{ factura.ruc_cliente }}</p>
+            <p><strong>Cliente:</strong> {{ factura.nombre_cliente }}</p>
+            <p><strong>Dirección:</strong> {{ factura.direccion_cliente }}</p>
+        </div>
+        
+        <!-- Datos derecha -->
+        <div class="grupo-derecha">
+            <p><strong>Teléfono:</strong> {{ factura.telefono_cliente }}</p>
+            <p><strong>Cond. de Venta:</strong> Contado</p>
+        </div>
+    </section>
+
+    <!-- Tabla de productos -->
+     <section>
+        <table class="pedido-table">
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th>Cantidad</th>
+                    <th>Precio Unit.</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if factura and factura.detalles.all %}
+                    {% for item in factura.detalles.all %}
+                    <tr>
+                        <td>{{ item.producto.nombre }}</td>
+                        <td>{{ item.cantidad }}</td>
+                        <td>{{ item.precio_unitario|floatformat:0 }}</td>
+                        <td>{{ item.total|floatformat:0 }}</td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="4">No hay productos cargados.</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </section>
+
+    <section class="totales">
+        <p><span>Subtotal:</span> {% if factura %}{{ factura.subtotal|floatformat:0 }}{% else %}0{% endif %}</p>
+        <p><span>IVA (10%):</span> {% if factura %}{{ factura.iva_10|floatformat:0 }}{% else %}0{% endif %}</p>
+        <p class="total-final"><span>Total:</span> {% if factura %}{{ factura.monto_total|floatformat:0 }}{% else %}0{% endif %}</p>
+    </section>
+
+    <section class="condiciones">
+        <hr>
+        <p><strong>Condiciones: </strong>El pago debe realizarse al momento de la entrega. No se aceptan devoluciones una vez entregado el pedido.</p>
+        <p><strong>Esta factura es válida como comprobante legal. Gracias por su compra.</strong></p>
+    </section>
+{% endblock %}

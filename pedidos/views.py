@@ -281,3 +281,12 @@ def confirmar_pedido(request):
 
 def confirmacion_pedido(request):
     return render(request, 'pedidos/confirmacion_pedido.html')
+
+#Orden de pedidos
+#Empleado/Cajero
+def ordenes_view(request):
+    return render(request, 'orden_pedidos/orden.html')
+
+#Cocina
+def cocina_view(request):
+    return render(request,'orden_pedidos/cocina.html')

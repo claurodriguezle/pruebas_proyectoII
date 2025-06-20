@@ -1,14 +1,13 @@
-from django.shortcuts import redirect, get_object_or_404
+from django.shortcuts import redirect,render, get_object_or_404
 from django.views.generic import ListView, CreateView, UpdateView
 from django.urls import reverse_lazy
 from django.contrib import messages
-from .models import Timbrado
-from .forms import TimbradoForm
+from django.views.generic import DetailView
+from .models import Timbrado, Factura,DetalleFactura
+from .forms import TimbradoForm, FacturaForm
 
 # Create your views here.
 # facturacion/views.py
-
-
 class TimbradoListView(ListView):
     model = Timbrado
     template_name = 'timbrado/timbrado_list.html'
@@ -48,3 +47,15 @@ def timbrado_soft_delete(request, pk):
     timbrado.soft_delete()  # Usamos el método que creamos
     messages.success(request, "Timbrado marcado como eliminado (no se borró de la BD).")
     return redirect('facturacion:timbrado_list')
+
+#Vistas para Factura
+def factura_view(request):
+    # Buscar una factura activa, si existe
+    #factura = Factura.objects.get(pk=factura_id)
+    timbrado_activo = Timbrado.objects.filter(activo=True, eliminado=False).first()
+
+    context = {
+        'factura': None,
+        'timbrado': timbrado_activo
+    }
+    return render(request, 'factura/factura.html', context)
