@@ -1,0 +1,58 @@
+{% extends 'pedidos/menu_productos.html' %}
+{% load static %}
+
+{% block body %}
+<div class="container my-5">
+
+    {% if messages %}
+        <div class="container mt-3">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+            </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <h2 class="text-center mb-4">📦 Resumen de tu pedido</h2>
+
+    <!-- Información adicional del pedido -->
+    <div class="mb-4">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">📝 Detalles del pedido</h5>
+                <p><strong>Tipo de entrega:</strong>
+                    {% if tipo_entrega == 'RE' %}Retiro en local{% elif tipo_entrega == 'DE' %} Delivery{% endif %}
+                </p>
+                {% if tipo_entrega == 'RE' %}
+                    <p><strong>Hora estimado: </strong>{{ hora_estimada }}</p>
+                {% elif tipo_entrega == 'DE' %}
+                    <p><strong>Dirección de entrega:</strong>{{ direccion }}</p>
+                    <p><strong>Costo de envio:</strong>5.000gs</p> <!-- Futuramente dinamico -->
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de productos en el pedido -->
+    <div id="carrito">
+        <div class="table-responsive">
+            {% include 'pedidos/partials/lista_carrito.html' %}
+        </div>
+        <h4>PRUEBA</h4>
+        <pre>{{ carrito|safe }}</pre>
+        <!-- Total y botón de confirmar -->
+        <div class="d-flex justify-content-end mt-4">
+            <div class="text-end">
+                <h4><strong>Total a pagar: <span id="total-carrito">{{ total }} Gs</span></strong></h4>
+
+                <form action="{% url 'pedidos:confirmar_pedido' %}" method="post" class="mt-3">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-success btn-lg">✅ Confirmar pedido</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

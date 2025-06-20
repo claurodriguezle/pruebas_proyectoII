@@ -1,0 +1,45 @@
+{% extends 'pedidos/menu_productos.html' %}
+{% load static %}
+
+{% block body %}
+<div class="container mt-5">
+  <h2 class="mb-4" style="text-align: center;">¿Cómo querés recibir tu pedido?</h2>
+  <div class="row">
+    
+    <!-- Retiro en local -->
+    <div class="col-md-6 mb-4">
+      <div class="card h-100 shadow-sm">
+        <div class="card-body text-center">
+          <h4 class="card-title">Retiro en local</h4>
+          <p class="card-text">Pasás a buscar tu pedido en el local. Vas a poder elegir un horario estimado de retiro.</p>
+            <form method="post" action="{% url 'pedidos:retiro_local' %}" class="mt-3">
+              {% csrf_token %}
+              {{ form.tipo_entrega.as_hidden }}
+              <div class="mb-2">
+                <label for="{{ form.hora_retiro.id_for_label }}" class="form-label">Hora estimada:</label>
+                {{ form.hora_retiro }}
+                {% if form.hora_retiro.errors %}
+                  <div class="text-danger">{{ form.hora_retiro.errors.0 }}</div>
+                {% endif %}
+              </div>
+
+              <button type="submit" class="btn btn-primary mt-2">Elegir esta opción</button>
+            </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delivery -->
+    <div class="col-md-6 mb-4">
+      <div class="card h-100 shadow-sm">
+        <div class="card-body text-center">
+          <h4 class="card-title">Delivery</h4>
+          <p class="card-text">Recibí tu pedido en la comodidad de tu casa. Vas a poder elegir o agregar una dirección.</p>
+          <a href="" class="btn btn-success mt-3">Elegir esta opción</a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

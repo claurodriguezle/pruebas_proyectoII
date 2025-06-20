@@ -9,16 +9,22 @@ class Adicional(models.Model):
     
 
 class Pedido(models.Model):
-    # CLIENTE   PEDIENTE
+    TIPO_ENTREGA_CHOICES = [
+        ('RE', 'Retiro en local'),
+        ('DE', 'Delivery'),
+    ]
+
+    cliente = models.ForeignKey('administrador.Cliente', on_delete=models.CASCADE, related_name='pedidos')
     # CODIGO PEDIENTE PARA REVISION
     fecha = models.DateTimeField(auto_now_add=True)
     total = models.IntegerField()
     estado = models.CharField(max_length=20, default='Pediente') # PEDIENTE PARA REVISION
     direccion_entrega = models.CharField(max_length=255, blank=True, null=True) # PEDIENTE PARA REVISION
-    # TIPO - PENDIENTE PARA REVISION
+    tipo_entrega = models.CharField(max_length=2, choices=TIPO_ENTREGA_CHOICES, default='RE')
+    hora_retiro = models.TimeField(null=True, blank=True)
 
     def __str__(self):
-        return f"Pedido #{self.id} - {self.estado}"
+        return f"Pedido #{self.id} - {self.get_tipo_entrega_display()}"
 
 class DetallePedido(models.Model):
     pedido = models.ForeignKey(Pedido, on_delete=models.CASCADE, related_name='detalle')

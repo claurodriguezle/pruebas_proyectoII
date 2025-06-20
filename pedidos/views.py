@@ -1,6 +1,10 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from administrador.models import Producto, CategoriaProducto
-from .models import Adicional
+from administrador.models import Producto, CategoriaProducto, Cliente, IngredienteProducto
+from django.contrib.auth.decorators import login_required
+from .models import Adicional, Pedido, DetallePedido, DetalleAdicionalPedido, IngredienteEliminadoPedido
+from .forms import RetiroForm
+from django.db import transaction
+from django.contrib import messages
 
 def index(request):
     return render(request, 'pedidos/index.html')
@@ -150,3 +154,130 @@ def eliminar_item(request, item_index):
     }
     
     return render(request, 'pedidos/partials/contenido_carrito.html', context)
+
+@login_required
+def tipo_entrega(request):
+    form = RetiroForm()
+    return render(request, 'pedidos/tipo_entrega.html', {'form': form})
+
+@login_required
+def retiro_local(request):
+    if request.method == 'POST':
+        form = RetiroForm(request.POST)
+        if form.is_valid():
+            # Guardar los datos en la sesion
+            request.session['tipo_entrega'] = form.cleaned_data['tipo_entrega']
+            request.session['hora_retiro'] = form.cleaned_data['hora_retiro'].strftime('%H:%M')
+            request.session['direccion'] = 'N/A'
+
+            return redirect('pedidos:resumen_pedido')
+    else:
+        form = RetiroForm()
+    return render(request, 'pedidos/tipo_entrega.html', {'form': form})
+
+@login_required
+def resumen_pedido(request):
+    carrito = request.session.get('carrito', [])
+
+    if not carrito:
+        # Redirige si el carrito está vacío
+        return redirect('pedidos:menu_productos')
+
+    # Simulamos tipo de entrega (esto luego se recupera desde POST o session)
+    tipo_entrega = request.session.get('tipo_entrega')  # o 'delivery'
+    hora_estimada = request.session.get('hora_retiro')  # Simulado
+    direccion = request.session.get('direccion')  # Solo si es delivery
+
+    # Calcular total
+    total = sum(item['subtotal'] for item in carrito)
+
+    context = {
+        'carrito': carrito,
+        'total': total,
+        'tipo_entrega': tipo_entrega,
+        'hora_estimada': hora_estimada,
+        'direccion': direccion,
+    }
+
+    return render(request, 'pedidos/resumen_pedido.html', context)
+
+@login_required
+def confirmar_pedido(request):
+    carrito = request.session.get('carrito', [])
+    if not carrito:
+        messages.error(request, "Tu carrito está vacío")
+        return redirect('pedidos:menu_productos')
+
+    tipo_entrega = request.session.get('tipo_entrega')
+    hora_retiro_str = request.session.get('hora_retiro')
+    direccion = request.session.get('direccion', '')
+
+    try:
+        cliente = Cliente.objects.get(user=request.user)
+    except Cliente.DoesNotExist:
+        messages.error(request, "No se encontró un cliente asociado a tu usuario")
+        return redirect('pedidos:menu_productos')
+
+    from datetime import datetime
+    hora_retiro = None
+    if hora_retiro_str:
+        try:
+            hora_retiro = datetime.strptime(hora_retiro_str, '%H:%M').time()
+        except ValueError:
+            hora_retiro = None
+
+    total = sum(item['subtotal'] for item in carrito)
+
+    try:
+        with transaction.atomic():
+            pedido = Pedido.objects.create(
+                cliente=cliente,
+                total=total,
+                tipo_entrega=tipo_entrega,
+                hora_retiro=hora_retiro,
+                direccion_entrega=direccion if tipo_entrega == 'DE' else '',
+                estado='Pendiente',
+            )
+
+            for item in carrito:
+                producto = Producto.objects.get(pk=item['producto'])
+                detalle = DetallePedido.objects.create(
+                    pedido=pedido,
+                    producto=producto,
+                    cantidad=item['cantidad'],
+                    precio_unitario=item['precio'],
+                    nota=item.get('nota', '')
+                )
+
+                adicionales = item.get('adicionales', [])
+                for ad in adicionales:
+                    adicional_obj = Adicional.objects.get(pk=ad['id'])
+                    DetalleAdicionalPedido.objects.create(
+                        detalle_pedido=detalle,
+                        adicional=adicional_obj,
+                        cantidad=ad.get('cantidad', 1)
+                    )
+
+                ingredientes_eliminados = item.get('ingredientes_eliminados', [])
+                for ing_id in ingredientes_eliminados:
+                    ingrediente_obj = IngredienteProducto.objects.get(pk=ing_id)
+                    IngredienteEliminadoPedido.objects.create(
+                        detalle_pedido=detalle,
+                        ingrediente=ingrediente_obj
+                    )
+
+            # Si llega acá, todo fue bien, se hace commit automático
+    except Exception as e:
+        messages.error(request, f"Error al guardar el pedido: {e}")
+        return redirect('pedidos:resumen_pedido')
+
+    # Limpiar sesión solo si todo salió bien
+    for key in ['carrito', 'tipo_entrega', 'hora_retiro', 'direccion']:
+        if key in request.session:
+            del request.session[key]
+
+    messages.success(request, "Pedido confirmado y guardado con éxito.")
+    return redirect('pedidos:pedido_confirmado')
+
+def confirmacion_pedido(request):
+    return render(request, 'pedidos/confirmacion_pedido.html')

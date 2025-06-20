@@ -53,8 +53,9 @@ def iniciar_sesion(request):
         if user is not None:
             login(request, user)
             messages.success(request, 'Inicio de sesión exitoso.')
-            return redirect('pedidos:carrito')
+            return redirect('pedidos:tipo_entrega')
         else:
             messages.error(request, 'Usuario o contraseña incorrectos.')
     
     return render(request, 'usuarios/sesion.html')
+
