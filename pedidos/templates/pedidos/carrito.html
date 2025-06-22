@@ -1,9 +1,5 @@
 {% extends 'pedidos/menu_productos.html' %}
 {% load static %}
-
-{% block carrito %}
-{% endblock %}
-
 {% block body %}
     <div class="container my-5">
         <h2 class="text-center mb-4">🛒 Carrito de Compras</h2>
@@ -32,4 +28,19 @@
         {% endif %}
 
     </div>
+    <script>
+        function actualizarContador() {
+            console.log('actualizarContador ejecutado');
+            htmx.ajax('GET', "{% url 'pedidos:contador_carrito' %}", { target: '#carrito-contador'});
+
+        }
+
+        function cerrarModarlYActualizarContador(){
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalProducto'));
+            if (modal) {
+                modal.hide();
+            }
+            actualizarContador();
+        }
+    </script>
 {% endblock %}

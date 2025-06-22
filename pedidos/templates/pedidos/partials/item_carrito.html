@@ -35,7 +35,8 @@
             <form 
                 hx-post="{% url 'pedidos:decrementar_cantidad' item_index %}"
                 hx-target="#carrito"
-                hx-swap="outerHTML">
+                hx-swap="outerHTML"
+                hx-on::after-request="actualizarContador()">
                     {% csrf_token %}
                     <button class="btn btn-outline-secondary btn-sm">-</button>
             </form>
@@ -45,7 +46,8 @@
             <form 
                 hx-post="{% url 'pedidos:incrementar_cantidad' item_index %}"
                 hx-target="#carrito"
-                hx-swap="outerHTML">
+                hx-swap="outerHTML"
+                hx-on::after-request="actualizarContador()">
                     {% csrf_token %}
                     <button class="btn btn-outline-secondary btn-sm">+</button>
             </form>
@@ -62,7 +64,8 @@
         <form 
             hx-post="{% url 'pedidos:eliminar_item' item_index %}" 
             hx-target="#carrito" 
-            hx-swap="outerHTML">
+            hx-swap="outerHTML"
+            hx-on::after-request="actualizarContador()">
             {% csrf_token %}
             <button class="btn btn-danger btn-sm ms-3">X</button>
         </form>

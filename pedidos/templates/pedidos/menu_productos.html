@@ -8,7 +8,9 @@ Menu
 {% block carrito %}
   <button id="carrito-btn" class="btn btn-warning ms-3">
     <a href="{% url 'pedidos:carrito' %}" class="text-dark text-decoration-none">
-        <i class="bi bi-cart3"></i> (<span id="carrito-contador">0</span>)
+        <i class="bi bi-cart3"></i> (<span id="carrito-contador">
+          {% include 'pedidos/partials/contador_carrito.html' with cantidad=cantidad_carrito %}
+        </span>)
     </a>
 </button>
 {% endblock %}
@@ -54,7 +56,13 @@ Menu
     <div class="modal fade" id="personalizarModal" tabindex="-1" aria-labelledby="personalizarModalLabel" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-          <form action="{% url 'pedidos:agregar_al_carrito' %}" method="post">
+          <form
+              id="form-personalizado"
+              hx-post="{% url 'pedidos:agregar_al_carrito' %}"
+              hx-swap="none"
+              hx-trigger="submit"
+              hx-on::after-request="cerrarModarlYActualizarContador()"
+              >
             <input type="hidden" name="producto_id" id="input-producto-id">
             {% csrf_token %}
             <div class="modal-header">
@@ -104,6 +112,22 @@ Menu
       </div>
     </div>
   </section>
+
+  <script>
+        function actualizarContador() {
+            console.log('actualizarContador ejecutado');
+            htmx.ajax('GET', "{% url 'pedidos:contador_carrito' %}", { target: '#carrito-contador'});
+
+        }
+
+        function cerrarModarlYActualizarContador(){
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalProducto'));
+            if (modal) {
+                modal.hide();
+            }
+            actualizarContador();
+        }
+    </script>
 
   <!-- Carga el input con el producto_id seleccionado -->
   <script>

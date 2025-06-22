@@ -5,6 +5,8 @@ from .models import Adicional, Pedido, DetallePedido, DetalleAdicionalPedido, In
 from .forms import RetiroForm
 from django.db import transaction
 from django.contrib import messages
+from django.http import HttpResponse
+from django.template.loader import render_to_string
 
 def index(request):
     return render(request, 'pedidos/index.html')
@@ -12,9 +14,15 @@ def index(request):
 def menu_productos(request):
     categorias = CategoriaProducto.objects.all()
     adicionales = Adicional.objects.all()
+    carrito = request.session.get('carrito', [])
+    
+    # Total de item para el contador del carrito
+    cantidad_carrito = sum(item['cantidad'] for item in carrito)
+
     return render(request, 'pedidos/menu_productos.html', {
         'categorias': categorias,
         'adicionales': adicionales,
+        'cantidad_carrito': cantidad_carrito
         })
 
 def lista_productos(request):
@@ -24,6 +32,12 @@ def lista_productos(request):
     else:
         productos = Producto.objects.filter(estado='A')
     return render(request, 'pedidos/partials/productos_lista.html', {'productos': productos})
+
+def contador_carrito(request):
+    carrito = request.session.get('carrito', [])
+    total = sum(item['cantidad'] for item in carrito)
+    html = render_to_string('pedidos/partials/contador_carrito.html', {'cantidad': total})
+    return HttpResponse(html)
 
 def agregar_al_carrito(request):
     if request.method == 'POST':
@@ -77,8 +91,8 @@ def agregar_al_carrito(request):
 
         request.session['carrito'] = carrito
 
-        return redirect('pedidos:carrito') # ir a la vista de carrito
-    return redirect('pedidos:menu_productos')
+    request.session['carrito'] = carrito
+    return HttpResponse(status=204)
 
 def carrito(request):
     carrito = request.session.get('carrito', [])
@@ -91,9 +105,13 @@ def carrito(request):
     # Calculamos el total general
     total = sum(item['subtotal'] for item in carrito)
 
+    # Total de item para el contador del carrito
+    cantidad_carrito = sum(item['cantidad'] for item in carrito)
+
     return render(request, 'pedidos/carrito.html', {
             'carrito': carrito,
-            'total': total
+            'total': total,
+            'cantidad_carrito': cantidad_carrito
         })
     
 def _calcular_totales_y_actualizar_sesion(request, carrito):
@@ -130,11 +148,9 @@ def decrementar_cantidad(request, item_index):
     
     total = _calcular_totales_y_actualizar_sesion(request, carrito)
 
-
     context = {
         'carrito': carrito,
         'total': total,
-    
     }
 
     return render(request, 'pedidos/partials/contenido_carrito.html', context)

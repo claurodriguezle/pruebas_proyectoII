@@ -27,7 +27,12 @@
                             <i class="bi bi-cart-plus-fill"></i> Agregar
                     </button>
                 {% else %}
-                    <form action="{% url 'pedidos:agregar_al_carrito' %}" method="POST">
+                    <form
+                        hx-post="{% url 'pedidos:agregar_al_carrito' %}"
+                        hx-swap="none"
+                        hx-trigger="submit"
+                        hx-on::after-request="actualizarContador()"
+                        >
                         {% csrf_token %}
                         <input type="hidden" name="producto_id" value="{{ producto.id }}">
                         <button type="submit" class="btn btn-success" title="Agregar">
