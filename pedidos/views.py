@@ -129,6 +129,7 @@ def _calcular_totales_y_actualizar_sesion(request, carrito):
 
 def incrementar_cantidad(request, item_index):
     carrito = request.session.get('carrito', [])
+    
 
     if 0 <= item_index < len(carrito) and carrito[item_index]['cantidad'] < 10:
         carrito[item_index]['cantidad'] += 1
@@ -166,7 +167,7 @@ def eliminar_item(request, item_index):
     
     context = {
         'carrito': carrito,
-        'total': total
+        'total': total,
     }
     
     return render(request, 'pedidos/partials/contenido_carrito.html', context)

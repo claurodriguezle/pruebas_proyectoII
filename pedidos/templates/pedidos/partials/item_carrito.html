@@ -32,26 +32,28 @@
 
         <!-- Controles de cantidad -->
         <div class="input-group w-auto align-items-center">
-            <form 
+            <form
                 hx-post="{% url 'pedidos:decrementar_cantidad' item_index %}"
                 hx-target="#carrito"
                 hx-swap="outerHTML"
-                hx-on::after-request="actualizarContador()">
+                hx-trigger="submit"
+                class="actualiza-contador"
+                >
                     {% csrf_token %}
-                    <button class="btn btn-outline-secondary btn-sm">-</button>
+                    <button type="submit" class="btn btn-outline-secondary btn-sm">-</button>
             </form>
 
             <input type="text" class="form-control text-center" value="{{ item.cantidad }}" style="width: 50px;" readonly>
 
-            <form 
+            <form
                 hx-post="{% url 'pedidos:incrementar_cantidad' item_index %}"
                 hx-target="#carrito"
                 hx-swap="outerHTML"
-                hx-on::after-request="actualizarContador()">
+                hx-trigger="submit"
+                class="actualiza-contador">
                     {% csrf_token %}
-                    <button class="btn btn-outline-secondary btn-sm">+</button>
+                    <button type="submit" class="btn btn-outline-secondary btn-sm">+</button>
             </form>
-            
         </div>
 
         <!-- Subtotal -->
@@ -61,13 +63,14 @@
         </div>
 
         <!-- Botón eliminar -->
-        <form 
+        <form
             hx-post="{% url 'pedidos:eliminar_item' item_index %}" 
             hx-target="#carrito" 
             hx-swap="outerHTML"
-            hx-on::after-request="actualizarContador()">
+            hx-trigger="submit"
+            class="actualiza-contador">
             {% csrf_token %}
-            <button class="btn btn-danger btn-sm ms-3">X</button>
+            <button type="submit" class="btn btn-danger btn-sm ms-3">X</button>
         </form>
     </div>
 </div>

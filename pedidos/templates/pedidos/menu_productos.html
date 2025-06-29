@@ -5,16 +5,6 @@
 Menu
 {% endblock %}
 
-{% block carrito %}
-  <button id="carrito-btn" class="btn btn-warning ms-3">
-    <a href="{% url 'pedidos:carrito' %}" class="text-dark text-decoration-none">
-        <i class="bi bi-cart3"></i> (<span id="carrito-contador">
-          {% include 'pedidos/partials/contador_carrito.html' with cantidad=cantidad_carrito %}
-        </span>)
-    </a>
-</button>
-{% endblock %}
-
 {% block body %}
   <!-- Menú de categorías -->
   <div class="my-4 bg-dark p-2 rounded" style="width: 60%; margin: 0 auto;">
@@ -61,7 +51,8 @@ Menu
               hx-post="{% url 'pedidos:agregar_al_carrito' %}"
               hx-swap="none"
               hx-trigger="submit"
-              hx-on::after-request="cerrarModarlYActualizarContador()"
+              class="actualiza-contador">
+
               >
             <input type="hidden" name="producto_id" id="input-producto-id">
             {% csrf_token %}
@@ -113,23 +104,7 @@ Menu
     </div>
   </section>
 
-  <script>
-        function actualizarContador() {
-            console.log('actualizarContador ejecutado');
-            htmx.ajax('GET', "{% url 'pedidos:contador_carrito' %}", { target: '#carrito-contador'});
-
-        }
-
-        function cerrarModarlYActualizarContador(){
-            const modal = bootstrap.Modal.getInstance(document.getElementById('modalProducto'));
-            if (modal) {
-                modal.hide();
-            }
-            actualizarContador();
-        }
-    </script>
-
-  <!-- Carga el input con el producto_id seleccionado -->
+   <!-- Carga el input con el producto_id seleccionado -->
   <script>
     function cargarDatosProducto(boton) {
       const productoId = boton.getAttribute('data-producto-id');
@@ -143,4 +118,3 @@ Menu
     }
   </script>
 {% endblock %}
-
