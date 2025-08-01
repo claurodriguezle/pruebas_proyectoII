@@ -10,6 +10,7 @@ body {
   padding: 1rem;
   text-align: center;
 }
+
 .nav a {
   margin: 0 1rem;
   text-decoration: none;
@@ -23,7 +24,6 @@ body {
 nav a:hover {
   border-bottom: 2px solid #f8f9fa;
 }
-
 
 .contenedor {
   display: flex;
@@ -59,6 +59,7 @@ nav a:hover {
   padding: 1rem;
   margin-top: 2rem;
 }
+
 
 ul li button:hover {
   background-color: #f8f9fa !important;

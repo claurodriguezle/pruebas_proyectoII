@@ -52,6 +52,7 @@ li {
     background-color:#fff;
     transition: 0.15s ease-in-out;
 }
+
 .menu li a:hover:after {width: 100%;}
 .open-menu , .close-menu {
     position: absolute;

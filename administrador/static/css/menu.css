@@ -25,6 +25,23 @@ nav {
   padding: 20px;
   top: 0;
   left: 0;
+  /* Para el scroll */
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+
+  /* Firefox */
+  scrollbar-width: thin;
+  scrollbar-color: #A1A1A1 transparent;
+}
+
+nav::-webkit-scrollbar {
+  width: 6px;
+}
+
+nav::-webkit-scrollbar-thumb {
+  background-color: #A1A1A1;
+  border-radius: 4px;
 }
 
 ul{
@@ -51,8 +68,9 @@ ul{
   padding: 0.5rem 1rem;
 }
 
+
 .nav-link:hover {
-  border: 1px solid #0c0d0e !important;
+  border: 0px solid #0c0d0e !important;
   border-radius: 0.375rem !important;
   background-color: #dee2e6 !important;
   color: #000 !important;
