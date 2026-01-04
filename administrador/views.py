@@ -21,6 +21,8 @@ from django.db.models import Sum
 #from . import models {}
 from .forms import ItemForm
 
+from django.core.paginator import Paginator
+
 
 # PERSONAS
 def menu(request):

@@ -95,8 +95,8 @@
             <div class="topbar border border-secondary rounded p-3">
                 <span>Panel de Control</span>
                 <div>
-                    <span>Admin</span>
-                    <button type="button" class="btn btn-dark"><a href="{% url 'administrador:menu' %}" class="nav-link">Cerrar</a></button>
+                    <span class="mx-2">Admin</span>
+                    <a href="{% url 'administrador:menu' %}" class="btn btn-dark" role="button">Cerrar</a>
                 </div>
             </div>
             {% block body %}
