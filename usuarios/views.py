@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, HttpResponse
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
-from administrador.models import Cliente
+from administrador.models import Cliente, Empleado
 from usuarios.forms import RegistroClienteForm
 from django.contrib import messages
 from django.db import transaction
@@ -63,7 +63,24 @@ def iniciar_sesion(request):
 
 @login_required
 def perfil_user(request):
-    return render(request, 'usuarios/perfil.html')
+    usuario_logueado = request.user
+
+    # Busca si el usuario es un Cliente
+    try:
+        datos_completos = usuario_logueado.cliente
+        tipo = 'Cliente'
+    except Cliente.DoesNotExist:
+        # Si no es cliente, probamos si es Empleado
+        try:
+            datos_completos = usuario_logueado.empleado
+            tipo = 'Empleado'
+        except Empleado.DoesNotExist:
+            datos_completos = None
+            tipo = 'Usuario sin perfil asociado'
+    return render(request, 'usuarios/perfil.html', {
+        'perfil': datos_completos,
+        'tipo': tipo
+    })
 
 @login_required
 def exit(request):

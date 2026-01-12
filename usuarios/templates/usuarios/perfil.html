@@ -33,7 +33,8 @@
         <div class="container d-flex justify-content-center align-items-center" style="margin-top: 25px">
             <div class="card shadow p-4" style="max-width: 400px; width: 100%;">
                 
-                <h2 class="text-center mb-3">Perfil</h2>
+                <h2 class="text-center mb-3">¡Hola, {{ perfil.nombre }}!</h2>
+                <h3 class="text-center mb-3">Perfil</h3>
                 <div class="text-center">
                     <i class="bi bi-person-fill fs-2"></i>
                 </div>
@@ -41,11 +42,11 @@
 
                 <ul class="list-group list-group-flush mb-4">
                     <li class="list-group-item"><strong>Usuario: {{ user.username }}</strong></li>
-                    <li class="list-group-item"><strong>Nombre:{{ persona.nombre }}</strong></li>
-                    <li class="list-group-item"><strong>Apellido:</strong></li>
+                    <li class="list-group-item"><strong>Nombre: {{ perfil.nombre }}</strong></li>
+                    <li class="list-group-item"><strong>Apellido: {{ perfil.apellido}}</strong></li>
                     <li class="list-group-item"><strong>Correo: {{ user.email }}</strong></li>
-                    <li class="list-group-item"><strong>Dirección:</strong></li>
-                    <li class="list-group-item"><strong>Teléfono:</strong></li>
+                    <li class="list-group-item"><strong>Ciudad: {{perfil.ciudad}}</strong></li>
+                    <li class="list-group-item"><strong>Teléfono: {{perfil.telefono}}</strong></li>
                 </ul>
 
                 <form method="post" action="{% url 'usuarios:exit' %}">

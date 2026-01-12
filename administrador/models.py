@@ -30,7 +30,6 @@ class Cliente(Persona):
 
 class Empleado(Persona):
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
-    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
     sueldo = models.DecimalField(max_digits=12, decimal_places=2)
     fecha_contratacion = models.DateField()
     t_empleado = models.CharField(max_length=100)
