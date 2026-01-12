@@ -39,6 +39,22 @@
                         </span>)
                     </a>
                 </button>
+
+                <!-- Boton Usuario-->
+                {% if request.user.is_authenticated %}
+                    <button class="btn btn-light ms-3">
+                        <a href="{% url 'usuarios:perfil_user' %}" class="text-dark text-decoration-none">
+                            <i class="bi bi-person"></i><span> Perfil</span>
+                        </a>
+                    </button>
+                {% else %}
+                    <button class="btn btn-light ms-3">
+                        <a href="{% url 'usuarios:sesion' %}" class="text-dark text-decoration-none">
+                            <i class="bi bi-person"></i><span> Cuenta</span>
+                        </a>
+                    </button>
+                {% endif %}
+                
             </div>
         </header>
 

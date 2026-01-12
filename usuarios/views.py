@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, HttpResponse
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
 from administrador.models import Cliente
 from usuarios.forms import RegistroClienteForm
 from django.contrib import messages
@@ -53,9 +54,19 @@ def iniciar_sesion(request):
         if user is not None:
             login(request, user)
             messages.success(request, 'Inicio de sesión exitoso.')
-            return redirect('pedidos:tipo_entrega')
+            #return redirect('pedidos:tipo_entrega')
+            return redirect('pedidos:menu_productos')
         else:
             messages.error(request, 'Usuario o contraseña incorrectos.')
     
     return render(request, 'usuarios/sesion.html')
+
+@login_required
+def perfil_user(request):
+    return render(request, 'usuarios/perfil.html')
+
+@login_required
+def exit(request):
+    logout(request)
+    return redirect('pedidos:menu_productos')
 
