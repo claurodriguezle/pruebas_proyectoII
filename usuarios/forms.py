@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib.auth.models import User
-from administrador.models import Cliente
+from administrador.models import Persona, Direccion
+
 
 class RegistroClienteForm(forms.ModelForm):
     username = forms.CharField(
@@ -26,7 +27,7 @@ class RegistroClienteForm(forms.ModelForm):
     )
 
     class Meta:
-        model = Cliente
+        model = Persona
         fields = [
             'nombre', 'apellido', 'telefono', 'fecha_nacimiento',
             'cedula', 'ciudad', 'barrio', 'nacionalidad',
@@ -39,8 +40,8 @@ class RegistroClienteForm(forms.ModelForm):
                 'class': 'form-control', 'type': 'date'
             }),
             'cedula': forms.TextInput(attrs={'class': 'form-control'}),
-            'ciudad': forms.TextInput(attrs={'class': 'form-control'}),
-            'barrio': forms.TextInput(attrs={'class': 'form-control'}),
+            'ciudad': forms.Select(attrs={'class': 'form-select'}),
+            'barrio': forms.Select(attrs={'class': 'form-select'}),
             'nacionalidad': forms.TextInput(attrs={'class': 'form-control'}),
         }
 
@@ -63,3 +64,26 @@ class RegistroClienteForm(forms.ModelForm):
         if User.objects.filter(email=email).exists():
             raise forms.ValidationError("Ya existe un usuario con este correo electrónico.")
         return email
+
+class DireccionForm(forms.ModelForm):
+    class Meta:
+        model = Direccion
+        fields = [
+            "nombre", "direccion_text", "latitud", "longitud", "es_principal"]
+        
+        widgets = {
+            "latitud": forms.HiddenInput(),
+            "longitud": forms.HiddenInput()
+        }
+    def clean_latitud(self):
+        lat = self.cleaned_data.get("latitud")
+        if lat is not None:
+            return round(lat, 7)
+        return lat
+
+    def clean_longitud(self):
+        lat = self.cleaned_data.get("longitud")
+        if lat is not None:
+            return round(lat, 7)
+        return lat
+

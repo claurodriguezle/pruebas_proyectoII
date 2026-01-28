@@ -2,8 +2,8 @@ from django.shortcuts import render, redirect, HttpResponse
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
-from administrador.models import Cliente, Empleado
-from usuarios.forms import RegistroClienteForm
+from administrador.models import Cliente, Empleado, Direccion
+from usuarios.forms import RegistroClienteForm, DireccionForm
 from django.contrib import messages
 from django.db import transaction
 
@@ -27,11 +27,14 @@ def registro_cliente(request):
                         password=form.cleaned_data['password1']
                     )
 
-                    # Crear el cliente
-                    cliente = form.save(commit=False)
-                    cliente.user = user
-                    cliente.ruc = form.cleaned_data.get('ruc')
-                    cliente.save()
+                    # Crear persona
+                    persona = form.save()
+
+                    # Crear el cliente asociado a la persona
+                    Cliente.objects.create(
+                        persona=persona,
+                        user=user
+                    )
                     
                     messages.success(request, 'Registro exitoso. Ya puedes iniciar sesión.')
                     return redirect('usuarios:sesion')
@@ -83,7 +86,49 @@ def perfil_user(request):
     })
 
 @login_required
+def agregar_direccion(request):
+    cliente = request.user.cliente
+
+    if request.method == "POST":
+        form = DireccionForm(request.POST)
+        if form.is_valid():
+            direccion = form.save(commit=False)
+            direccion.cliente = cliente
+
+            # Valida la direccion
+            if not direccion.latitud or not direccion.longitud:
+                messages.error(
+                    request,
+                    "Debes usar el botón de ubicación antes de guardar la dirección."
+                )
+                return render(
+                    request,
+                    "direcciones/agregar.html",
+                    {"form": form}
+                )
+
+            if direccion.es_principal:
+                Direccion.objects.filter(cliente=cliente).update(es_principal=False)
+            
+            direccion.save()
+            return redirect("usuarios:listar_direc")
+    
+    else:
+        form = DireccionForm()
+    
+    return render(request, "direcciones/agregar.html", {"form": form})
+
+@login_required
+def listar_direcciones(request):
+    cliente = request.user.cliente
+    direcciones = cliente.direcciones.all()
+
+    return render(request, "direcciones/listar_direc.html", {
+        "cliente": cliente,
+        "direcciones": direcciones
+    })
+
+@login_required
 def exit(request):
     logout(request)
     return redirect('pedidos:menu_productos')
-

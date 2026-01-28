@@ -1,7 +1,7 @@
 from xml.dom import ValidationErr
 from django import forms
 from django.utils import timezone
-from .models import Persona, Cliente, Empleado, Proveedor, Producto, CategoriaProducto, IngredienteProducto # noqa: F401
+from .models import Persona, Cliente, Empleado, Proveedor, Producto, CategoriaProducto, IngredienteProducto, Salario, TipoEmpleado # noqa: F401
 from .models import Compra, DetalleCompra, Item
 
 class PersonaForm(forms.ModelForm):
@@ -20,7 +20,7 @@ class PersonaForm(forms.ModelForm):
     class Meta:
         model = Persona
         fields = [
-            'nombre', 'apellido', 'telefono', 'fecha_nacimiento', 'cedula', 'ciudad', 'barrio', 'nacionalidad'
+            'nombre', 'apellido', 'telefono', 'fecha_nacimiento', 'cedula', 'ruc', 'correo', 'ciudad', 'barrio', 'nacionalidad'
         ]
 
         widgets = {
@@ -29,74 +29,59 @@ class PersonaForm(forms.ModelForm):
             'telefono': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '0987654321'}),
             'fecha_nacimiento': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'cedula': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '123456789'}),
-            'ciudad': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Coronel Oviedo'}),
-            'barrio': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Barrio Centro'}),
+            'ruc': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '123456789-0'}),
+            'correo' : forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'example@example.com'}),
+            'ciudad': forms.Select(attrs={'class': 'form-select'}),
+            'barrio': forms.Select(attrs={'class': 'form-select'}),
             'nacionalidad': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Paraguaya'}),
         }
 
     # Campos de Roles especificos
-    ruc = forms.CharField(
+
+    salario = forms.ModelChoiceField(
+        queryset=Salario.objects.all(),
         required=False,
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': '1234567-8'}),
-        label="RUC"
-    )
-    sueldo = forms.DecimalField(
-        required=False,
-        widget=forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '3000000'}),
-        label="Sueldo"
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label="Salario"
     )
     fecha_contratacion = forms.DateField(
         required=False,
         widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
         label="Fecha de Contratación"
     )
-    t_empleado = forms.CharField(
-    required=False,
-    widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Tipo de Empleado'}),
-    label="Tipo de Empleado"
+    t_empleado = forms.ModelChoiceField(
+        queryset = TipoEmpleado.objects.all(),
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select'}), 
+        label="Tipo Empleado"
     )
     nombre_empresa = forms.CharField(
         required=False,
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Mi Empresa S.A.'}),
         label="Empresa"
     )
+    # Codigo para manejar los campos dinamicos
 
-# Codigo para manejar los campos dinamicos
+    def clean(self):
+        cleaned_data = super().clean()
+        tipo_persona = cleaned_data.get('tipo_persona')
 
-def clean(self):
-    cleaned_data = super().clean()
-    tipo_persona = cleaned_data.get('tipo_persona')
-    ruc = cleaned_data.get('ruc', '').strip()
+        # Limpiar campos no relevantes
+        if tipo_persona == 'cliente':
+            cleaned_data['salario'] = None
+            cleaned_data['fecha_contratacion'] = None
+            cleaned_data['t_empleado'] = None
+            cleaned_data['nombre_empresa'] = None
 
-    # Limpiar campos no relevantes
-    if tipo_persona == 'cliente':
-        cleaned_data['sueldo'] = None
-        cleaned_data['fecha_contratacion'] = None
-        cleaned_data['t_empleado'] = None
-        cleaned_data['nombre_empresa'] = None
-        
-        # Guardar como NULL si ruc está vacío
-        if not ruc:
-            cleaned_data['ruc'] = None
-        else:
-            # Validar unicidad manual del RUC entre clientes
-            from .models import Cliente  # evitar import circular
-            qs = Cliente.objects.filter(ruc=ruc)
-            if self.instance.pk:
-                qs = qs.exclude(pk=self.instance.pk)
-            if qs.exists():
-                self.add_error('ruc', 'Ya existe un cliente con este RUC.')
+        elif tipo_persona == 'empleado':
+            cleaned_data['nombre_empresa'] = None
 
-    elif tipo_persona == 'empleado':
-        cleaned_data['ruc'] = None
-        cleaned_data['nombre_empresa'] = None
+        elif tipo_persona == 'proveedor':
+            cleaned_data['salario'] = None
+            cleaned_data['fecha_contratacion'] = None
+            cleaned_data['t_empleado'] = None
 
-    elif tipo_persona == 'proveedor':
-        cleaned_data['sueldo'] = None
-        cleaned_data['fecha_contratacion'] = None
-        cleaned_data['t_empleado'] = None
-
-    return cleaned_data
+        return cleaned_data
 
 # PRODUCTOS
 class ProductoForm(forms.ModelForm):

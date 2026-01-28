@@ -37,16 +37,16 @@ def listar_personas(request):
 
     # FILTRO POR GRUPO
     if grupo == 'Clientes':
-        personas = Cliente.objects.annotate(tipo=Value("Cliente", output_field=CharField()))
+        personas = Cliente.objects.annotate(tipo_persona=Value("Cliente", output_field=CharField()))
     elif grupo == 'Empleados':
-        personas = Empleado.objects.annotate(tipo=Value("Empleado", output_field=CharField()))
+        personas = Empleado.objects.annotate(tipo_persona=Value("Empleado", output_field=CharField()))
     elif grupo == 'Proveedores':
-        personas = Proveedor.objects.annotate(tipo=Value("Proveedor", output_field=CharField()))
+        personas = Proveedor.objects.annotate(tipo_persona=Value("Proveedor", output_field=CharField()))
     else:
         # Si no se seleccionó ningún grupo, traemos todos
-        personas = list(Cliente.objects.annotate(tipo=Value("Cliente", output_field=CharField())))
-        personas += list(Empleado.objects.annotate(tipo=Value("Empleado", output_field=CharField())))
-        personas += list(Proveedor.objects.annotate(tipo=Value("Proveedor", output_field=CharField())))
+        personas = list(Cliente.objects.annotate(tipo_persona=Value("Cliente", output_field=CharField())))
+        personas += list(Empleado.objects.annotate(tipo_persona=Value("Empleado", output_field=CharField())))
+        personas += list(Proveedor.objects.annotate(tipo_persona=Value("Proveedor", output_field=CharField())))
 
     # FILTRO POR BÚSQUEDA
     if search:
@@ -65,41 +65,30 @@ def listar_personas(request):
 
 def crear_persona(request):
     if request.method == 'POST':
-        print(request.POST)
+        # print(request.POST)
         form = PersonaForm(request.POST)
         if form.is_valid():
             tipo_persona = form.cleaned_data['tipo_persona']
-            persona_data = {
-                'nombre': form.cleaned_data['nombre'],
-                'apellido': form.cleaned_data['apellido'],
-                'telefono': form.cleaned_data['telefono'],
-                'fecha_nacimiento': form.cleaned_data['fecha_nacimiento'],
-                'cedula': form.cleaned_data['cedula'],
-                'ciudad': form.cleaned_data['ciudad'],
-                'barrio': form.cleaned_data['barrio'],
-                'nacionalidad': form.cleaned_data['nacionalidad'],
-            }
+            
+            # Crea persona
+            persona = form.save()
 
             try:
                 if tipo_persona == 'cliente':
-                    # cleaned_data['ruc'] ya será None si está vacío (gracias al form.clean())
-                    cliente= Cliente(**persona_data, ruc=form.cleaned_data['ruc'])
-                    cliente.full_clean()
-                    cliente.save()
+                    Cliente.objects.create(persona=persona)
 
                 elif tipo_persona == 'empleado':
                     Empleado.objects.create(
-                        **persona_data,
-                        sueldo=form.cleaned_data['sueldo'],         # No será None (campo requerido para empleado)
-                        fecha_contratacion=form.cleaned_data['fecha_contratacion'],
-                        t_empleado=form.cleaned_data['t_empleado']
+                        persona=persona,
+                        salario=form.cleaned_data.get('salario'),
+                        fecha_contratacion=form.cleaned_data.get('fecha_contratacion'),
+                        tipo=form.cleaned_data.get('t_empleado'),
                     )
 
                 elif tipo_persona == 'proveedor':
                     Proveedor.objects.create(
-                        **persona_data,
-                        nombre_empresa=form.cleaned_data['nombre_empresa'],
-                        ruc=form.cleaned_data['ruc']                # None o valor valido
+                        persona=persona,
+                        nombre_empresa=form.cleaned_data.get('nombre_empresa')              
                     )
 
                 return redirect('administrador:listar_personas')
@@ -123,12 +112,15 @@ def editar_persona(request, id):
     if hasattr(persona, 'cliente'):
         tipo_persona = 'cliente'
         instancia_especifica = persona.cliente
+        rol_instance = persona.cliente
     elif hasattr(persona, 'empleado'):
         tipo_persona = 'empleado'
         instancia_especifica = persona.empleado
+        rol_instance = persona.empleado
     elif hasattr(persona, 'proveedor'):
         tipo_persona = 'proveedor'
         instancia_especifica = persona.proveedor
+        rol_instance = persona.proveedor
     else:
         raise Http404("Tipo de persona no válido")
 
@@ -138,75 +130,18 @@ def editar_persona(request, id):
         if form.is_valid():
             try:
                 with transaction.atomic():
-                    # Actualización directa vía SQL (bypass ORM)
-                    with connection.cursor() as cursor:
-                        cursor.execute(
-                            """
-                            UPDATE administrador_persona SET
-                                nombre = %s,
-                                apellido = %s,
-                                telefono = %s,
-                                fecha_nacimiento = %s,
-                                cedula = %s,
-                                ciudad = %s,
-                                barrio = %s,
-                                nacionalidad = %s
-                            WHERE id = %s
-                            """,
-                            [
-                                form.cleaned_data['nombre'],
-                                form.cleaned_data['apellido'],
-                                form.cleaned_data['telefono'],
-                                form.cleaned_data['fecha_nacimiento'],
-                                form.cleaned_data['cedula'],
-                                form.cleaned_data['ciudad'],
-                                form.cleaned_data['barrio'],
-                                form.cleaned_data['nacionalidad'],
-                                id
-                            ]
-                        )
+                    persona = form.save()
                         
-                        # Actualización modelo hijo
-                        if tipo_persona == 'cliente':
-                            cursor.execute(
-                                "UPDATE administrador_cliente SET ruc = %s WHERE persona_ptr_id = %s",
-                                [form.cleaned_data.get('ruc'), id]
-                            )
-                        elif tipo_persona == 'empleado':
-                            cursor.execute(
-                                """UPDATE administrador_empleado SET
-                                    sueldo = %s,
-                                    fecha_contratacion = %s,
-                                    t_empleado = %s
-                                WHERE persona_ptr_id = %s""",
-                                [
-                                    form.cleaned_data['sueldo'],
-                                    form.cleaned_data['fecha_contratacion'],
-                                    form.cleaned_data['t_empleado'],
-                                    id
-                                ]
-                            )
-                        elif tipo_persona == 'proveedor':
-                            cursor.execute(
-                                """UPDATE administrador_proveedor SET
-                                    nombre_empresa = %s,
-                                    ruc = %s
-                                WHERE persona_ptr_id = %s""",
-                                [
-                                    form.cleaned_data['nombre_empresa'],
-                                    form.cleaned_data.get('ruc'),
-                                    id
-                                ]
-                            )
+                    # Actualización de los modelo
+                    if tipo_persona == 'empleado':
+                        instancia_especifica.salario = form.cleaned_data.get('salario')
+                        instancia_especifica.fecha_contratacion = form.cleaned_data.get('fecha_contratacion')
+                        instancia_especifica.tipo = form.cleaned_data.get('t_empleado')
+                        instancia_especifica.save()
 
-                    # Forzar recarga de instancias
-                    persona.refresh_from_db()
-                    if hasattr(persona, 'cliente'):
-                        persona.cliente.refresh_from_db()
-                    elif hasattr(persona, 'empleado'):
-                        persona.empleado.refresh_from_db()
-                    elif hasattr(persona, 'proveedor'):
-                        persona.proveedor.refresh_from_db()
+                    elif tipo_persona == 'proveedor':
+                        instancia_especifica.nombre_empresa = form.cleaned_data.get('nombre_empresa')
+                        instancia_especifica.save()
 
                 return redirect('administrador:listar_personas')
                 
@@ -214,24 +149,14 @@ def editar_persona(request, id):
                 print(f"ERROR EN TRANSACCIÓN: {str(e)}")
                 form.add_error(None, f"Error crítico al actualizar: {str(e)}")
     else:
-        # CÓDIGO INICIAL DEL FORM (ELSE)
-        initial_data = {
-            'tipo_persona': tipo_persona,
-            'nombre': persona.nombre,
-            'apellido': persona.apellido,
-            'telefono': persona.telefono,
-            'fecha_nacimiento': persona.fecha_nacimiento,
-            'cedula': persona.cedula,
-            'ciudad': persona.ciudad,
-            'barrio': persona.barrio,
-            'nacionalidad': persona.nacionalidad,
-            'ruc': getattr(instancia_especifica, 'ruc', None),
-            'sueldo': getattr(instancia_especifica, 'sueldo', ''),
-            'fecha_contratacion': getattr(instancia_especifica, 'fecha_contratacion', ''),
-            't_empleado': getattr(instancia_especifica, 't_empleado', ''),
-            'nombre_empresa': getattr(instancia_especifica, 'nombre_empresa', ''),
-        }
-        form = PersonaForm(initial=initial_data)
+        form = PersonaForm(instance=persona)
+        # Rellenar los campos del rol de forma simple
+        if tipo_persona == 'empleado':
+            form.initial['salario'] = rol_instance.salario
+            form.initial['fecha_contratacion'] = rol_instance.fecha_contratacion
+            form.initial['t_empleado'] = rol_instance.tipo
+        elif tipo_persona == 'proveedor':
+            form.initial['nombre_empresa'] = rol_instance.nombre_empresa
 
     return render(request, 'administrador/registro.html', {
         'form': form,

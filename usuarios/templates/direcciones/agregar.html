@@ -1,0 +1,126 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Perfil</title>
+
+        <!-- Fuente-->
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
+
+        <!-- Iconos -->
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+
+        <!-- Estilos de Bootstrap-->
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet" />
+        <!-- Estilos -->
+        <link rel="stylesheet" href="{% static 'css/menu_productos.css' %}">
+
+    </head>
+    <body class="bg-light">
+        <header class="header bg-dark text-white py-3 mb-5">
+            <div class="container text-center">
+                <h1 class="mb-2">BROTHER'S BURGER</h1>
+                <nav class="nav justify-content-center">
+                    <a class="nav-link text-white" href="{% url 'pedidos:index' %}">Inicio</a>
+                    <a class="nav-link text-white" href="{% url 'pedidos:menu_productos' %}">Productos</a>
+                    <a class="nav-link text-white" href="contacto.html">Contacto</a>
+                </nav>
+            </div>
+        </header>
+
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-12 col-md-8 col-lg-6">
+
+                    {% if form.errors %}
+                        <div class="alert alert-danger shadow-sm">
+                            {{ form.errors }}
+                        </div>
+                    {% endif %}
+
+                    <div class="card shadow-sm border-0">
+                        <div class="card-body p-4">
+
+                            <h4 class="text-center mb-4">
+                                <i class="bi bi-geo-alt-fill me-2"></i>Nueva dirección
+                            </h4>
+
+                            <form method="post">
+                                {% csrf_token %}
+
+                                <div class="mb-3">
+                                    {{ form.nombre.label_tag }}
+                                    {{ form.nombre }}
+                                </div>
+
+                                <div class="mb-3">
+                                    {{ form.direccion_text.label_tag }}
+                                    {{ form.direccion_text }}
+                                </div>
+
+                                <div>
+                                    {{ form.latitud }}
+                                    {{ form.longitud }}
+                                </div>
+
+                                <div class="d-grid mt-2">
+                                    <button
+                                        type="button"
+                                        class="btn btn-outline-secondary"
+                                        onclick="obtenerUbicacion()">
+                                        📍 Usar mi ubicación actual
+                                    </button>
+                                </div>
+
+                                <div class="form-check mt-3">
+                                    {{ form.es_principal }}
+                                    {{ form.es_principal.label_tag }}
+                                </div>
+
+                                <div class="d-grid mt-4">
+                                    <button class="btn btn-primary">
+                                        Guardar dirección
+                                    </button>
+                                </div>
+                            </form>
+
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Bootstrap JS -->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+        <!-- HTMX -->
+        <script src="https://unpkg.com/htmx.org"></script>
+
+    </body>
+
+    <script>
+        function obtenerUbicacion() {
+            if(!navigator.geolocation){
+                alert("Tu navegador no soporta geolocalización")
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    const lat = position.coords.latitude.toFixed(7);
+                    const lng = position.coords.longitude.toFixed(7);
+
+                    document.getElementById("id_latitud").value = lat;
+                    document.getElementById("id_longitud").value = lng;
+                    alert("Ubicación obtenida correctamente✅")
+                }, 
+                function(){
+                    alert("No se pudo obtener la ubicación❌")
+                }
+            );
+        }
+    </script>
+</html>

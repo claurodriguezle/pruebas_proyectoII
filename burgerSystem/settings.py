@@ -86,7 +86,7 @@ WSGI_APPLICATION = 'burgerSystem.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME':'bdburgerapp',
+        'NAME':'db_burgerapp',
         'USER':'ruizj',
         'PASSWORD':'admin',
         'HOST':'localhost',
@@ -125,6 +125,9 @@ USE_I18N = True
 
 USE_TZ = True
 
+SESSION_COOKIE_AGE = 600
+LOGIN_URL = 'usuarios:sesion'
+SESSION_SAVE_EVERY_REQUEST = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/

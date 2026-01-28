@@ -1,0 +1,79 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Perfil</title>
+
+    <!-- Fuente -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Iconos -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+    <!-- Estilos propios -->
+    <link rel="stylesheet" href="{% static 'css/menu_productos.css' %}">
+</head>
+
+<body class="bg-light" style="font-family: 'Poppins', sans-serif;">
+
+<header class="header bg-dark text-white py-3 mb-5">
+    <div class="container text-center">
+        <h1 class="mb-2">BROTHER'S BURGER</h1>
+        <nav class="nav justify-content-center">
+            <a class="nav-link text-white" href="{% url 'pedidos:index' %}">Inicio</a>
+            <a class="nav-link text-white" href="{% url 'pedidos:menu_productos' %}">Productos</a>
+            <a class="nav-link text-white" href="#">Contacto</a>
+        </nav>
+    </div>
+</header>
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-8 col-lg-6">
+
+            <h4 class="text-center mb-4">
+                <i class="bi bi-geo-alt-fill me-2"></i>Mis direcciones
+            </h4>
+
+            {% for d in direcciones %}
+                <div class="card mb-3 shadow-sm border-0">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <strong>{{ d.nombre }}</strong>
+                            {% if d.es_principal %}
+                                <span class="badge bg-success">Principal</span>
+                            {% endif %}
+                        </div>
+                        <p class="mb-0 text-muted">{{ d.direccion_text }}</p>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="alert alert-warning text-center">
+                    No tenés direcciones guardadas
+                </div>
+            {% endfor %}
+
+            <div class="d-grid mt-4">
+                <a class="btn btn-primary" href="{% url 'usuarios:crear_direccion' %}">
+                    <i class="bi bi-plus-circle me-2"></i>Agregar dirección
+                </a>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<!-- HTMX -->
+<script src="https://unpkg.com/htmx.org"></script>
+
+</body>
+</html>

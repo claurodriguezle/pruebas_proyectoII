@@ -1,14 +1,14 @@
-{% for persona in personas %}
+{% for dato in personas %}
     <tr>
         <td>{{ forloop.counter }}</td>
-        <td>{{ persona.cedula }}</td>
-        <td>{{ persona.nombre }}</td>
-        <td>{{ persona.apellido }}</td>
-        <td>{{ persona.tipo }}</td>
-        <td>{{ persona.telefono }}</td>
+        <td>{{ dato.persona.cedula }}</td>
+        <td>{{ dato.persona.nombre }}</td>
+        <td>{{ dato.persona.apellido }}</td>
+        <td>{{ dato.tipo_persona }}</td>
+        <td>{{ dato.persona.telefono }}</td>
         <td>
-            <a href="{% url 'administrador:editar_persona' persona.id %}" class="btn btn-sm btn-outline-primary me-2">Editar</a>
-            <a href="{% url 'administrador:eliminar_persona' persona.id %}" class="btn btn-sm btn-outline-danger me-2">Eliminar</a>
+            <a href="{% url 'administrador:editar_persona' dato.persona.id %}" class="btn btn-sm btn-outline-primary me-2">Editar</a>
+            <a href="{% url 'administrador:eliminar_persona' dato.persona.id %}" class="btn btn-sm btn-outline-danger me-2">Eliminar</a>
         </td>
     </tr>
 {% endfor %}

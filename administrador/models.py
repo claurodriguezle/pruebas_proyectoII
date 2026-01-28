@@ -9,44 +9,106 @@ class Persona(models.Model):
     telefono = models.CharField(max_length=15)
     fecha_nacimiento = models.DateField()
     cedula = models.CharField(max_length=15, unique=True)
-    ciudad = models.CharField(max_length=100)
-    barrio = models.CharField(max_length=100)
+    ruc = models.CharField(max_length=20, blank=True, null=True, unique=True)
+    correo = models.EmailField(blank=True)
     nacionalidad = models.CharField(max_length=100)
+    estado = models.BooleanField(default=True)
+    ciudad = models.ForeignKey("Ciudad", on_delete=models.CASCADE)
+    barrio = models.ForeignKey("Barrio", on_delete=models.CASCADE)
 
     def __str__(self):
         return f"{self.nombre} {self.apellido}"
 
-class Cliente(Persona):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
-    ruc = models.CharField(
-    max_length=20,
-    blank=True,
-    null=True,
-    default=None
+class Ciudad(models.Model):
+    nombre = models.CharField(max_length=50)
+
+    def __str__(self):
+        return self.nombre
+
+class Barrio(models.Model):
+    nombre = models.CharField(max_length=100)
+    ciudad = models.ForeignKey(
+        Ciudad,
+        on_delete=models.CASCADE
     )
 
     def __str__(self):
-        return f"Cliente: {self.nombre} {self.apellido}"
+        return f"{self.nombre} - {self.ciudad.nombre}"
+    
+class Cliente(models.Model):
+    persona = models.OneToOneField(Persona, on_delete=models.CASCADE) 
+    user = models.OneToOneField(
+        User, 
+        on_delete=models.CASCADE, 
+        null=True, 
+        blank=True
+    )
+    
+    def __str__(self):
+        return f"Cliente: {self.persona.nombre} {self.persona.apellido}"
 
-class Empleado(Persona):
+class Direccion(models.Model):
+    cliente = models.ForeignKey(
+        Cliente,
+        on_delete=models.CASCADE,
+        related_name="direcciones"
+    )
+
+    nombre = models.CharField(max_length=100) # Casa, trabajo...
+    direccion_text = models.CharField(max_length=150) # Calle, referencia...
+
+    latitud = models.DecimalField(
+        max_digits=15,
+        decimal_places=7,
+        null=True,
+        blank=True
+    )
+
+    longitud = models.DecimalField(
+        max_digits=15,
+        decimal_places=7,
+        null=True,
+        blank=True
+    )
+
+    es_principal = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.nombre} - {self.cliente}"
+
+class Empleado(models.Model):
+    persona = models.OneToOneField(Persona, on_delete=models.CASCADE)
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
-    sueldo = models.DecimalField(max_digits=12, decimal_places=2)
     fecha_contratacion = models.DateField()
-    t_empleado = models.CharField(max_length=100)
+    salario = models.ForeignKey(
+        "Salario", 
+        on_delete=models.CASCADE,
+        null=True, blank=True)
+    
+    tipo = models.ForeignKey(
+        "TipoEmpleado", 
+        on_delete=models.CASCADE,
+        null=True, blank=True)
 
     def __str__(self):
-        return f"Empleado:{self.nombre} {self.apellido} "
+        return f"Empleado:{self.persona.nombre} {self.persona.apellido} "
 
-class Proveedor(Persona):
+class Salario(models.Model):
+    monto = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def __str__(self):
+        return str(self.monto)
+
+class TipoEmpleado(models.Model):
+    nombre_tipo = models.CharField(max_length=50)
+
+    def __str__(self):
+        return self.nombre_tipo
+
+class Proveedor(models.Model):
+    persona = models.OneToOneField(Persona, on_delete=models.CASCADE)
     nombre_empresa = models.CharField(max_length=150)
-    ruc = models.CharField(
-    max_length=20, 
-    unique=True,
-    blank=True,
-    null=True,
-    default=None
-    )
-
+    
     def __str__(self):
         return f"Proveedor: {self.nombre_empresa}"
 

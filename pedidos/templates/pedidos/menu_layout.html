@@ -42,17 +42,23 @@
 
                 <!-- Boton Usuario-->
                 {% if request.user.is_authenticated %}
-                    <button class="btn btn-light ms-3">
-                        <a href="{% url 'usuarios:perfil_user' %}" class="text-dark text-decoration-none">
-                            <i class="bi bi-person"></i><span> Perfil</span>
-                        </a>
-                    </button>
+                    <div class="dropdown">
+                        <button class="btn btn-light ms-3 dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-person"></i><span> Mi Cuenta</span>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{% url 'usuarios:perfil_user' %}">Datos</a></li>
+                            <li><a class="dropdown-item" href="">Pedidos</a></li>
+                            <li><a class="dropdown-item" href="{% url 'usuarios:listar_direc' %}">Dirección</a></li>
+                        </ul>
+                    </div>
                 {% else %}
                     <button class="btn btn-light ms-3">
                         <a href="{% url 'usuarios:sesion' %}" class="text-dark text-decoration-none">
-                            <i class="bi bi-person"></i><span> Cuenta</span>
+                            <i class="bi bi-person"></i><span> Acceder</span>
                         </a>
                     </button>
+
                 {% endif %}
                 
             </div>
