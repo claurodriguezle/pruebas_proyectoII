@@ -1,21 +1,12 @@
 from xml.dom import ValidationErr
+from django.core.exceptions import ValidationError
 from django import forms
 from django.utils import timezone
 from .models import Persona, Cliente, Empleado, Proveedor, Producto, CategoriaProducto, IngredienteProducto, Salario, TipoEmpleado # noqa: F401
 from .models import Compra, DetalleCompra, Item
+from datetime import date
 
 class PersonaForm(forms.ModelForm):
-    TIPO_PERSONA_CHOICES = [
-        ('cliente', 'Cliente'),
-        ('empleado', 'Empleado'),
-        ('proveedor', 'Proveedor'),
-    ]
-
-    tipo_persona = forms.ChoiceField(
-        choices=TIPO_PERSONA_CHOICES,
-        widget=forms.Select(attrs={'class': 'form-select', 'id': 'tipo-persona'}),
-        label="Rol"
-    )
 
     class Meta:
         model = Persona
@@ -35,53 +26,59 @@ class PersonaForm(forms.ModelForm):
             'barrio': forms.Select(attrs={'class': 'form-select'}),
             'nacionalidad': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Paraguaya'}),
         }
+    
+    def clean_fecha_nacimiento(self):
+        fecha_nacimiento = self.cleaned_data.get('fecha_nacimiento')
+        hoy = date.today()
 
-    # Campos de Roles especificos
+        edad = hoy.year - fecha_nacimiento.year - (
+            (hoy.month, hoy.day) < (fecha_nacimiento.month, fecha_nacimiento.day)
+        )
 
-    salario = forms.ModelChoiceField(
-        queryset=Salario.objects.all(),
-        required=False,
-        widget=forms.Select(attrs={'class': 'form-select'}),
-        label="Salario"
+        if edad < 14:
+            raise forms.ValidationError(
+                'La persona debe ser mayor de 14 años.'
+            )
+        
+        return fecha_nacimiento
+
+class EmpleadoForm(forms.ModelForm):
+    class Meta: 
+        model = Empleado
+        fields = ['salario', 'fecha_contratacion', 'tipo']
+        widgets = {
+            'salario': forms.Select(attrs={'class': 'form-select'}),
+            'fecha_contratacion': forms.DateInput(attrs={'class': 'form-control', 'type': 'date', 'min': '2020-01-01'}),
+            'tipo': forms.Select(attrs={'class': 'form-select'}),
+        }
+    
+    def fecha_contratacion(self):
+        fecha_contratacion = self.cleaned_data.get('fecha_contratacion')
+
+        if fecha_contratacion and fecha_contratacion.year < 2020:
+            raise ValidationError(
+                "La fecha de contratación no puede ser anterior al año 2020."
+            )
+
+class ProveedorForm(forms.ModelForm):
+    class Meta:
+        model = Proveedor
+        fields = ['nombre_empresa']
+        widgets = {
+            'nombre_empresa': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+
+class RolForm(forms.Form):
+    rol = forms.ChoiceField(
+        choices=[
+            ('', '---------'),
+            ('cliente', 'Cliente'),
+            ('empleado', 'Empleado'),
+            ('proveedor', 'Proveedor'),
+        ],
+        widget=forms.Select(attrs={'class': 'form-select', 'id': 'rol-select'}),
+        label='Rol'
     )
-    fecha_contratacion = forms.DateField(
-        required=False,
-        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-        label="Fecha de Contratación"
-    )
-    t_empleado = forms.ModelChoiceField(
-        queryset = TipoEmpleado.objects.all(),
-        required=False,
-        widget=forms.Select(attrs={'class': 'form-select'}), 
-        label="Tipo Empleado"
-    )
-    nombre_empresa = forms.CharField(
-        required=False,
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Mi Empresa S.A.'}),
-        label="Empresa"
-    )
-    # Codigo para manejar los campos dinamicos
-
-    def clean(self):
-        cleaned_data = super().clean()
-        tipo_persona = cleaned_data.get('tipo_persona')
-
-        # Limpiar campos no relevantes
-        if tipo_persona == 'cliente':
-            cleaned_data['salario'] = None
-            cleaned_data['fecha_contratacion'] = None
-            cleaned_data['t_empleado'] = None
-            cleaned_data['nombre_empresa'] = None
-
-        elif tipo_persona == 'empleado':
-            cleaned_data['nombre_empresa'] = None
-
-        elif tipo_persona == 'proveedor':
-            cleaned_data['salario'] = None
-            cleaned_data['fecha_contratacion'] = None
-            cleaned_data['t_empleado'] = None
-
-        return cleaned_data
 
 # PRODUCTOS
 class ProductoForm(forms.ModelForm):

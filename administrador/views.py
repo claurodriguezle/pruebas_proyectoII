@@ -5,7 +5,7 @@ from django.db import transaction, IntegrityError, connection
 from django.db.models import Q, Value, CharField
 from decimal import Decimal, InvalidOperation
 from .models import Persona, Cliente, Empleado, Proveedor, Producto, CategoriaProducto, IngredienteProducto
-from .forms import PersonaForm, ProductoForm, CategoriaProductoForm, IngredienteProductoForm 
+from .forms import PersonaForm, ProductoForm, CategoriaProductoForm, IngredienteProductoForm, RolForm, EmpleadoForm, ProveedorForm 
 from django.http import Http404, HttpResponse, HttpResponseBadRequest
 from django.template.loader import render_to_string
 from django.views.decorators.http import require_POST
@@ -65,104 +65,139 @@ def listar_personas(request):
 
 def crear_persona(request):
     if request.method == 'POST':
-        # print(request.POST)
-        form = PersonaForm(request.POST)
-        if form.is_valid():
-            tipo_persona = form.cleaned_data['tipo_persona']
-            
-            # Crea persona
-            persona = form.save()
+        persona_form = PersonaForm(request.POST)
+        rol_form = RolForm(request.POST)
 
-            try:
-                if tipo_persona == 'cliente':
+        empleado_form = None
+        proveedor_form = None
+
+        if persona_form.is_valid() and rol_form.is_valid():
+            rol = rol_form.cleaned_data['rol']
+
+            if rol == 'empleado':
+                empleado_form = EmpleadoForm(request.POST)
+                if not empleado_form.is_valid():
+                    return render(request, 'administrador/registro.html', {
+                        'persona_form': persona_form,
+                        'rol_form': rol_form,
+                        'empleado_form': empleado_form,
+                        'proveedor_form': ProveedorForm(),
+                    })
+                
+            elif rol == 'proveedor':
+                proveedor_form = ProveedorForm(request.POST)
+                if not proveedor_form.is_valid():
+                    return(render, 'administrador/registro.html', {
+                        'persona_form': persona_form,
+                        'rol_form': rol_form,
+                        'empleado_form': EmpleadoForm(),
+                        'proveedor_form': proveedor_form,
+                    })
+                
+            with transaction.atomic():
+                persona = persona_form.save()
+
+                if rol == 'cliente':
                     Cliente.objects.create(persona=persona)
 
-                elif tipo_persona == 'empleado':
-                    Empleado.objects.create(
-                        persona=persona,
-                        salario=form.cleaned_data.get('salario'),
-                        fecha_contratacion=form.cleaned_data.get('fecha_contratacion'),
-                        tipo=form.cleaned_data.get('t_empleado'),
-                    )
+                elif rol == 'empleado':
+                    empleado = empleado_form.save(commit=False)
+                    empleado.persona = persona
+                    empleado.save()
+                
+                elif rol == 'proveedor':
+                    proveedor = proveedor_form.save(commit=False)
+                    proveedor.persona = persona
+                    proveedor.save()
 
-                elif tipo_persona == 'proveedor':
-                    Proveedor.objects.create(
-                        persona=persona,
-                        nombre_empresa=form.cleaned_data.get('nombre_empresa')              
-                    )
-
-                return redirect('administrador:listar_personas')
-
-            except IntegrityError as e:
-                # Maneja errores de unicidad
-                form.add_error(None, "Error al guardar. Verifica los datos únicos.")
-                print(f"Error de integridad: {e}")
-        return render(request, 'administrador/registro.html', {'form': form})
-
+            return redirect('administrador:listar_personas')
     else:
-        form = PersonaForm()
-
-    return render(request, 'administrador/registro.html', {'form': form})
+        persona_form = PersonaForm()
+        rol_form = RolForm()
+        empleado_form = EmpleadoForm()
+        proveedor_form = ProveedorForm()
+    return render(request, 'administrador/registro.html', {
+        'persona_form': persona_form,
+        'rol_form': rol_form,
+        'empleado_form': empleado_form,
+        'proveedor_form': proveedor_form,
+    })
 
 
 def editar_persona(request, id):
     persona = get_object_or_404(Persona, id=id)
-    
-    # Determinar tipo de persona
-    if hasattr(persona, 'cliente'):
-        tipo_persona = 'cliente'
-        instancia_especifica = persona.cliente
-        rol_instance = persona.cliente
-    elif hasattr(persona, 'empleado'):
-        tipo_persona = 'empleado'
-        instancia_especifica = persona.empleado
-        rol_instance = persona.empleado
+
+    rol_principal = None
+    if hasattr(persona, 'empleado'):
+        rol_principal = 'empleado'
     elif hasattr(persona, 'proveedor'):
-        tipo_persona = 'proveedor'
-        instancia_especifica = persona.proveedor
-        rol_instance = persona.proveedor
-    else:
-        raise Http404("Tipo de persona no válido")
+        rol_principal = 'proveedor'
+
+    es_cliente = hasattr(persona, 'cliente')
 
     if request.method == 'POST':
-        form = PersonaForm(request.POST, instance=persona)
-        
-        if form.is_valid():
-            try:
-                with transaction.atomic():
-                    persona = form.save()
-                        
-                    # Actualización de los modelo
-                    if tipo_persona == 'empleado':
-                        instancia_especifica.salario = form.cleaned_data.get('salario')
-                        instancia_especifica.fecha_contratacion = form.cleaned_data.get('fecha_contratacion')
-                        instancia_especifica.tipo = form.cleaned_data.get('t_empleado')
-                        instancia_especifica.save()
+        persona_form = PersonaForm(request.POST, instance=persona)
+        rol_form = RolForm(request.POST)
 
-                    elif tipo_persona == 'proveedor':
-                        instancia_especifica.nombre_empresa = form.cleaned_data.get('nombre_empresa')
-                        instancia_especifica.save()
+        empleado_form = EmpleadoForm(
+            request.POST, instance=getattr(persona, 'empleado', None)
+        )
+        proveedor_form = ProveedorForm(
+            request.POST, instance=getattr(persona, 'proveedor', None)
+        )
 
-                return redirect('administrador:listar_personas')
-                
-            except Exception as e:
-                print(f"ERROR EN TRANSACCIÓN: {str(e)}")
-                form.add_error(None, f"Error crítico al actualizar: {str(e)}")
+        rol = request.POST.get('rol')
+
+        forms_validos = (
+            persona_form.is_valid() and
+            rol_form.is_valid() and (
+                empleado_form.is_valid() if rol == 'empleado'
+                else proveedor_form.is_valid() if rol == 'proveedor'
+                else True
+            )
+        )
+
+        if forms_validos:
+            with transaction.atomic():
+                persona_form.save()
+
+                if rol == 'cliente':
+                    Cliente.objects.get_or_create(persona=persona)
+                    # NO tocar empleado/proveedor
+
+                elif rol == 'empleado':
+                    Proveedor.objects.filter(persona=persona).delete()
+
+                    empleado = empleado_form.save(commit=False)
+                    empleado.persona = persona
+                    empleado.save()
+
+                elif rol == 'proveedor':
+                    Empleado.objects.filter(persona=persona).delete()
+
+                    proveedor = proveedor_form.save(commit=False)
+                    proveedor.persona = persona
+                    proveedor.save()
+
+            return redirect('administrador:listar_personas')
+
     else:
-        form = PersonaForm(instance=persona)
-        # Rellenar los campos del rol de forma simple
-        if tipo_persona == 'empleado':
-            form.initial['salario'] = rol_instance.salario
-            form.initial['fecha_contratacion'] = rol_instance.fecha_contratacion
-            form.initial['t_empleado'] = rol_instance.tipo
-        elif tipo_persona == 'proveedor':
-            form.initial['nombre_empresa'] = rol_instance.nombre_empresa
+        persona_form = PersonaForm(instance=persona)
+        rol_form = RolForm(initial={'rol': rol_principal})
+
+        empleado_form = EmpleadoForm(instance=getattr(persona, 'empleado', None))
+        proveedor_form = ProveedorForm(instance=getattr(persona, 'proveedor', None))
 
     return render(request, 'administrador/registro.html', {
-        'form': form,
+        'persona_form': persona_form,
+        'empleado_form': empleado_form,
+        'proveedor_form': proveedor_form,
+        'rol_form': rol_form,
         'persona': persona,
-        'tipo_persona': tipo_persona
+        'rol_principal': rol_principal,
+        'es_cliente': es_cliente,
     })
+
 
 def eliminar_persona(request, id):
     persona = get_object_or_404(Persona, id=id)

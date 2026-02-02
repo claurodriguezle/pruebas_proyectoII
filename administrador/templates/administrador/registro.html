@@ -20,96 +20,122 @@
                 {% csrf_token %}
         
                 <!-- Mostrar errores generales -->
-                {% if form.errors %}
-                <div class="alert alert-danger">
-                    {% for field in form %}
-                        {% for error in field.errors %}
+                {% if persona_form.errors %}
+                    <div class="alert alert-danger">
+                        {% for field in persona_form %}
+                            {% for error in field.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        {% endfor %}
+                        {% for error in form.non_field_errors %}
                             <p>{{ error }}</p>
                         {% endfor %}
-                    {% endfor %}
-                    {% for error in form.non_field_errors %}
-                        <p>{{ error }}</p>
-                    {% endfor %}
-                </div>
+                    </div>
+                {% endif %}
+
+                {% if empleado_form.errors %}
+                    <div class="alert alert-danger">
+                        {% for field in empleado_form %}
+                            {% for error in field.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        {% endfor %}
+                        {% for error in form.non_field_errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                {% if proveedor_form.errors %}
+                    <div class="alert alert-danger">
+                        {% for field in proveedor_form %}
+                            {% for error in field.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        {% endfor %}
+                        {% for error in form.non_field_errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
                 {% endif %}
         
                 <div class="mb-3">
-                    <label for="{{ form.nombre.id_for_label }}" class="form-label">Nombre</label>
-                    {{ form.nombre }}
+                    <label class="form-label">Nombre</label>
+                    {{ persona_form.nombre }}
                 </div>
         
                 <div class="mb-3">
-                    <label for="{{ form.apellido.id_for_label }}" class="form-label">Apellido</label>
-                    {{ form.apellido }}
+                    <label class="form-label">Apellido</label>
+                    {{ persona_form.apellido }}
                 </div>
         
                 <div class="mb-3">
-                    <label for="{{ form.telefono.id_for_label }}" class="form-label">Teléfono</label>
-                    {{ form.telefono }}
+                    <label class="form-label">Teléfono</label>
+                    {{ persona_form.telefono }}
                 </div>
         
                 <div class="mb-3">
-                    <label for="{{ form.fecha_nacimiento.id_for_label }}" class="form-label">Fecha de Nacimiento</label>
-                    {{ form.fecha_nacimiento }}
+                    <label class="form-label">Fecha de Nacimiento</label>
+                    {{ persona_form.fecha_nacimiento }}
                 </div>
         
                 <div class="mb-3">
-                    <label for="{{ form.cedula.id_for_label }}" class="form-label">Cédula</label>
-                    {{ form.cedula }}
+                    <label class="form-label">Cédula</label>
+                    {{ persona_form.cedula }}
                 </div>
 
                 <div class="mb-3">
-                    <label for="{{ form.ruc.id_for_label }}" class="form-label">RUC</label>
-                    {{ form.ruc }}
+                    <label class="form-label">RUC</label>
+                    {{ persona_form.ruc }}
                 </div>
 
                 <div class="mb-3">
-                    <label for="{{ form.correo.id_for_label }}" class="form-label">Correo</label>
-                    {{ form.correo }}
+                    <label class="form-label">Correo</label>
+                    {{ persona_form.correo }}
                 </div>
         
                 <div class="mb-3">
-                    <label for="{{ form.ciudad.id_for_label }}" class="form-label">Ciudad</label>
-                    {{ form.ciudad }}
+                    <label class="form-label">Ciudad</label>
+                    {{ persona_form.ciudad }}
                 </div>
         
                 <div class="mb-3">
-                    <label for="{{ form.barrio.id_for_label }}" class="form-label">Barrio</label>
-                    {{ form.barrio }}
+                    <label class="form-label">Barrio</label>
+                    {{ persona_form.barrio }}
                 </div>
         
                 <div class="mb-3">
-                    <label for="{{ form.nacionalidad.id_for_label }}" class="form-label">Nacionalidad</label>
-                    {{ form.nacionalidad }}
+                    <label class="form-label">Nacionalidad</label>
+                    {{ persona_form.nacionalidad }}
                 </div>
                 
                 <!-- Dropdown de Rol -->
                 <div class="mb-3">
-                <label for="{{ form.tipo_persona.id_for_label }}" class="form-label">Rol</label>
-                    {{ form.tipo_persona }}
+                <label class="form-label">Rol</label>
+                    {{ rol_form.rol }}
                 </div>
         
                 <!-- Campos dinámicos para Empleado -->
                 <div id="empleadoFields" class="campos-dinamicos" style="display: none;">
                     <div class="mb-3">
-                        <label for="{{ form.sueldo.id_for_label }}" class="form-label">Salario</label>
-                        {{ form.sueldo }}
+                        <label class="form-label">Salario</label>
+                        {{ empleado_form.salario }}
                     </div>
                     <div class="mb-3">
-                        <label for="{{ form.fecha_contratacion.id_for_label }}" class="form-label">Fecha de Contratación</label>
-                        {{ form.fecha_contratacion }}
+                        <label class="form-label">Fecha de Contratación</label>
+                        {{ empleado_form.fecha_contratacion }}
                     </div>
                     <div class="mb-3">
-                        <label for="{{ form.tipo.id_for_label }}" class="form-label">Tipo de Empleado</label>
-                        {{ form.t_empleado }}
+                        <label class="form-label">Tipo de Empleado</label>
+                        {{ empleado_form.tipo }}
                     </div>
                 </div>
         
                 <!-- Campos dinámicos para Proveedor -->
                 <div id="proveedorFields" class="campos-dinamicos" style="display: none;">
                     <div class="mb-3">
-                        <label for="{{ form.nombre_empresa.id_for_label }}" class="form-label">Empresa</label>
-                        {{ form.nombre_empresa }}
+                        <label class="form-label">Empresa</label>
+                        {{ proveedor_form.nombre_empresa }}
                     </div>
                 </div>
                 <!-- Botones -->
@@ -124,53 +150,30 @@
 </div>
 
 <!-- JavaScript para manejar los campos dinámicos -->
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const tipoPersonaDropdown = document.getElementById('tipo-persona');
-        
-        // Función para mostrar/ocultar campos
-        function actualizarCampos() {
-            // 1. Oculta todos los campos dinámicos
-            document.querySelectorAll('.campos-dinamicos').forEach(div => {
-                div.style.display = 'none';
-            });
-    
-            // 2. Muestra solo los del tipo seleccionado
-            if (tipoPersonaDropdown.value === 'empleado') {
-                document.getElementById('empleadoFields').style.display = 'block';
-            } else if (tipoPersonaDropdown.value === 'proveedor') {
-                document.getElementById('proveedorFields').style.display = 'block';
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const rol = document.getElementById('rol-select');
+            const empleadoFields = document.getElementById('empleadoFields');
+            const proveedorFields = document.getElementById('proveedorFields');
+
+            const empleadoInputs = empleadoFields.querySelectorAll('input, select');
+            const proveedorInputs = proveedorFields.querySelectorAll('input, select');
+
+            function toggleFields() {
+                const isEmpleado = rol.value === 'empleado';
+                const isProveedor = rol.value === 'proveedor';
+
+                empleadoFields.style.display = isEmpleado ? 'block' : 'none';
+                proveedorFields.style.display = isProveedor ? 'block' : 'none';
+
+                empleadoInputs.forEach(input => input.required = isEmpleado);
+                proveedorInputs.forEach(input => input.required = isProveedor);
             }
-        }
-    
-        // Evento al cambiar el dropdown
-        tipoPersonaDropdown.addEventListener('change', actualizarCampos);
-    
-        // Evento al enviar el formulario
-        document.querySelector('form').addEventListener('submit', function() {
-            const tipoPersona = tipoPersonaDropdown.value;
-            
-            // Deshabilita TODOS los campos dinámicos primero
-            document.querySelectorAll('.campos-dinamicos input').forEach(input => {
-                input.disabled= true;
-            });
-    
-            // Habilita SOLO los campos relevantes
-            if (tipoPersona === 'empleado') {
-                document.querySelectorAll('#empleadoFields input').forEach(input => {
-                    input.disabled = false;
-                });
-            } else if (tipoPersona === 'proveedor') {
-                document.querySelectorAll('#proveedorFields input').forEach(input => {
-                    input.disabled = false;
-                });
+
+            if (rol) {
+                rol.addEventListener('change', toggleFields);
+                toggleFields();
             }
         });
-    
-        // Inicializa campos al cargar la página
-        if (tipoPersonaDropdown.value) {
-            actualizarCampos();
-        }
-    });
     </script>
 {% endblock %}
