@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from administrador.models import Producto, CategoriaProducto, Cliente, IngredienteProducto
+from administrador.models import Producto, CategoriaProducto, Cliente, IngredienteProducto, Direccion
 from django.contrib.auth.decorators import login_required
 from .models import Adicional, Pedido, DetallePedido, DetalleAdicionalPedido, IngredienteEliminadoPedido
 from .forms import RetiroForm
@@ -7,6 +7,7 @@ from django.db import transaction
 from django.contrib import messages
 from django.http import HttpResponse
 from django.template.loader import render_to_string
+from datetime import datetime
 
 def index(request):
     return render(request, 'pedidos/index.html')
@@ -227,15 +228,22 @@ def confirmar_pedido(request):
 
     tipo_entrega = request.session.get('tipo_entrega')
     hora_retiro_str = request.session.get('hora_retiro')
-    direccion = request.session.get('direccion', '')
+    direccion_id = request.session.get('direccion')
 
     try:
         cliente = Cliente.objects.get(user=request.user)
     except Cliente.DoesNotExist:
         messages.error(request, "No se encontró un cliente asociado a tu usuario")
         return redirect('pedidos:menu_productos')
+    
+    direccion_obj = None
+    if tipo_entrega == 'DE' and direccion_id:
+        try:
+            direccion_obj = Direccion.objects.get(pk=direccion_id, cliente=cliente)
+        except Direccion.DoesNotExist:
+            messages.error(request, "La dirección seleccionada no es válida.")
+            return redirect('pedidos:resumen_pedido')
 
-    from datetime import datetime
     hora_retiro = None
     if hora_retiro_str:
         try:
@@ -252,8 +260,8 @@ def confirmar_pedido(request):
                 total=total,
                 tipo_entrega=tipo_entrega,
                 hora_retiro=hora_retiro,
-                direccion_entrega=direccion if tipo_entrega == 'DE' else '',
-                estado='Pendiente',
+                direccion_entrega=direccion_obj,
+                estado='PE',
             )
 
             for item in carrito:
@@ -294,10 +302,47 @@ def confirmar_pedido(request):
             del request.session[key]
 
     messages.success(request, "Pedido confirmado y guardado con éxito.")
-    return redirect('pedidos:pedido_confirmado')
-
+    return redirect('pedidos:mis_pedidos')
+    
 def confirmacion_pedido(request):
     return render(request, 'pedidos/confirmacion_pedido.html')
+
+@login_required
+def mis_pedidos(request): # Muestra el estado e historial del pedido de CLIENTE
+
+    # Aseguramos si el pedido pertenece al cliente logueado
+    try:
+        cliente = request.user.cliente
+    except Cliente.DoesNotExist:
+        messages.error(request, "No tienes un perfil de cliente asociado.")
+        return redirect('pedidos:menu_productos')
+
+    pedidos = Pedido.objects.filter(cliente=cliente).order_by('-id')
+
+    context = {
+        "pedidos": pedidos
+    }
+
+    return render(request, 'pedidos/estado_pedido.html', context)
+
+@login_required
+def detalle_mi_pedido(request, pedido_id):
+    # Obtiene el pedido y nos asegura que sea del cliente loguedo
+    pedido = get_object_or_404(
+        Pedido,
+        id=pedido_id,
+        cliente = request.user.cliente
+    )
+
+    # Trae los detalles del pedido
+    detalles= pedido.detalle.all().prefetch_related('adicionales')
+
+    context = {
+        'pedido': pedido,
+        'detalles': detalles
+    }
+
+    return render(request, 'pedidos/detalle_mi_pedido.html', context)
 
 #Orden de pedidos
 #Empleado/Cajero

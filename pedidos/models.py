@@ -1,4 +1,5 @@
 from django.db import models
+from django.core.exceptions import ValidationError
 
 class Adicional(models.Model):
     nombre = models.CharField(max_length=50)
@@ -14,15 +15,56 @@ class Pedido(models.Model):
         ('DE', 'Delivery'),
     ]
 
+    ESTADO_CHOICES = [
+        ('PE', 'Pendiente'),
+        ('EC', 'En camino'),
+        ('EN', 'Entregado'),
+        ('CA', 'Cancelado'),
+    ]
+
     cliente = models.ForeignKey('administrador.Cliente', on_delete=models.CASCADE, related_name='pedidos')
     # CODIGO PEDIENTE PARA REVISION
     fecha = models.DateTimeField(auto_now_add=True)
     total = models.IntegerField()
-    estado = models.CharField(max_length=20, default='Pediente') # PEDIENTE PARA REVISION
-    direccion_entrega = models.CharField(max_length=255, blank=True, null=True) # PEDIENTE PARA REVISION
+    estado = models.CharField(max_length=2, choices=ESTADO_CHOICES, default='PE')
     tipo_entrega = models.CharField(max_length=2, choices=TIPO_ENTREGA_CHOICES, default='RE')
+    direccion_entrega = models.ForeignKey(
+        'administrador.Direccion',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='pedidos'
+    )
+
+    # Guarda la direccion para el historial
+    direccion_snapshot = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True
+    )
     hora_retiro = models.TimeField(null=True, blank=True)
 
+    def clean(self):
+        if self.tipo_entrega == 'DE' and not self.direccion_entrega:
+            raise ValidationError("Debe seleccionar una dirección para delivery.")
+        
+        if self.tipo_entrega == 'RE':
+            self.direccion_entrega = None
+            self.direccion_snapshot = None
+    
+    def save(self, *args, **kwargs):
+        if self.tipo_entrega == 'DE' and self.direccion_entrega:
+            direccion = self.direccion_entrega
+            persona = self.cliente.persona
+
+            self.direccion_snapshot = (
+                f"{direccion.nombre} - {direccion.direccion_text}, "
+                f"{persona.barrio.nombre}, "
+                f"{persona.ciudad.nombre}"
+            )
+
+        super().save(*args, **kwargs)
+    
     def __str__(self):
         return f"Pedido #{self.id} - {self.get_tipo_entrega_display()}"
 
