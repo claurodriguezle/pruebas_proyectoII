@@ -18,6 +18,8 @@ urlpatterns = [
     path('resumen/', views.resumen_pedido, name='resumen_pedido'),
     path('pedido/confirmar-pedido/', views.confirmar_pedido, name='confirmar_pedido'), 
     path('pedido/pedido-confirmado/', views.confirmacion_pedido, name='pedido_confirmado'),
+    path('mis_pedidos', views.mis_pedidos, name='mis_pedidos'),
+    path('detalle_pedido/<int:pedido_id>/', views.detalle_mi_pedido, name="detalle_mi_pedido"),
     #Rutas para pruebas de orden de pedidos
     #Empleado/Cajero
     path('orden/', views.ordenes_view, name='ordenes_view'),

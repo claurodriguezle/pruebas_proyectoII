@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.models import User
 from administrador.models import Persona, Direccion
-
+from datetime import date
 
 class RegistroClienteForm(forms.ModelForm):
     username = forms.CharField(
@@ -64,6 +64,21 @@ class RegistroClienteForm(forms.ModelForm):
         if User.objects.filter(email=email).exists():
             raise forms.ValidationError("Ya existe un usuario con este correo electrónico.")
         return email
+    
+    def clean_fecha_nacimiento(self):
+        fecha_nacimiento = self.cleaned_data.get('fecha_nacimiento')
+        hoy = date.today()
+
+        edad = hoy.year - fecha_nacimiento.year - (
+            (hoy.month, hoy.day) < (fecha_nacimiento.month, fecha_nacimiento.day)
+        )
+
+        if edad < 14:
+            raise forms.ValidationError(
+                'La persona debe ser mayor de 14 años.'
+            )
+        
+        return fecha_nacimiento
 
 class DireccionForm(forms.ModelForm):
     class Meta:
