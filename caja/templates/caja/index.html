@@ -1,0 +1,169 @@
+{% extends "administrador/layout.html" %}
+{% load static %}
+
+{% block title %}Gestión de Caja | Restaurante{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/caja.css' %}">
+{% endblock %}
+
+{% block body %}
+<div class="container py-5">
+  <h1 class="text-white mb-4">Gestión de Caja</h1>
+  
+  {% if caja_abierta %}
+    <div class="card border-success">
+      <div class="card-header bg-white d-flex align-items-center">
+        <i class="bi bi-unlock-fill text-success me-2"></i>
+        <h5 class="card-title text-success mb-0">Caja Abierta</h5>
+      </div>
+      <div class="card-body text-center py-5">
+        <p class="text-muted mb-2">Caja abierta por: <strong>{{ caja_empleado }}</strong></p>
+        <p class="text-muted mb-4">Monto inicial: <strong>${{ caja_monto_inicial|floatformat:2 }}</strong></p>
+        <div class="d-flex gap-2 justify-content-center">
+          <a href="{% url 'caja:caja_abierta' %}" class="btn btn-success px-4">
+            <i class="bi bi-cash-stack me-2"></i>
+            Ir a Caja
+          </a>
+          <a href="{% url 'caja:cerrar_caja' %}" class="btn btn-outline-danger px-4" id="cerrarCajaBtn">
+            <i class="bi bi-lock-fill me-2"></i>
+            Cerrar Caja
+          </a>
+        </div>
+      </div>
+    </div>
+  {% else %}
+    <div class="card border-danger">
+      <div class="card-header bg-white d-flex align-items-center">
+        <i class="bi bi-lock-fill text-danger me-2"></i>
+        <h5 class="card-title text-danger mb-0">Estado de Caja</h5>
+      </div>
+      <div class="card-body text-center py-5">
+        <p class="text-muted mb-4">La caja está cerrada</p>
+        <button id="open-btn" class="btn btn-dark px-4" data-bs-toggle="modal" data-bs-target="#openCajaModal">
+          <i class="bi bi-unlock-fill me-2"></i>
+          Abrir Caja
+        </button>
+      </div>
+    </div>
+  {% endif %}
+</div>
+
+<!-- Modal de Apertura de Caja -->
+<div class="modal fade" id="openCajaModal" tabindex="-1" aria-labelledby="openCajaModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="openCajaModalLabel">Apertura de Caja</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted">Ingrese los datos para abrir la caja del día</p>
+        <form id="openCajaForm">
+          <div class="mb-3">
+            <label for="empleado" class="form-label">Nombre del Empleado</label>
+            <input type="text" class="form-control bg-light" id="empleado" placeholder="Nombre del empleado" required>
+          </div>
+          <div class="mb-3">
+            <label for="montoInicial" class="form-label">Monto Inicial en Efectivo</label>
+            <input type="number" class="form-control bg-light" id="montoInicial" placeholder="0.00" step="0.01" min="0" required>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-dark w-100" id="confirmarApertura">Abrir Caja</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Cierre de Caja -->
+<div class="modal fade" id="closeCajaModal" tabindex="-1" aria-labelledby="closeCajaModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="closeCajaModalLabel">Cerrar Caja</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted">¿Está seguro que desea cerrar la caja?</p>
+        <div class="alert alert-info">
+          <strong>Resumen del día:</strong><br>
+          Monto inicial: ${{ caja_monto_inicial|floatformat:2 }}<br>
+          Monto actual: ${{ caja_monto_actual|floatformat:2 }}
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-danger" id="confirmarCierre">Cerrar Caja</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Manejar apertura de caja
+  document.getElementById('confirmarApertura')?.addEventListener('click', function() {
+    const empleado = document.getElementById('empleado').value;
+    const montoInicial = document.getElementById('montoInicial').value;
+    
+    if (!empleado || !montoInicial) {
+      alert('Por favor complete todos los campos');
+      return;
+    }
+    
+    fetch("{% url 'caja:caja_abierta' %}", {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': '{{ csrf_token }}'
+      },
+      body: JSON.stringify({
+        empleado: empleado,
+        monto_inicial: parseFloat(montoInicial)
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        window.location.reload();
+      } else {
+        alert('Error al abrir la caja: ' + (data.message || 'Error desconocido'));
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert('Error al abrir la caja');
+    });
+  });
+
+  // Manejar cierre de caja
+  document.getElementById('confirmarCierre')?.addEventListener('click', function() {
+    fetch("{% url 'caja:cerrar_caja' %}", {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': '{{ csrf_token }}'
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        window.location.reload();
+      } else {
+        alert('Error al cerrar la caja: ' + (data.message || 'Error desconocido'));
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert('Error al cerrar la caja');
+    });
+  });
+});
+</script>
+{% endblock %}

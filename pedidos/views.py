@@ -195,6 +195,11 @@ def retiro_local(request):
 @login_required
 def resumen_pedido(request):
     carrito = request.session.get('carrito', [])
+    #Tomamos los datos del cliente para su facturacion
+    cliente = request.user.cliente
+    persona = cliente.persona
+    documento_factura = persona.ruc if persona.ruc else persona.cedula
+
 
     if not carrito:
         # Redirige si el carrito está vacío
@@ -214,6 +219,9 @@ def resumen_pedido(request):
         'tipo_entrega': tipo_entrega,
         'hora_estimada': hora_estimada,
         'direccion': direccion,
+        #Datos de facturacion
+        'persona': persona,
+        'documento_factura' : documento_factura,
     }
 
     return render(request, 'pedidos/resumen_pedido.html', context)

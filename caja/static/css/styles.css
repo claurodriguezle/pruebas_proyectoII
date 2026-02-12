@@ -1,0 +1,49 @@
+/* Estilos personalizados */
+
+/* Colores personalizados */
+.text-purple {
+  color: #6f42c1;
+}
+
+/* Estilos para impresión */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  #facturaPreview,
+  #facturaPreview * {
+    visibility: visible;
+  }
+
+  #facturaPreview {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+}
+
+/* Estilos para modales */
+.modal-header {
+  border-bottom: 1px solid #dee2e6;
+}
+
+.modal-footer {
+  border-top: 1px solid #dee2e6;
+}
+
+/* Estilos para tarjetas */
+.card {
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.card-header {
+  background-color: #fff;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+/* Estilos para tablas */
+.table > :not(:first-child) {
+  border-top: 2px solid currentColor;
+}

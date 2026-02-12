@@ -1,0 +1,181 @@
+{% extends "administrador/layout.html" %}
+{% load static %}
+
+{% block title %}Caja Abierta | Restaurante{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/caja.css' %}">
+{% endblock %}
+
+{% block body %}
+<main class="container py-5">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="text-white">Gestión de Caja</h1>
+    <div>
+      <button class="btn btn-outline-light me-2" data-bs-toggle="modal" data-bs-target="#egresoModal">
+        <i class="bi bi-dash-circle me-2"></i>
+        Registrar Egreso
+      </button>
+      <a href="{% url 'caja:caja_view' %}" class="btn btn-danger">
+        <i class="bi bi-arrow-left me-2"></i>
+        Volver
+      </a>
+    </div>
+  </div>
+  
+  <div class="card border-success mb-4">
+    <div class="card-header bg-white d-flex align-items-center">
+      <i class="bi bi-cash text-success me-2"></i>
+      <h5 class="card-title text-success mb-0">Estado de Caja - {{ caja_empleado }}</h5>
+    </div>
+    <div class="card-body">
+      <div class="row text-center">
+        <div class="col">
+          <p class="text-muted mb-1">Monto Inicial</p>
+          <p class="fs-4 fw-bold text-primary">${{ resumen.monto_inicial|floatformat:2 }}</p>
+        </div>
+        <div class="col">
+          <p class="text-muted mb-1">Total Ingresos</p>
+          <p class="fs-4 fw-bold text-success">${{ resumen.ingresos|floatformat:2 }}</p>
+        </div>
+        <div class="col">
+          <p class="text-muted mb-1">Total Egresos</p>
+          <p class="fs-4 fw-bold text-danger">${{ resumen.egresos|floatformat:2 }}</p>
+        </div>
+        <div class="col">
+          <p class="text-muted mb-1">Efectivo en Caja</p>
+          <p class="fs-4 fw-bold text-purple">${{ resumen.monto_actual|floatformat:2 }}</p>
+        </div>
+        <div class="col">
+          <p class="text-muted mb-1">Ganancia Real</p>
+          <p class="fs-4 fw-bold text-warning">${{ resumen.ganancia_real|floatformat:2 }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="card">
+    <div class="card-header bg-white">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <h5 class="card-title mb-1">Movimientos del Día</h5>
+          <p class="text-muted small">Historial de ingresos y egresos</p>
+        </div>
+        <a href="{% url 'caja:nuevo_pedido' %}" class="btn btn-primary">
+          <i class="bi bi-plus-circle me-2"></i>
+          Nuevo Pedido
+        </a>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Hora</th>
+              <th>Tipo</th>
+              <th>Concepto</th>
+              <th>Monto</th>
+              <th>Empleado</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if movimientos %}
+              {% for movimiento in movimientos %}
+                <tr>
+                  <td>{{ movimiento.hora }}</td>
+                  <td>
+                    <span class="badge {% if movimiento.tipo == 'ingreso' %}bg-success{% else %}bg-danger{% endif %}">
+                      {{ movimiento.tipo|title }}
+                    </span>
+                  </td>
+                  <td>{{ movimiento.concepto }}</td>
+                  <td class="fw-bold">${{ movimiento.monto|floatformat:2 }}</td>
+                  <td>{{ movimiento.responsable }}</td>
+                </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="5" class="text-center text-muted py-4">No hay movimientos registrados</td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Modal de Registro de Egreso -->
+<div class="modal fade" id="egresoModal" tabindex="-1" aria-labelledby="egresoModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="egresoModalLabel">Registrar Egreso</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="egresoForm">
+          <div class="mb-3">
+            <label for="conceptoEgreso" class="form-label">Concepto</label>
+            <input type="text" class="form-control" id="conceptoEgreso" placeholder="Ej: Pago a proveedor" required>
+          </div>
+          <div class="mb-3">
+            <label for="montoEgreso" class="form-label">Monto</label>
+            <input type="number" class="form-control" id="montoEgreso" placeholder="0.00" step="0.01" min="0" required>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="confirmarEgreso">Registrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Modal de egreso
+  document.getElementById('confirmarEgreso').addEventListener('click', function() {
+    const concepto = document.getElementById('conceptoEgreso').value;
+    const monto = parseFloat(document.getElementById('montoEgreso').value);
+    
+    if (!concepto || isNaN(monto) || monto <= 0) {
+      alert('Por favor complete todos los campos correctamente');
+      return;
+    }
+    
+    fetch("{% url 'caja:registrar_movimiento' %}", {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': '{{ csrf_token }}'
+      },
+      body: JSON.stringify({
+        tipo: 'egreso',
+        concepto: concepto,
+        monto: monto
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        bootstrap.Modal.getInstance(document.getElementById('egresoModal')).hide();
+        document.getElementById('egresoForm').reset();
+        window.location.reload();
+      } else {
+        alert('Error al registrar egreso: ' + (data.message || 'Error desconocido'));
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert('Error al registrar egreso');
+    });
+  });
+});
+</script>
+{% endblock %}
