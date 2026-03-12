@@ -13,6 +13,14 @@ import os
 
 from pathlib import Path
 
+from django.contrib.messages import constants as messages # Para las clases de bootstrap
+
+MESSAGE_TAGS = {
+    messages.ERROR: 'danger',
+    messages.SUCCESS: 'success',
+    messages.WARNING: 'warning',
+    messages.INFO: 'info',
+}
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -86,11 +94,10 @@ WSGI_APPLICATION = 'burgerSystem.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME':'Db_Burger_App',
-        'USER':'crodriguez',
-        'PASSWORD':'12345',
+        'NAME':'db_burgerapp',
+        'USER':'ruizj',
+        'PASSWORD':'admin',
         'HOST':'localhost',
-        'PORT': '5433',
     }
 }
 

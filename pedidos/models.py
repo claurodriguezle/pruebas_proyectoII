@@ -36,6 +36,12 @@ class Pedido(models.Model):
         related_name='pedidos'
     )
 
+    costo_delivery = models.IntegerField(
+        null=True,
+        blank=True,
+        default=0
+    )
+
     # Guarda la direccion para el historial
     direccion_snapshot = models.CharField(
         max_length=255,
@@ -55,12 +61,11 @@ class Pedido(models.Model):
     def save(self, *args, **kwargs):
         if self.tipo_entrega == 'DE' and self.direccion_entrega:
             direccion = self.direccion_entrega
-            persona = self.cliente.persona
 
             self.direccion_snapshot = (
                 f"{direccion.nombre} - {direccion.direccion_text}, "
-                f"{persona.barrio.nombre}, "
-                f"{persona.ciudad.nombre}"
+                f"{direccion.barrio.nombre}, "
+                f"{direccion.barrio.ciudad.nombre}"
             )
 
         super().save(*args, **kwargs)

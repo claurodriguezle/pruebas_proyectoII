@@ -1,0 +1,148 @@
+{% extends 'pedidos/menu_productos.html' %}
+{% load static %}
+
+{% block carrito %}{% endblock %}
+
+{% block body %}
+    <div class="container py-4" style="max-width: 600px;">
+
+    <h4 class="text-center mb-4">📍 Seleccionar dirección de entrega</h4>
+
+    {# Mensajes de error #}
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    {# --- Direcciones guardadas --- #}
+    {% if direcciones %}
+        {% for dir in direcciones %}
+        <form method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="direccion_id" value="{{ dir.id }}">
+            <div class="card mb-3 shadow-sm">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>{{ dir.nombre }}</strong>
+                        {% if dir.es_principal %}
+                            <span class="badge bg-success ms-2">Principal</span>
+                        {% endif %}
+                        <p class="mb-0 text-muted small">{{ dir.direccion_text }}</p>
+                        {% if dir.barrio %}
+                            <p class="mb-0 text-muted small">{{ dir.barrio.nombre }}</p>
+                        {% endif %}
+                    </div>
+                    <button type="submit" class="btn btn-success btn-sm">
+                        Enviar aquí
+                    </button>
+                </div>
+            </div>
+        </form>
+        {% endfor %}
+    {% else %}
+        <div class="alert alert-info text-center">
+            No tenés direcciones guardadas aún.
+        </div>
+    {% endif %}
+
+    {# --- Botón agregar nueva dirección --- #}
+    <div class="d-grid mt-2">
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevaDireccion">
+            ⊕ Agregar nueva dirección
+        </button>
+    </div>
+
+</div>
+
+{# --- Modal nueva dirección --- #}
+<div class="modal fade" id="modalNuevaDireccion" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title">Nueva dirección</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <form method="POST">
+                {% csrf_token %}
+                <input type="hidden" name="nueva_direccion" value="1">
+
+                <div class="modal-body">
+
+                    <div class="mb-3">
+                        <label class="form-label">Nombre <span class="text-muted small">(Casa, Trabajo...)</span></label>
+                        {{ form.nombre }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Dirección</label>
+                        {{ form.direccion_text }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Barrio</label>
+                        {{ form.barrio }}
+                    </div>
+
+                    {# Campos ocultos de coordenadas #}
+                    {{ form.latitud }}
+                    {{ form.longitud }}
+
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" name="es_principal" id="esPrincipal">
+                        <label class="form-check-label" for="esPrincipal">Guardar como dirección principal</label>
+                    </div>
+
+                    {# Botón geolocalización #}
+                    <div class="d-grid">
+                        <button type="button" class="btn btn-outline-secondary" onclick="obtenerUbicacion()">
+                            📍 Usar mi ubicación actual
+                        </button>
+                    </div>
+                    <p class="text-muted small text-center mt-1" id="estadoUbicacion"></p>
+
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">Guardar y continuar</button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+
+{# --- Script geolocalización --- #}
+<script>
+    function obtenerUbicacion() {
+        const estado = document.getElementById("estadoUbicacion");
+        estado.textContent = "Obteniendo ubicación...";
+
+        if (!navigator.geolocation) {
+            estado.textContent = "Tu navegador no soporta geolocalización.";
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                const lat = position.coords.latitude.toFixed(7);
+                const lng = position.coords.longitude.toFixed(7);
+
+                document.getElementById("id_latitud").value = lat;
+                document.getElementById("id_longitud").value = lng;
+
+                estado.textContent = "✅ Ubicación obtenida correctamente.";
+            },
+            function() {
+                estado.textContent = "❌ No se pudo obtener la ubicación.";
+            }
+        );
+    }
+</script>
+{% endblock %}

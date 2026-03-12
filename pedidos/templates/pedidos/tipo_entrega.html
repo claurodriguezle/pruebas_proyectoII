@@ -1,6 +1,8 @@
 {% extends 'pedidos/menu_productos.html' %}
 {% load static %}
 
+{% block carrito %}{% endblock %}
+
 {% block body %}
 <div class="container mt-5">
   <h2 class="mb-4" style="text-align: center;">¿Cómo querés recibir tu pedido?</h2>
@@ -35,7 +37,7 @@
         <div class="card-body text-center">
           <h4 class="card-title">Delivery</h4>
           <p class="card-text">Recibí tu pedido en la comodidad de tu casa. Vas a poder elegir o agregar una dirección.</p>
-          <a href="" class="btn btn-success mt-3">Elegir esta opción</a>
+          <a href="{% url 'pedidos:seleccionar_direccion_delivery' %}" class="btn btn-success mt-3">Elegir esta opción</a>
         </div>
       </div>
     </div>

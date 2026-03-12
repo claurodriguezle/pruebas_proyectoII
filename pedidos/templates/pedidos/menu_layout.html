@@ -30,16 +30,16 @@
 
             <div class="contenedor">
                 <input type="text" id="buscar" class="form-control w-50" placeholder="Buscar productos..." />
-                
+                {% block carrito %}
                 <!-- Carrito -->
-                <button id="carrito-btn" class="btn btn-warning ms-3">
-                    <a href="{% url 'pedidos:carrito' %}" class="text-dark text-decoration-none">
-                        <i class="bi bi-cart3"></i> (<span id="carrito-contador">
-                        {% include 'pedidos/partials/contador_carrito.html' with cantidad=cantidad_carrito %}
-                        </span>)
-                    </a>
-                </button>
-
+                    <button id="carrito-btn" class="btn btn-warning ms-3">
+                        <a href="{% url 'pedidos:carrito' %}" class="text-dark text-decoration-none">
+                            <i class="bi bi-cart3"></i> (<span id="carrito-contador">
+                            {% include 'pedidos/partials/contador_carrito.html' with cantidad=cantidad_carrito %}
+                            </span>)
+                        </a>
+                    </button>
+                {% endblock %}
                 <!-- Boton Usuario-->
                 {% if request.user.is_authenticated %}
                     <div class="dropdown">

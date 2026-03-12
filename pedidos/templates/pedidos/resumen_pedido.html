@@ -1,6 +1,8 @@
 {% extends 'pedidos/menu_productos.html' %}
 {% load static %}
 
+{% block carrito %}{% endblock %}
+
 {% block body %}
 <div class="container my-5">
 
@@ -28,8 +30,21 @@
                 {% if tipo_entrega == 'RE' %}
                     <p><strong>Hora estimado: </strong>{{ hora_estimada }}</p>
                 {% elif tipo_entrega == 'DE' %}
-                    <p><strong>Dirección de entrega:</strong>{{ direccion }}</p>
-                    <p><strong>Costo de envio:</strong>5.000gs</p> <!-- Futuramente dinamico -->
+                    {% if direccion %}
+                        <p>
+                            <strong>Dirección de entrega:</strong>
+                            {{ direccion.nombre }} - {{ direccion.direccion_text }}
+                            {% if direccion.barrio %}
+                                , {{ direccion.barrio.nombre }}
+                            {% endif %}
+                        </p>
+                        <p>
+                            <strong>Distancia:</strong> {{ distancia_km }} km        
+                        </p>
+                        <p>
+                            <strong>Costo de envío:</strong> ₲{{ costo_delivery }}   
+                        </p>
+                    {% endif %}
                 {% endif %}
             </div>
         </div>

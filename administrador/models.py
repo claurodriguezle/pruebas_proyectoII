@@ -32,6 +32,8 @@ class Barrio(models.Model):
         on_delete=models.CASCADE
     )
 
+    habilitado = models.BooleanField(default=False) 
+
     def __str__(self):
         return f"{self.nombre} - {self.ciudad.nombre}"
     
@@ -52,6 +54,13 @@ class Direccion(models.Model):
         Cliente,
         on_delete=models.CASCADE,
         related_name="direcciones"
+    )
+
+    barrio = models.ForeignKey(
+        Barrio,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True
     )
 
     nombre = models.CharField(max_length=100) # Casa, trabajo...

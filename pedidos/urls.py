@@ -16,10 +16,11 @@ urlpatterns = [
     path('usuarios/tipo-entrega/', views.tipo_entrega, name='tipo_entrega'),
     path('retiro-local/', views.retiro_local, name='retiro_local'),
     path('resumen/', views.resumen_pedido, name='resumen_pedido'),
-    path('pedido/confirmar-pedido/', views.confirmar_pedido, name='confirmar_pedido'), 
-    path('pedido/pedido-confirmado/', views.confirmacion_pedido, name='pedido_confirmado'),
+    path('pedido/confirmar-pedido/', views.confirmar_pedido, name='confirmar_pedido'),
     path('mis_pedidos', views.mis_pedidos, name='mis_pedidos'),
     path('detalle_pedido/<int:pedido_id>/', views.detalle_mi_pedido, name="detalle_mi_pedido"),
+
+    path('delivery/', views.seleccionar_direccion_delivery, name='seleccionar_direccion_delivery'),
     #Rutas para pruebas de orden de pedidos
     #Empleado/Cajero
     path('orden/', views.ordenes_view, name='ordenes_view'),

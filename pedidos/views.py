@@ -8,6 +8,8 @@ from django.contrib import messages
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from datetime import datetime
+from .services import validar_delivery
+from usuarios.forms import DireccionForm
 
 def index(request):
     return render(request, 'pedidos/index.html')
@@ -179,6 +181,68 @@ def tipo_entrega(request):
     return render(request, 'pedidos/tipo_entrega.html', {'form': form})
 
 @login_required
+def seleccionar_direccion_delivery(request):
+    try:
+        cliente = request.user.cliente
+    except Cliente.DoesNotExist:
+        messages.error(request, "No se encontró un cliente asociado.")
+        return redirect('pedidos:menu_productos')
+    
+    direcciones = Direccion.objects.filter(cliente=cliente)
+
+    # Opcion 1: Cliente elige una direccion existente
+
+    if request.method == 'POST' and 'direccion_id' in request.POST:
+        direccion_id = request.POST.get('direccion_id')
+        try:
+            direccion = Direccion.objects.get(pk=direccion_id)
+        except Direccion.DoesNotExist:
+            messages.error(request, "La direccion seleccionada no es valida.")
+            return redirect('pedidos:seleccionar_direccion_delivery')
+        
+        resultado = validar_delivery(direccion)
+
+        if not resultado['disponible']:
+            messages.error(request, resultado['mensaje'])
+            return redirect('pedidos:seleccionar_direccion_delivery')
+
+        # Guarda en sesion y redirigi al resumen
+
+        request.session['tipo_entrega'] = 'DE'
+        request.session['direccion'] = direccion_id
+        request.session['costo_delivery'] = resultado['costo_delivery']
+        request.session['distancia_km'] = resultado['distancia_km']
+        return redirect('pedidos:resumen_pedido')
+
+    # 
+    if request.method == 'POST' and 'nueva_direccion' in request.POST:
+        form = DireccionForm(request.POST)
+        if form.is_valid():
+            nueva_direccion = form.save(commit=False)
+            nueva_direccion.cliente = cliente
+            nueva_direccion.save()
+
+            resultado = validar_delivery(nueva_direccion)
+
+            if not resultado['disponible']:
+                # La guardamos pero avisamos que no hay delivery
+                messages.error(request, resultado['mensaje'])
+                return redirect('pedidos:seleccionar_direccion_delivery')
+
+            request.session['tipo_entrega'] = 'DE'
+            request.session['direccion'] = nueva_direccion.id
+            request.session['costo_delivery'] = resultado['costo_delivery']
+            request.session['distancia_km'] = resultado['distancia_km']
+            return redirect('pedidos:resumen_pedido')
+    else:
+        form = DireccionForm()
+
+    return render(request, 'pedidos/seleccionar_direccion_delivery.html', {
+        'direcciones': direcciones,
+        'form': form,
+    })
+    
+@login_required
 def retiro_local(request):
     if request.method == 'POST':
         form = RetiroForm(request.POST)
@@ -206,20 +270,36 @@ def resumen_pedido(request):
         # Redirige si el carrito está vacío
         return redirect('pedidos:menu_productos')
 
-    # Simulamos tipo de entrega (esto luego se recupera desde POST o session)
-    tipo_entrega = request.session.get('tipo_entrega')  # o 'delivery'
-    hora_estimada = request.session.get('hora_retiro')  # Simulado
-    direccion = request.session.get('direccion')  # Solo si es delivery
+    tipo_entrega = request.session.get('tipo_entrega')
+    hora_estimada = request.session.get('hora_retiro')  
+    direccion_id = request.session.get('direccion') 
+    costo_delivery = request.session.get('costo_delivery', 0)
+    distancia_km = request.session.get('distancia_km', None)
 
-    # Calcular total
-    total = sum(item['subtotal'] for item in carrito)
+    # Recuperamos objeto direccion si es delivery
+    direccion_obj = None
+    if tipo_entrega == 'DE' and direccion_id:
+        try:
+            direccion_obj = Direccion.objects.get(
+                pk=direccion_id, cliente=cliente
+            )
+        except Direccion.DoesNotExist:
+            pass
+
+    # Calcular total productos
+    total_productos = sum(item['subtotal'] for item in carrito)
+
+    total = total_productos + (costo_delivery if tipo_entrega == 'DE' else 0)
 
     context = {
         'carrito': carrito,
+        'total_productos': total_productos,
         'total': total,
         'tipo_entrega': tipo_entrega,
         'hora_estimada': hora_estimada,
-        'direccion': direccion,
+        'direccion': direccion_obj,
+        'costo_delivery': costo_delivery,
+        'distancia_km':distancia_km,
         #Datos de facturacion
         'persona': persona,
         'documento_factura' : documento_factura,
@@ -237,6 +317,7 @@ def confirmar_pedido(request):
     tipo_entrega = request.session.get('tipo_entrega')
     hora_retiro_str = request.session.get('hora_retiro')
     direccion_id = request.session.get('direccion')
+    costo_delivery = request.session.get('costo_delivery', 0)
 
     try:
         cliente = Cliente.objects.get(user=request.user)
@@ -269,6 +350,7 @@ def confirmar_pedido(request):
                 tipo_entrega=tipo_entrega,
                 hora_retiro=hora_retiro,
                 direccion_entrega=direccion_obj,
+                costo_delivery=costo_delivery,
                 estado='PE',
             )
 
@@ -305,15 +387,12 @@ def confirmar_pedido(request):
         return redirect('pedidos:resumen_pedido')
 
     # Limpiar sesión solo si todo salió bien
-    for key in ['carrito', 'tipo_entrega', 'hora_retiro', 'direccion']:
+    for key in ['carrito', 'tipo_entrega', 'hora_retiro', 'direccion', 'costo_delivery', 'distancia_km']:
         if key in request.session:
             del request.session[key]
 
     messages.success(request, "Pedido confirmado y guardado con éxito.")
     return redirect('pedidos:mis_pedidos')
-    
-def confirmacion_pedido(request):
-    return render(request, 'pedidos/confirmacion_pedido.html')
 
 @login_required
 def mis_pedidos(request): # Muestra el estado e historial del pedido de CLIENTE

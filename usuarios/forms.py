@@ -84,9 +84,12 @@ class DireccionForm(forms.ModelForm):
     class Meta:
         model = Direccion
         fields = [
-            "nombre", "direccion_text", "latitud", "longitud", "es_principal"]
+            "nombre", "direccion_text", "barrio", "latitud", "longitud", "es_principal"]
         
         widgets = {
+            "nombre": forms.TextInput(attrs={'class': 'form-control'}),
+            'direccion_text': forms.TextInput(attrs={'class': 'form-control'}),
+            'barrio': forms.Select(attrs={'class': 'form-select'}),
             "latitud": forms.HiddenInput(),
             "longitud": forms.HiddenInput()
         }
@@ -97,8 +100,8 @@ class DireccionForm(forms.ModelForm):
         return lat
 
     def clean_longitud(self):
-        lat = self.cleaned_data.get("longitud")
-        if lat is not None:
-            return round(lat, 7)
-        return lat
+        lng = self.cleaned_data.get("longitud")
+        if lng is not None:
+            return round(lng, 7)
+        return lng
 
