@@ -1,0 +1,316 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Factura {{ factura.nro_fact }} — Brother's Burger</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <style>
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white !important; }
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa, #e4e7eb);
+            min-height: 100vh;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .factura-card {
+            background: #fff;
+            border-radius: 18px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            padding: 2.5rem;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .fact-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding-bottom: 1.25rem;
+            border-bottom: 2px solid #f5a623;
+            margin-bottom: 1.25rem;
+        }
+
+        .fact-empresa h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #92400e;
+            margin-bottom: .2rem;
+        }
+
+        .fact-nro {
+            text-align: right;
+        }
+
+        .fact-nro .numero {
+            font-size: 1.1rem;
+            font-weight: 700;
+            font-family: monospace;
+            color: #111827;
+        }
+
+        .timbrado-bar {
+            background: #fff7ed;
+            border: 1px solid #fed7aa;
+            border-radius: 8px;
+            padding: .5rem 1rem;
+            font-size: .82rem;
+            color: #92400e;
+            margin-bottom: 1.25rem;
+        }
+
+        .partes-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .parte-label {
+            font-size: .7rem;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            color: #9ca3af;
+            font-weight: 600;
+            margin-bottom: .4rem;
+        }
+
+        .parte-val {
+            font-size: .88rem;
+            color: #111827;
+            margin: .15rem 0;
+        }
+
+        .parte-val span { color: #9ca3af; font-size: .78rem; margin-right: .25rem; }
+
+        table.items { width: 100%; border-collapse: collapse; font-size: .875rem; margin-bottom: 1.25rem; }
+        table.items thead th {
+            background: #f9fafb;
+            border-bottom: 1px solid #e5e7eb;
+            padding: .55rem .75rem;
+            font-size: .7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            color: #6b7280;
+        }
+        table.items tbody td {
+            padding: .6rem .75rem;
+            border-bottom: 1px solid #f3f4f6;
+            color: #111827;
+        }
+        table.items tbody tr:last-child td { border: none; }
+
+        .totales-wrap { display: flex; justify-content: flex-end; margin-bottom: 1.25rem; }
+        .totales-box { min-width: 220px; }
+        .tot-row {
+            display: flex; justify-content: space-between;
+            padding: .3rem 0; font-size: .875rem;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        .tot-row:last-child { border: none; }
+        .tot-row label { color: #6b7280; font-size: .8rem; }
+        .tot-row.final {
+            font-size: 1.05rem; font-weight: 700;
+            border-top: 2px solid #f5a623;
+            padding-top: .5rem; margin-top: .25rem;
+        }
+        .tot-row.final span { color: #92400e; }
+
+        .iva-box {
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: .75rem 1rem;
+            margin-bottom: 1.25rem;
+        }
+        .iva-grid {
+            display: grid; grid-template-columns: repeat(3,1fr);
+            text-align: center; gap: .5rem;
+        }
+        .iva-col label { font-size: .72rem; color: #9ca3af; display: block; margin-bottom: 2px; }
+        .iva-col span  { font-size: .9rem; font-weight: 600; color: #111827; }
+
+        .fact-footer {
+            text-align: center;
+            font-size: .78rem;
+            color: #9ca3af;
+            border-top: 1px solid #f3f4f6;
+            padding-top: .75rem;
+        }
+
+        .btn-imprimir {
+            background: #f5a623; color: #fff; border: none;
+            border-radius: 20px; padding: .45rem 1.25rem;
+            font-size: .85rem; font-weight: 600;
+            display: inline-flex; align-items: center; gap: .4rem;
+            cursor: pointer; transition: opacity .15s;
+        }
+        .btn-imprimir:hover { opacity: .88; }
+
+        .btn-volver {
+            background: #fff; color: #374151;
+            border: 1px solid #d1d5db; border-radius: 20px;
+            padding: .45rem 1.25rem; font-size: .85rem;
+            font-weight: 500; text-decoration: none;
+            display: inline-flex; align-items: center; gap: .4rem;
+            transition: background .15s;
+        }
+        .btn-volver:hover { background: #f9fafb; color: #374151; }
+    </style>
+</head>
+
+<body>
+<header class="bg-dark text-white py-3 no-print">
+    <div class="container text-center">
+        <h1 class="mb-2 fs-3">BROTHER'S BURGER</h1>
+        <nav class="nav justify-content-center">
+            <a class="nav-link text-white" href="{% url 'pedidos:index' %}">Inicio</a>
+            <a class="nav-link text-white" href="{% url 'pedidos:menu_productos' %}">Productos</a>
+        </nav>
+    </div>
+</header>
+
+<div class="container py-5">
+
+    {# Acciones #}
+    <div class="d-flex gap-2 mb-4 no-print" style="max-width:700px;margin:0 auto">
+        <a href="{% url 'pedidos:mis_pedidos' %}" class="btn-volver">
+            <i class="bi bi-arrow-left"></i> Mis pedidos
+        </a>
+        <button class="btn-imprimir" onclick="window.print()">
+            <i class="bi bi-printer"></i> Imprimir
+        </button>
+    </div>
+
+    <div class="factura-card">
+
+        {# Cabecera #}
+        <div class="fact-header">
+            <div class="fact-empresa">
+                <h2>🍔 Brother's Burger</h2>
+                <p class="text-muted small mb-0">RUC: {{ factura.timbrado.ruc }}</p>
+                <p class="text-muted small mb-0">Coronel Oviedo, Paraguay</p>
+                <span class="badge mt-2" style="background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;font-weight:600">
+                    ✓ {{ factura.get_forma_de_pago_display }}
+                </span>
+            </div>
+            <div class="fact-nro">
+                <div class="text-muted" style="font-size:.7rem;text-transform:uppercase;letter-spacing:.08em">N° Factura</div>
+                <div class="numero">{{ factura.nro_fact }}</div>
+                <div class="text-muted small mt-1">{{ factura.fecha_emision|date:"d/m/Y" }}</div>
+            </div>
+        </div>
+
+        {# Timbrado #}
+        <div class="timbrado-bar">
+            Timbrado: <strong>{{ factura.timbrado.numero }}</strong>
+            &nbsp;·&nbsp;
+            Vigencia: <strong>{{ factura.timbrado.fecha_inicio_vigencia|date:"d/m/Y" }}</strong>
+            al <strong>{{ factura.timbrado.fecha_fin_vigencia|date:"d/m/Y" }}</strong>
+        </div>
+
+        {# Partes #}
+        <div class="partes-grid">
+            <div>
+                <div class="parte-label">Emisor</div>
+                <p class="parte-val"><span>Empresa:</span> Brother's Burger</p>
+                <p class="parte-val"><span>RUC:</span> {{ factura.timbrado.ruc }}</p>
+            </div>
+            <div>
+                <div class="parte-label">Cliente</div>
+                <p class="parte-val"><span>Nombre:</span> {{ factura.nombre_cliente }}</p>
+                <p class="parte-val"><span>RUC/CI:</span> {{ factura.ruc_cliente }}</p>
+                <p class="parte-val"><span>Tel:</span> {{ factura.telefono_cliente }}</p>
+                {% if factura.direccion_cliente %}
+                <p class="parte-val"><span>Dir:</span> {{ factura.direccion_cliente }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        {# Items #}
+        <table class="items">
+            <thead>
+                <tr>
+                    <th>Cód.</th>
+                    <th>Descripción</th>
+                    <th class="text-center">Cant.</th>
+                    <th class="text-end">Precio unit.</th>
+                    <th class="text-end">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for d in factura.detalles.all %}
+                <tr>
+                    <td style="font-family:monospace;font-size:.78rem;color:#9ca3af">{{ d.codigo_producto }}</td>
+                    <td>{{ d.descripcion }}</td>
+                    <td class="text-center">{{ d.cantidad }}</td>
+                    <td class="text-end">{{ d.precio_unitario|floatformat:0 }} Gs.</td>
+                    <td class="text-end fw-semibold">{{ d.total|floatformat:0 }} Gs.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        {# Totales #}
+        <div class="totales-wrap">
+            <div class="totales-box">
+                <div class="tot-row">
+                    <label>Subtotal (sin IVA)</label>
+                    <span>{{ factura.subtotal|floatformat:0 }} Gs.</span>
+                </div>
+                <div class="tot-row">
+                    <label>IVA (10%)</label>
+                    <span>{{ factura.iva_10|floatformat:0 }} Gs.</span>
+                </div>
+                {% if factura.descuento > 0 %}
+                <div class="tot-row">
+                    <label>Descuento</label>
+                    <span>- {{ factura.descuento|floatformat:0 }} Gs.</span>
+                </div>
+                {% endif %}
+                <div class="tot-row final">
+                    <label>Total</label>
+                    <span>{{ factura.monto_total|floatformat:0 }} Gs.</span>
+                </div>
+            </div>
+        </div>
+
+        {# IVA breakdown #}
+        <div class="iva-box">
+            <div class="parte-label mb-2">Liquidación del IVA</div>
+            <div class="iva-grid">
+                <div class="iva-col">
+                    <label>Gravado 10%</label>
+                    <span>{{ factura.subtotal|floatformat:0 }} Gs.</span>
+                </div>
+                <div class="iva-col">
+                    <label>IVA 10%</label>
+                    <span>{{ factura.iva_10|floatformat:0 }} Gs.</span>
+                </div>
+                <div class="iva-col">
+                    <label>Total IVA</label>
+                    <span>{{ factura.total_iva|floatformat:0 }} Gs.</span>
+                </div>
+            </div>
+        </div>
+
+        {# Footer #}
+        <div class="fact-footer">
+            Gracias por su compra en <strong style="color:#f5a623">Brother's Burger</strong> —
+            Documento válido como comprobante fiscal
+        </div>
+
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

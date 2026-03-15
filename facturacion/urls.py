@@ -12,4 +12,6 @@ urlpatterns = [
     path('timbrados/eliminar/<int:pk>/', views.timbrado_soft_delete, name='timbrado_soft_delete'),
     #Rutas para pruebas de Factura
     path('factura/factura_view/', views.factura_view, name='factura_view'),
+    path('factura/', views.facturas_list, name='facturas_list'),
+path('factura/<int:factura_id>/', views.factura_detalle, name='factura_detalle'),
 ]

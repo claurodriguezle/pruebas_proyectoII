@@ -19,8 +19,11 @@ urlpatterns = [
     path('pedido/confirmar-pedido/', views.confirmar_pedido, name='confirmar_pedido'),
     path('mis_pedidos', views.mis_pedidos, name='mis_pedidos'),
     path('detalle_pedido/<int:pedido_id>/', views.detalle_mi_pedido, name="detalle_mi_pedido"),
-
     path('delivery/', views.seleccionar_direccion_delivery, name='seleccionar_direccion_delivery'),
+    #RUTA PARA CANCELAR EL PEDIDO CUANDO SE ENCUENTRA EN PENDIENTE
+    path('cancelar_pedido/<int:pedido_id>/', views.cancelar_pedido, name='cancelar_pedido'),
+
+
     #Rutas para pruebas de orden de pedidos
     # Panel del Empleado
     path('orden/', views.panel_empleado, name='ordenes_view'),
@@ -28,9 +31,11 @@ urlpatterns = [
     path('orden/modal/<int:pedido_id>/', views.empleado_modal, name='empleado_modal'),
     path('orden/avanzar/<int:pedido_id>/', views.empleado_avanzar, name='empleado_avanzar'),
     path('orden/actualizar/<int:pedido_id>/', views.empleado_actualizar, name='empleado_actualizar'),
- 
+
     #  Panel de Cocina
     path('cocina/', views.cocina_view, name='cocina_view'),
     path('cocina/cards/', views.cocina_cards, name='cocina_cards'),
     path('cocina/avanzar/<int:pedido_id>/', views.cocina_avanzar, name='cocina_avanzar'),
+    #Rutas para la Facturacion
+    path('mi_factura/<int:pedido_id>/', views.mi_factura, name='mi_factura'),
 ]

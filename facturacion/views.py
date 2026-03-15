@@ -1,6 +1,7 @@
 from django.shortcuts import redirect,render, get_object_or_404
 from django.views.generic import ListView, CreateView, UpdateView
 from django.urls import reverse_lazy
+from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.views.generic import DetailView
 from .models import Timbrado, Factura,DetalleFactura
@@ -59,3 +60,22 @@ def factura_view(request):
         'timbrado': timbrado_activo
     }
     return render(request, 'factura/factura.html', context)
+
+@login_required
+def factura_detalle(request, factura_id):
+    factura = get_object_or_404(
+        Factura.objects.select_related('cliente__persona', 'timbrado')
+                       .prefetch_related('detalles__producto'),
+        pk=factura_id
+    )
+    return render(request, 'factura/factura_detalle.html', {'factura': factura})
+
+
+@login_required
+def facturas_list(request):
+    facturas = (
+        Factura.objects
+        .select_related('cliente__persona', 'timbrado')
+        .order_by('-fecha_emision', '-cod_fact')
+    )
+    return render(request, 'factura/facturas_list.html', {'facturas': facturas})

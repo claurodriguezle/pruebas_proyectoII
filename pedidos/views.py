@@ -422,6 +422,26 @@ def confirmar_pedido(request):
     return redirect('pedidos:mis_pedidos')
 
 @login_required
+def mis_pedidos(request):
+    try:
+        cliente = request.user.cliente
+    except:
+        messages.error(request, "No tenés un perfil de cliente asociado.")
+        return redirect('pedidos:menu_productos')
+
+    pedidos = Pedido.objects.filter(cliente=cliente).order_by('-id')
+
+    for pedido in pedidos:
+        try:
+            pedido.factura_cliente = pedido.factura_pedido
+        except:
+            pedido.factura_cliente = None
+
+    return render(request, 'pedidos/estado_pedido.html', {'pedidos': pedidos})
+
+
+'''
+@login_required
 def mis_pedidos(request): # Muestra el estado e historial del pedido de CLIENTE
 
     # Aseguramos si el pedido pertenece al cliente logueado
@@ -438,7 +458,7 @@ def mis_pedidos(request): # Muestra el estado e historial del pedido de CLIENTE
     }
 
     return render(request, 'pedidos/estado_pedido.html', context)
-
+'''
 @login_required
 def detalle_mi_pedido(request, pedido_id):
     # Obtiene el pedido y nos asegura que sea del cliente loguedo
@@ -457,7 +477,21 @@ def detalle_mi_pedido(request, pedido_id):
     }
 
     return render(request, 'pedidos/detalle_mi_pedido.html', context)
+#CANCELAR EL PEDIDO CUANDO SE ENCUENTRA EN PENDIENTE UNA VEZ ENTRA EN PREPARACION YA NO SE PUEDE CANCELAR
+@login_required
+@require_http_methods(['POST'])
+def cancelar_pedido(request, pedido_id):
+    pedido = get_object_or_404(Pedido, pk=pedido_id, cliente=request.user.cliente)
 
+    # Solo se puede cancelar si cocina aún no empezó
+    if pedido.estado_cocina == 'PE':
+        pedido.estado_entrega = 'CA'
+        pedido.save(update_fields=['estado_entrega'])
+        messages.success(request, "Tu pedido fue cancelado correctamente.")
+    else:
+        messages.error(request, "No podés cancelar este pedido, ya está en preparación.")
+
+    return redirect('pedidos:mis_pedidos')
 #Orden de pedidos
 #Empleado/Cajero
 def _get_filtros(request):
@@ -554,11 +588,22 @@ def empleado_modal(request, pedido_id):
 @login_required
 @require_http_methods(['POST'])
 def empleado_avanzar(request, pedido_id):
+    from facturacion.services import generar_factura_desde_pedido
+
     pedido    = get_object_or_404(Pedido, pk=pedido_id)
     siguiente = pedido.siguiente_estado_entrega
+
     if siguiente:
         pedido.estado_entrega = siguiente
         pedido.save(update_fields=['estado_entrega'])
+
+        # ── Generar factura al marcar Entregado ──────────────────────────────
+        if siguiente == 'EN':
+            factura = generar_factura_desde_pedido(pedido)
+            if factura:
+                # Avanzar automáticamente a Facturado
+                pedido.estado_entrega = 'FA'
+                pedido.save(update_fields=['estado_entrega'])
 
     filtros = _get_filtros(request)
     pedidos = _get_pedidos_empleado(filtros)
@@ -662,3 +707,29 @@ def cocina_avanzar(request, pedido_id):
         'cnt_ep':  sum(1 for p in pedidos if p.estado_cocina == 'EP'),
         'cnt_li':  sum(1 for p in pedidos if p.estado_cocina == 'LI'),
     })
+
+#Coneccion con Facturacion
+@login_required
+def mi_factura(request, pedido_id):
+    from facturacion.models import Factura
+    pedido = get_object_or_404(Pedido, pk=pedido_id, cliente=request.user.cliente)
+    factura = get_object_or_404(
+        Factura.objects
+        .select_related('timbrado')
+        .prefetch_related('detalles__producto'),
+        pedido=pedido
+    )
+    return render(request, 'pedidos/mi_factura.html', {'factura': factura, 'pedido': pedido})
+
+
+@login_required
+@require_http_methods(['POST'])
+def cancelar_pedido(request, pedido_id):
+    pedido = get_object_or_404(Pedido, pk=pedido_id, cliente=request.user.cliente)
+    if pedido.estado_cocina == 'PE':
+        pedido.estado_entrega = 'CA'
+        pedido.save(update_fields=['estado_entrega'])
+        messages.success(request, "Tu pedido fue cancelado correctamente.")
+    else:
+        messages.error(request, "No podés cancelar este pedido, ya está en preparación.")
+    return redirect('pedidos:mis_pedidos')

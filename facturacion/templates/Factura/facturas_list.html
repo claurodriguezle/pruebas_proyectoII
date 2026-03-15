@@ -1,0 +1,131 @@
+{% extends "administrador/layout.html" %}
+{% load static %}
+
+{% block title %}Facturas — Brother's Burger{% endblock %}
+
+{% block extra_css %}
+<style>
+  body { background: #f9fafb; font-family: 'Segoe UI', sans-serif; }
+
+  .fact-list-wrapper { padding: 1.5rem 2rem; }
+
+  .page-title {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+  }
+
+  .table-wrap {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,.05);
+  }
+
+  table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+
+  thead th {
+    background: #f9fafb;
+    border-bottom: 2px solid #e5e7eb;
+    padding: .65rem 1rem;
+    text-align: left;
+    font-size: .72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: #6b7280;
+  }
+
+  tbody tr { border-bottom: 1px solid #f3f4f6; transition: background .1s; }
+  tbody tr:hover { background: #f9fafb; }
+  tbody tr:last-child { border: none; }
+  tbody td { padding: .75rem 1rem; color: #111827; vertical-align: middle; }
+
+  .nro-fact {
+    font-family: monospace;
+    font-weight: 700;
+    color: #92400e;
+    font-size: .9rem;
+  }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: .3rem;
+    padding: .22rem .6rem; border-radius: 3px;
+    font-size: .72rem; font-weight: 700;
+    letter-spacing: .06em; text-transform: uppercase;
+  }
+  .badge-efectivo { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+
+  .total-col { font-weight: 700; font-family: monospace; font-size: .9rem; }
+
+  .btn-ver {
+    display: inline-flex; align-items: center; gap: .3rem;
+    background: #f5a623; color: #fff; border: none;
+    padding: .35rem .75rem; border-radius: 4px;
+    font-size: .75rem; font-weight: 700;
+    text-decoration: none; transition: opacity .15s;
+  }
+  .btn-ver:hover { opacity: .88; }
+
+  .empty {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: #9ca3af;
+  }
+  .empty .ei { font-size: 2.5rem; margin-bottom: .75rem; opacity: .4; }
+  .empty p { font-size: .9rem; }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="fact-list-wrapper">
+  <div class="page-title">📄 Facturas emitidas</div>
+
+  <div class="table-wrap">
+    {% if facturas %}
+    <table>
+      <thead>
+        <tr>
+          <th>N° Factura</th>
+          <th>Fecha</th>
+          <th>Cliente</th>
+          <th>RUC / CI</th>
+          <th>Timbrado</th>
+          <th>Forma de pago</th>
+          <th>Total</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for f in facturas %}
+        <tr>
+          <td><span class="nro-fact">{{ f.nro_fact }}</span></td>
+          <td>{{ f.fecha_emision|date:"d/m/Y" }}</td>
+          <td>{{ f.nombre_cliente }}</td>
+          <td style="font-family:monospace;font-size:.82rem">{{ f.ruc_cliente }}</td>
+          <td style="font-size:.82rem;color:#6b7280">{{ f.timbrado.numero }}</td>
+          <td><span class="badge badge-efectivo">✓ {{ f.get_forma_de_pago_display }}</span></td>
+          <td><span class="total-col">{{ f.monto_total|floatformat:0 }} Gs.</span></td>
+          <td>
+            <a href="{% url 'facturacion:factura_detalle' f.cod_fact %}" class="btn-ver">
+              🔍 Ver
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty">
+      <div class="ei">📄</div>
+      <p>No hay facturas emitidas aún</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
