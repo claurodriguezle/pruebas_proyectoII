@@ -1,0 +1,104 @@
+{# orden_pedidos/partials/empleado_modal.html #}
+{# Fragmento inyectado por htmx en #modal-body al hacer clic en "Ver" #}
+
+<div class="modal-title">Pedido #{{ pedido.id }}</div>
+
+{# Info general #}
+<div class="modal-grid">
+  <div>
+    <div class="field-label">Cliente</div>
+    <div class="field-value">{{ pedido.cliente_nombre }}</div>
+  </div>
+  <div>
+    <div class="field-label">Tipo de entrega</div>
+    <div class="field-value">{{ pedido.get_tipo_entrega_display }}</div>
+  </div>
+  <div>
+    <div class="field-label">Estado cocina</div>
+    <div class="field-value">{{ pedido.get_estado_cocina_display }}</div>
+  </div>
+  <div>
+    <div class="field-label">Estado entrega</div>
+    <div class="field-value">{{ pedido.get_estado_entrega_display }}</div>
+  </div>
+  <div>
+    <div class="field-label">Fecha</div>
+    <div class="field-value">{{ pedido.fecha|date:"d/m/Y H:i" }}</div>
+  </div>
+  {% if pedido.direccion_snapshot %}
+  <div>
+    <div class="field-label">Dirección</div>
+    <div class="field-value">{{ pedido.direccion_snapshot }}</div>
+  </div>
+  {% endif %}
+  {% if pedido.hora_retiro %}
+  <div>
+    <div class="field-label">Hora de retiro</div>
+    <div class="field-value">{{ pedido.hora_retiro|time:"H:i" }}</div>
+  </div>
+  {% endif %}
+</div>
+
+{# Items #}
+<div class="modal-section">
+  <div class="modal-section-label">Productos</div>
+  <ul class="items-ul">
+    {% for d in pedido.detalle.all %}
+    <li style="flex-direction:column;align-items:flex-start;gap:3px">
+      <div style="display:flex;justify-content:space-between;width:100%">
+        <span>
+          <span class="iq">{{ d.cantidad }}×</span>
+          {{ d.producto.nombre }}
+        </span>
+        <span class="ip">{{ d.subtotal|floatformat:0 }} Gs.</span>
+      </div>
+      {% for ad in d.adicionales.all %}
+        <div style="font-size:.72rem;color:var(--green);padding-left:1.2rem">+ {{ ad.adicional.nombre }}</div>
+      {% endfor %}
+      {% for ing in d.ingredientes_eliminados.all %}
+        <div style="font-size:.72rem;color:var(--red);font-weight:700;padding-left:1.2rem">✕ SIN {{ ing.ingrediente.item.nombre }}</div>
+      {% endfor %}
+      {% if d.nota %}
+        <div style="font-size:.72rem;color:var(--amber);padding-left:1.2rem">📝 {{ d.nota }}</div>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  <div class="modal-total">
+    Total <span>{{ pedido.total|floatformat:0 }} Gs.</span>
+  </div>
+</div>
+
+{# Notas #}
+{% for d in pedido.detalle.all %}
+  {% if d.nota %}
+  <div class="modal-section">
+    <div class="modal-section-label">Nota — {{ d.producto.nombre }}</div>
+    <div class="modal-notas">{{ d.nota }}</div>
+  </div>
+  {% endif %}
+{% endfor %}
+
+{# Formulario de cambio de estado — htmx lo envía con POST #}
+<form id="modal-form"
+      hx-post="{% url 'pedidos:empleado_actualizar' pedido.id %}"
+      hx-target="#tabla-wrap"
+      hx-swap="innerHTML show:none"
+      hx-indicator="#sync-ind">
+  {% csrf_token %}
+
+  <div class="modal-section">
+    <div class="modal-section-label">Cambiar estado de entrega</div>
+    <select name="estado_entrega" class="modal-select">
+      <option value="PE" {% if pedido.estado_entrega == 'PE' %}selected{% endif %}>⏳ Pendiente</option>
+      <option value="EN" {% if pedido.estado_entrega == 'EN' %}selected{% endif %}>📦 Entregado</option>
+      <option value="FA" {% if pedido.estado_entrega == 'FA' %}selected{% endif %}>📄 Facturado</option>
+      <option value="CA" {% if pedido.estado_entrega == 'CA' %}selected{% endif %}>✕ Cancelado</option>
+    </select>
+  </div>
+
+  <div class="modal-footer">
+    <button type="button" class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+    <button type="submit" class="btn btn-amber">Guardar</button>
+  </div>
+</form>

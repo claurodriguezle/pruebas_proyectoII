@@ -5,7 +5,7 @@ const orders = [
         total: "$87.00",
         customer: "Libra a Anna",
         paymentStatus: "paid",
-        fulfillmentStatus: "cancelled",
+        fulfillmentStatus: "ivoiced",
         deliveryType: "Delivery",
         date: "12 de diciembre, 12:56 p.m.",
         items: ["Hamburguesa Clásica x2", "Papas fritas grande", "Refresco"]
@@ -54,8 +54,8 @@ const orders = [
         id: "#BB-238",
         total: "$46.00",
         customer: "Katerina Karenin",
-        paymentStatus: "cancelled",
-        fulfillmentStatus: "cancelled",
+        paymentStatus: "invoiced",
+        fulfillmentStatus: "invoiced",
         deliveryType: "Local",
         date: "24 de noviembre, 10:26 p.m.",
         items: ["Hamburguesa Picante", "Refresco"]

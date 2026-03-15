@@ -1,246 +1,352 @@
 {% extends "administrador/layout.html" %}
 {% load static %}
-{% load humanize custom_filters %}
 
-{% block title %}Panel de Cocina{% endblock %}
+{% block title %}Panel de Cocina — Brother's Burger{% endblock %}
 
 {% block extra_css %}
-    <style>
-        .cocina-container {
-            padding: 20px;
-            background-color: #f5f5f5;
-        }
-        
-        .page-header {
-            display: flex;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        
-        .page-header img {
-            width: 50px;
-            height: 50px;
-            margin-right: 15px;
-        }
-        
-        .header-text h1 {
-            margin: 0;
-            font-size: 24px;
-            color: #333;
-        }
-        
-        .header-text p {
-            margin: 0;
-            color: #666;
-            font-size: 16px;
-        }
-        
-        .pedido-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
-        }
-        
-        .pedido-card {
-            background: white;
-            border-radius: 10px;
-            padding: 15px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            border-left: 4px solid #ff6b00;
-            position: relative;
-        }
-        
-        .corner-icon {
-            position: absolute;
-            right: 15px;
-            top: 15px;
-            opacity: 0.1;
-            width: 40px;
-            height: 40px;
-        }
-        
-        .pedido-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #eee;
-        }
-        
-        .pedido-title {
-            font-weight: bold;
-            font-size: 18px;
-            color: #333;
-        }
-        
-        .pedido-cliente {
-            font-size: 14px;
-            color: #666;
-        }
-        
-        .pedido-items {
-            margin: 15px 0;
-        }
-        
-        .pedido-item {
-            margin-bottom: 8px;
-            font-size: 14px;
-        }
-        
-        .pedido-tiempo {
-            font-weight: bold;
-            color: #ff6b00;
-            margin: 15px 0;
-            text-align: center;
-        }
-        
-        .pedido-actions {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 15px;
-        }
-        
-        .btn-preparar {
-            background-color: #ff6b00;
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-            flex: 1;
-            margin-right: 5px;
-        }
-        
-        .btn-entregar {
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-            flex: 1;
-            margin-left: 5px;
-        }
-        
-        .status-ready {
-            border-left-color: #4CAF50;
-        }
-    </style>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;700&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #f9fafb;
+    --surface:   #ffffff;
+    --surface2:  #f3f4f6;
+    --border:    #e5e7eb;
+    --text:      #111827;
+    --muted:     #6b7280;
+    --amber:     #f5a623;
+    --amber-dim: #fed7aa;
+    --amber-bg:  #fff7ed;
+    --amber-text:#92400e;
+    --blue:      #2563eb;
+    --blue-dim:  #bfdbfe;
+    --blue-bg:   #eff6ff;
+    --green:     #16a34a;
+    --green-dim: #bbf7d0;
+    --green-bg:  #f0fdf4;
+    --red:       #dc2626;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'IBM Plex Sans', sans-serif; }
+
+  /* ── Header ───────────────────────── */
+  .coc-header {
+    background: var(--surface);
+    border-bottom: 2px solid var(--amber);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    padding: 0 1.5rem;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .coc-brand {
+    font-family: 'Oswald', sans-serif;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--amber-text);
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+  }
+  .coc-brand .sep { color: var(--muted); font-weight: 300; }
+  .coc-brand .sub { color: var(--text); font-size: .9rem; }
+  .coc-meta { display: flex; align-items: center; gap: 1.2rem; }
+
+  .htmx-indicator {
+    display: none;
+    align-items: center;
+    gap: .4rem;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: .68rem;
+    letter-spacing: .1em;
+    color: var(--amber-text);
+    text-transform: uppercase;
+  }
+  .htmx-request .htmx-indicator,
+  .htmx-indicator.htmx-request { display: flex !important; }
+  .spin {
+    width: 10px; height: 10px;
+    border: 2px solid var(--amber-dim);
+    border-top-color: var(--amber);
+    border-radius: 50%;
+    animation: spin .6s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .live-badge {
+    display: flex; align-items: center; gap: .4rem;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: .68rem; letter-spacing: .12em;
+    color: var(--green); text-transform: uppercase;
+  }
+  .live-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--green);
+    animation: pulse 1.8s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%,100% { opacity:1; box-shadow:0 0 0 0 rgba(62,207,110,.4); }
+    50%      { opacity:.7; box-shadow:0 0 0 5px rgba(62,207,110,0); }
+  }
+  .clock {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: .82rem; color: var(--muted);
+  }
+
+  /* ── Contadores ───────────────────── */
+  .coc-counters {
+    background: #f3f4f6;
+    border-bottom: 1px solid var(--border);
+    padding: .6rem 1.5rem;
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .counter-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    padding: .3rem .85rem;
+    border-radius: 20px;
+    font-size: .78rem;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+  }
+  .counter-pill .n {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 1rem;
+    font-weight: 700;
+  }
+  .pill-pe { color: var(--amber); background: var(--amber-bg); border: 1px solid var(--amber-dim); }
+  .pill-ep { color: var(--blue);  background: var(--blue-bg);  border: 1px solid var(--blue-dim); }
+  .pill-li { color: var(--green); background: var(--green-bg); border: 1px solid var(--green-dim); }
+
+  /* ── Grid de tarjetas ─────────────── */
+  .coc-body {
+    padding: 1.5rem;
+  }
+
+  /* El div de tarjetas es el target de htmx */
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.25rem;
+  }
+
+  /* ── Tarjeta ──────────────────────── */
+  .pedido-card {
+    background: var(--surface);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    border-top: 3px solid var(--amber);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    padding: 1.1rem 1.1rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: .75rem;
+    animation: cardIn .3s ease;
+    transition: border-top-color .3s;
+  }
+  .pedido-card.ep { border-top-color: var(--blue); }
+  .pedido-card.li { border-top-color: var(--green); }
+
+  @keyframes cardIn {
+    from { opacity:0; transform:translateY(8px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+
+  /* Header de tarjeta */
+  .card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+  .card-num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--amber-text);
+    letter-spacing: .04em;
+  }
+  .card-timer {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: .75rem;
+    color: var(--muted);
+    text-align: right;
+  }
+  .card-timer.warn  { color: var(--amber); }
+  .card-timer.alert { color: var(--red); animation: blink .8s step-end infinite; }
+  @keyframes blink { 50% { opacity:0; } }
+
+  .card-cliente {
+    font-size: .82rem;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  /* Badge de estado */
+  .badge {
+    display: inline-flex; align-items: center; gap: .3rem;
+    padding: .22rem .6rem; border-radius: 3px;
+    font-size: .68rem; font-weight: 700;
+    letter-spacing: .06em; text-transform: uppercase;
+    border: 1px solid transparent; white-space: nowrap;
+  }
+  .badge-PE { color:var(--amber-text); background:var(--amber-bg); border-color:var(--amber-dim); }
+  .badge-EP { color:var(--blue);  background:var(--blue-bg);  border-color:var(--blue-dim); }
+  .badge-LI { color:var(--green); background:var(--green-bg); border-color:var(--green-dim); }
+
+  /* Items */
+  .card-items {
+    list-style: none;
+    border-top: 1px solid var(--border);
+    padding-top: .6rem;
+  }
+  .card-items li {
+    font-size: .85rem;
+    padding: .3rem 0;
+    border-bottom: 1px solid #1a1a1a;
+    display: flex;
+    gap: .5rem;
+    align-items: baseline;
+  }
+  .card-items li:last-child { border: none; }
+  .item-qty {
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--amber-text);
+    font-weight: 700;
+    font-size: .8rem;
+    flex-shrink: 0;
+  }
+  .item-nombre { color: var(--text); }
+  .item-ad {
+    font-size: .72rem;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  /* Nota */
+  .card-nota {
+    background: #111;
+    border-left: 3px solid var(--amber-dim);
+    padding: .4rem .7rem;
+    font-size: .78rem;
+    font-style: italic;
+    color: var(--text);
+    border-radius: 0 3px 3px 0;
+  }
+
+  /* Tipo entrega */
+  .card-tipo {
+    font-size: .75rem;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: .35rem;
+  }
+
+  /* Botón de acción */
+  .btn-avanzar {
+    width: 100%;
+    padding: .65rem;
+    border: none;
+    border-radius: 5px;
+    font-family: 'Oswald', sans-serif;
+    font-size: .95rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: opacity .15s, transform .1s;
+    margin-top: auto;
+  }
+  .btn-avanzar:hover  { opacity: .88; transform: translateY(-1px); }
+  .btn-avanzar:active { transform: translateY(0); }
+  .btn-pe { background: var(--amber); color: #fff; }
+  .btn-ep { background: var(--blue);  color: #000; }
+  .btn-li {
+    background: var(--green-bg);
+    color: #15803d;
+    border: 1px solid var(--green-dim);
+    cursor: default;
+    font-size: .8rem;
+  }
+
+  /* Estado vacío */
+  .coc-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 5rem 2rem;
+    color: var(--muted);
+    background: #f9fafb;
+    border-radius: 8px;
+  }
+  .coc-empty .ei { font-size: 3rem; margin-bottom: 1rem; opacity: .3; }
+  .coc-empty p { font-size: .9rem; letter-spacing: .04em; }
+</style>
 {% endblock %}
 
 {% block body %}
-    <div class="cocina-container">
-        <div class="page-header">
-            <img src="{% static 'hamburguesa.svg' %}" alt="Ícono de hamburguesa">
-            <div class="header-text">
-                <h1>Panel de Cocina</h1>
-                <p>Gestión de pedidos en preparación</p>
-            </div>
-        </div>
-        
-        <div class="pedido-grid">
-            <!-- Pedido #1 -->
-            <div class="pedido-card">
-                <img class="corner-icon" src="{% static 'hamburguesa.svg' %}" alt="Ícono decorativo">
-                <div class="pedido-header">
-                    <span class="pedido-title">Pedido #1</span>
-                    <span class="pedido-cliente">Juan Alberto Perez</span>
-                </div>
-                <div class="pedido-items">
-                    <div class="pedido-item">1x Hamburguesa Clásica</div>
-                    <div class="pedido-item">1x Papas Fritas</div>
-                    <div class="pedido-item">1x Coca Cola</div>
-                </div>
-                <div class="pedido-tiempo">Tiempo estimado: 15 min</div>
-                <div class="pedido-actions">
-                    <button class="btn-preparar">INICIAR PREPARACIÓN</button>
-                </div>
-            </div>
-            
-            <!-- Pedido #2 -->
-            <div class="pedido-card status-ready">
-                <img class="corner-icon" src="{% static 'hamburguesa.svg' %}" alt="Ícono decorativo">
-                <div class="pedido-header">
-                    <span class="pedido-title">Pedido #2</span>
-                    <span class="pedido-cliente">Juan Perez</span>
-                </div>
-                <div class="pedido-items">
-                    <div class="pedido-item">1x Internacional Clásica</div>
-                    <div class="pedido-item">1x Plaza Plaza</div>
-                </div>
-                <div class="pedido-tiempo">Tiempo estimado: 8 min (Listo)</div>
-                <div class="pedido-actions">
-                    <button class="btn-entregar">MARCAR COMO ENTREGADO</button>
-                </div>
-            </div>
-            
-            <!-- Pedido #3 -->
-            <div class="pedido-card">
-                <img class="corner-icon" src="{% static 'hamburguesa.svg' %}" alt="Ícono decorativo">
-                <div class="pedido-header">
-                    <span class="pedido-title">Pedido #3</span>
-                    <span class="pedido-cliente">María González</span>
-                </div>
-                <div class="pedido-items">
-                    <div class="pedido-item">2x Hamburguesa Clásica</div>
-                    <div class="pedido-item">1x Ensalada César</div>
-                    <div class="pedido-item">2x Agua Mineral</div>
-                </div>
-                <div class="pedido-tiempo">Tiempo estimado: 20 min</div>
-                <div class="pedido-actions">
-                    <button class="btn-preparar">INICIAR PREPARACIÓN</button>
-                </div>
-            </div>
-        </div>
-    </div>
+<script src="https://unpkg.com/htmx.org@1.9.12"></script>
 
-    <script>
-        // Lógica para cambiar estados
-        document.querySelectorAll('.btn-preparar').forEach(button => {
-            button.addEventListener('click', function() {
-                const card = this.closest('.pedido-card');
-                const timeElement = card.querySelector('.pedido-tiempo');
-                const actionsDiv = card.querySelector('.pedido-actions');
-                
-                // Cambiar a estado "En preparación"
-                this.textContent = 'EN PREPARACIÓN';
-                this.style.backgroundColor = '#ff9800';
-                
-                // Actualizar tiempo estimado
-                const currentTime = parseInt(timeElement.textContent.match(/\d+/)[0]);
-                timeElement.textContent = `Tiempo estimado: ${Math.max(5, currentTime - 5)} min`;
-                
-                // Cambiar a estado "Listo" después de 3 segundos (simulación)
-                setTimeout(() => {
-                    this.textContent = 'MARCAR COMO LISTO';
-                    this.style.backgroundColor = '#4CAF50';
-                    card.classList.add('status-ready');
-                    
-                    // Reemplazar botón
-                    actionsDiv.innerHTML = '<button class="btn-entregar">MARCAR COMO ENTREGADO</button>';
-                    
-                    // Agregar evento al nuevo botón
-                    actionsDiv.querySelector('.btn-entregar').addEventListener('click', function() {
-                        card.style.transform = 'translateX(100%)';
-                        card.style.opacity = '0';
-                        setTimeout(() => card.remove(), 500);
-                    });
-                }, 3000);
-            });
-        });
-        
-        // Evento para botones de entregar
-        document.querySelectorAll('.btn-entregar').forEach(button => {
-            button.addEventListener('click', function() {
-                const card = this.closest('.pedido-card');
-                card.style.transform = 'translateX(100%)';
-                card.style.opacity = '0';
-                setTimeout(() => card.remove(), 500);
-            });
-        });
-    </script>
+{# ── Header ──────────────────────────────────────────────────────────────────── #}
+<header class="coc-header">
+  <div class="coc-brand">
+    🍳 <span>Brother's Burger</span>
+    <span class="sep">/</span>
+    <span class="sub">Panel de Cocina</span>
+  </div>
+  <div class="coc-meta">
+    <div class="htmx-indicator" id="sync-ind">
+      <div class="spin"></div> Actualizando…
+    </div>
+    <div class="live-badge"><div class="live-dot"></div> En vivo</div>
+    <div class="clock" id="clock">--:--:--</div>
+  </div>
+</header>
+
+{# ── Contadores ───────────────────────────────────────────────────────────────── #}
+<div class="coc-counters" id="counters">
+  <span class="counter-pill pill-pe">🔔 <span class="n" id="cnt-pe">{{ cnt_pe }}</span> Nuevos</span>
+  <span class="counter-pill pill-ep">🍳 <span class="n" id="cnt-ep">{{ cnt_ep }}</span> En preparación</span>
+  <span class="counter-pill pill-li">✅ <span class="n" id="cnt-li">{{ cnt_li }}</span> Listos</span>
+</div>
+
+{# ── Tarjetas — htmx recarga cada 5s ─────────────────────────────────────────── #}
+<div class="coc-body">
+  <div id="cards-wrap"
+       hx-get="{% url 'pedidos:cocina_cards' %}"
+       hx-trigger="every 5s"
+       hx-swap="innerHTML show:none"
+       hx-indicator="#sync-ind">
+    {% include "orden_pedidos/partials/cocina_cards.html" %}
+  </div>
+</div>
+
+<script>
+  setInterval(() => {
+    document.getElementById('clock').textContent =
+      new Date().toLocaleTimeString('es-PY', { hour12: false });
+  }, 1000);
+
+  // Actualizar contadores cuando htmx recarga las tarjetas
+  document.body.addEventListener('htmx:afterSwap', e => {
+    if (e.detail.target.id === 'cards-wrap') {
+      const pe = document.querySelector('[data-cnt-pe]');
+      const ep = document.querySelector('[data-cnt-ep]');
+      const li = document.querySelector('[data-cnt-li]');
+      if (pe) document.getElementById('cnt-pe').textContent = pe.dataset.cntPe;
+      if (ep) document.getElementById('cnt-ep').textContent = ep.dataset.cntEp;
+      if (li) document.getElementById('cnt-li').textContent = li.dataset.cntLi;
+    }
+  });
+</script>
 {% endblock %}

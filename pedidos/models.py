@@ -10,23 +10,36 @@ class Adicional(models.Model):
     
 
 class Pedido(models.Model):
+    #Tipo de entrega
     TIPO_ENTREGA_CHOICES = [
         ('RE', 'Retiro en local'),
         ('DE', 'Delivery'),
     ]
 
-    ESTADO_CHOICES = [
-        ('PE', 'Pendiente'),
-        ('EC', 'En camino'),
-        ('EN', 'Entregado'),
-        ('CA', 'Cancelado'),
+    #Estado de cocina (lo maneja el Panel de Cocina)
+    ESTADO_COCINA_CHOICES = [
+        ('PE','Pendiente'),  #recien entro, cocina aun no lo vio
+        ('EP','En preparacion'), #cocina lo esta preparando
+        ('LI','Listo'),     #cocina termino, listo para entregar
+    ]
+
+    ESTADO_ENTREGA_CHOICES = [
+        ('PE', 'Pendiente'), #aun no fue entregado al cliente
+        ('EN','Entregado'),  #el empleado lo entrego al cliente
+        ('FA', 'Facturado'), #se genero y envio la factura
+        ('CA','Cancelado'),   #cancelado(cualquier momento)
     ]
 
     cliente = models.ForeignKey('administrador.Cliente', on_delete=models.CASCADE, related_name='pedidos')
     # CODIGO PEDIENTE PARA REVISION
     fecha = models.DateTimeField(auto_now_add=True)
     total = models.IntegerField()
-    estado = models.CharField(max_length=2, choices=ESTADO_CHOICES, default='PE')
+
+    #Estados de los pedidos
+    estado_cocina = models.CharField(max_length=2,choices=ESTADO_COCINA_CHOICES, default='PE', verbose_name='Estado de cocina')
+    estado_entrega = models.CharField(max_length=2,choices=ESTADO_ENTREGA_CHOICES, default='PE',verbose_name='Estado de entrega')
+
+
     tipo_entrega = models.CharField(max_length=2, choices=TIPO_ENTREGA_CHOICES, default='RE')
     direccion_entrega = models.ForeignKey(
         'administrador.Direccion',
@@ -49,6 +62,35 @@ class Pedido(models.Model):
         blank=True
     )
     hora_retiro = models.TimeField(null=True, blank=True)
+    #Propiedades utiles
+    @property
+    def listo_para_entregar(self):
+        """True cuando cocina terminó y el empleado aún no lo entregó."""
+        return self.estado_cocina == 'LI' and self.estado_entrega == 'PE'
+
+    @property
+    def puede_facturar(self):
+        """True cuando ya fue entregado pero aún no tiene factura."""
+        return self.estado_entrega == 'EN'
+
+    @property
+    def siguiente_estado_cocina(self):
+        """Devuelve el código del siguiente estado de cocina, o None si ya llegó al final."""
+        mapa = {'PE': 'EP', 'EP': 'LI'}
+        return mapa.get(self.estado_cocina)
+
+    @property
+    def siguiente_estado_entrega(self):
+        """
+        Devuelve el código del siguiente estado de entrega, o None.
+        Solo permite avanzar si cocina ya marcó Listo.
+        """
+        if self.estado_entrega == 'PE' and self.estado_cocina == 'LI':
+            return 'EN'
+        if self.estado_entrega == 'EN':
+            return 'FA'
+        return None
+    #Validaciones
 
     def clean(self):
         if self.tipo_entrega == 'DE' and not self.direccion_entrega:

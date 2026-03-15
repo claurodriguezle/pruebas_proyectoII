@@ -1,0 +1,131 @@
+{# orden_pedidos/partials/empleado_tabla.html #}
+{# Fragmento recargado por htmx cada 5s y al filtrar #}
+
+<div class="emp-table-wrap">
+  <table class="emp-table">
+    <thead>
+      <tr>
+        <th>Orden</th>
+        <th>Tiempo</th>
+        <th>Cliente</th>
+        <th>Items</th>
+        <th>Total</th>
+        <th>Cocina</th>
+        <th>Entrega</th>
+        <th>Tipo</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% if pedidos %}
+        {% for p in pedidos %}
+        <tr>
+
+          {# Número #}
+          <td><div class="order-num">#{{ p.id }}</div></td>
+
+          {# Tiempo transcurrido #}
+          <td>
+            <div class="timer
+              {% if p.minutos_transcurridos >= 20 %}alert
+              {% elif p.minutos_transcurridos >= 10 %}warn{% endif %}">
+              ⏱
+              {% if p.minutos_transcurridos < 1 %}ahora
+              {% else %}{{ p.minutos_transcurridos }} min{% endif %}
+            </div>
+          </td>
+
+          {# Cliente #}
+          <td>
+            <div class="client-name">{{ p.cliente_nombre }}</div>
+            <div class="delivery-sub">{{ p.get_tipo_entrega_display }}</div>
+          </td>
+
+          {# Items (resumen) #}
+          <td>
+            <div class="items-preview">
+              {% for d in p.detalle.all %}
+                {{ d.cantidad }}× {{ d.producto.nombre }}{% if not forloop.last %}, {% endif %}
+              {% endfor %}
+            </div>
+          </td>
+
+          {# Total #}
+          <td><div class="order-total">{{ p.total|floatformat:0 }} Gs.</div></td>
+
+          {# Estado cocina #}
+          <td>
+            <span class="badge badge-cocina-{{ p.estado_cocina }}">
+              {% if p.estado_cocina == 'PE' %}🔔 Pendiente
+              {% elif p.estado_cocina == 'EP' %}🍳 En preparación
+              {% elif p.estado_cocina == 'LI' %}✅ Listo
+              {% endif %}
+            </span>
+          </td>
+
+          {# Estado entrega #}
+          <td>
+            <span class="badge badge-entrega-{{ p.estado_entrega }}">
+              {% if p.estado_entrega == 'PE' %}⏳ Pendiente
+              {% elif p.estado_entrega == 'EN' %}📦 Entregado
+              {% elif p.estado_entrega == 'FA' %}📄 Facturado
+              {% elif p.estado_entrega == 'CA' %}✕ Cancelado
+              {% endif %}
+            </span>
+          </td>
+
+          {# Tipo entrega #}
+          <td>
+            {% if p.tipo_entrega == 'DE' %}
+              <span class="badge badge-tipo-DE">🛵 Delivery</span>
+            {% else %}
+              <span class="badge badge-tipo-RE">🏠 Local</span>
+            {% endif %}
+          </td>
+
+          {# Acciones #}
+          <td>
+            <div class="actions-cell">
+
+              {# Ver detalle — carga modal con htmx #}
+              <button class="btn btn-ghost"
+                      hx-get="{% url 'pedidos:empleado_modal' p.id %}"
+                      hx-target="#modal-body"
+                      hx-swap="innerHTML"
+                      hx-indicator="#sync-ind"
+                      onclick="openModal()">
+                🔍 Ver
+              </button>
+
+              {# Avanzar estado — solo si hay siguiente y cocina terminó #}
+              {% if p.siguiente_estado_entrega %}
+                <button class="btn btn-amber"
+                        hx-post="{% url 'pedidos:empleado_avanzar' p.id %}"
+                        hx-target="#tabla-wrap"
+                        hx-swap="innerHTML show:none"
+                        hx-indicator="#sync-ind"
+                        hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+                  ▶ {{ p.btn_label }}
+                </button>
+              {% elif p.estado_entrega == 'PE' and p.estado_cocina != 'LI' %}
+                <span class="waiting">Esperando cocina…</span>
+              {% endif %}
+
+            </div>
+          </td>
+
+        </tr>
+        {% endfor %}
+      {% else %}
+        <tr>
+          <td colspan="9">
+            <div class="emp-empty">
+              <div class="ei">🍔</div>
+              <p>No hay pedidos activos</p>
+            </div>
+          </td>
+        </tr>
+      {% endif %}
+    </tbody>
+  </table>
+</div>

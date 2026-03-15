@@ -1,0 +1,102 @@
+{# orden_pedidos/partials/cocina_cards.htmlFragmento recargado por htmx cada 5s.Recibe: pedidos, cnt_pe, cnt_ep, cnt_li#}
+
+{# Data attributes para que el JS del header actualice los contadores #}
+<span data-cnt-pe="{{ cnt_pe }}" data-cnt-ep="{{ cnt_ep }}" data-cnt-li="{{ cnt_li }}" style="display:none"></span>
+
+<div class="cards-grid">
+  {% if pedidos %}
+    {% for p in pedidos %}
+
+    <div class="pedido-card {% if p.estado_cocina == 'EP' %}ep{% elif p.estado_cocina == 'LI' %}li{% endif %}">
+
+      {# Cabecera: número + timer #}
+      <div class="card-head">
+        <div>
+          <div class="card-num">#{{ p.id }}</div>
+          <div class="card-cliente">{{ p.cliente_nombre }}</div>
+        </div>
+        <div>
+          <div class="card-timer
+            {% if p.minutos_transcurridos >= 20 %}alert
+            {% elif p.minutos_transcurridos >= 10 %}warn{% endif %}">
+            ⏱
+            {% if p.minutos_transcurridos < 1 %}ahora
+            {% else %}{{ p.minutos_transcurridos }} min{% endif %}
+          </div>
+          <span class="badge badge-{{ p.estado_cocina }}" style="margin-top:4px;display:inline-flex">
+            {% if p.estado_cocina == 'PE' %}🔔 Pendiente
+            {% elif p.estado_cocina == 'EP' %}🍳 En preparación
+            {% elif p.estado_cocina == 'LI' %}✅ Listo
+            {% endif %}
+          </span>
+        </div>
+      </div>
+
+      {# Tipo de entrega #}
+      <div class="card-tipo">
+        {% if p.tipo_entrega == 'DE' %}🛵 Delivery{% else %}🏠 Retiro local{% endif %}
+        {% if p.hora_retiro %} — Retiro: {{ p.hora_retiro|time:"H:i" }}{% endif %}
+      </div>
+
+      {# Lista de items #}
+      <ul class="card-items">
+        {% for d in p.detalle.all %}
+        <li>
+          <span class="item-qty">{{ d.cantidad }}×</span>
+          <div>
+            <div class="item-nombre">{{ d.producto.nombre }}</div>
+            {# Adicionales #}
+            {% for ad in d.adicionales.all %}
+              <div class="item-ad" style="color:#15803d">+ {{ ad.adicional.nombre }}</div>
+            {% endfor %}
+            {# Ingredientes eliminados — SIN ... #}
+            {% for ing in d.ingredientes_eliminados.all %}
+              <div class="item-ad" style="color:#dc2626;font-weight:700">✕ SIN {{ ing.ingrediente.item.nombre }}</div>
+            {% endfor %}
+            {# Nota del item #}
+            {% if d.nota %}
+              <div class="item-ad" style="color:#92400e">📝 {{ d.nota }}</div>
+            {% endif %}
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+
+      {# Botón de avance — htmx hace POST y reemplaza las tarjetas #}
+      {% if p.estado_cocina == 'PE' %}
+        <button class="btn-avanzar btn-pe"
+                hx-post="{% url 'pedidos:cocina_avanzar' p.id %}"
+                hx-target="#cards-wrap"
+                hx-swap="innerHTML show:none"
+                hx-indicator="#sync-ind"
+                hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+          ▶ Iniciar preparación
+        </button>
+
+      {% elif p.estado_cocina == 'EP' %}
+        <button class="btn-avanzar btn-ep"
+                hx-post="{% url 'pedidos:cocina_avanzar' p.id %}"
+                hx-target="#cards-wrap"
+                hx-swap="innerHTML show:none"
+                hx-indicator="#sync-ind"
+                hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+          ✓ Marcar listo
+        </button>
+
+      {% elif p.estado_cocina == 'LI' %}
+        <div class="btn-avanzar btn-li">
+          ✅ Listo — esperando al empleado
+        </div>
+      {% endif %}
+
+    </div>
+
+    {% endfor %}
+
+  {% else %}
+    <div class="coc-empty">
+      <div class="ei">🍳</div>
+      <p>Sin pedidos pendientes en cocina</p>
+    </div>
+  {% endif %}
+</div>

@@ -22,8 +22,15 @@ urlpatterns = [
 
     path('delivery/', views.seleccionar_direccion_delivery, name='seleccionar_direccion_delivery'),
     #Rutas para pruebas de orden de pedidos
-    #Empleado/Cajero
-    path('orden/', views.ordenes_view, name='ordenes_view'),
-    #Cocina
+    # Panel del Empleado
+    path('orden/', views.panel_empleado, name='ordenes_view'),
+    path('orden/tabla/', views.empleado_tabla, name='empleado_tabla'),
+    path('orden/modal/<int:pedido_id>/', views.empleado_modal, name='empleado_modal'),
+    path('orden/avanzar/<int:pedido_id>/', views.empleado_avanzar, name='empleado_avanzar'),
+    path('orden/actualizar/<int:pedido_id>/', views.empleado_actualizar, name='empleado_actualizar'),
+ 
+    #  Panel de Cocina
     path('cocina/', views.cocina_view, name='cocina_view'),
+    path('cocina/cards/', views.cocina_cards, name='cocina_cards'),
+    path('cocina/avanzar/<int:pedido_id>/', views.cocina_avanzar, name='cocina_avanzar'),
 ]

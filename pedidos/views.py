@@ -10,6 +10,9 @@ from django.template.loader import render_to_string
 from datetime import datetime
 from .services import validar_delivery
 from usuarios.forms import DireccionForm
+from django.views.decorators.http import require_http_methods
+from django.utils import timezone
+
 
 def index(request):
     return render(request, 'pedidos/index.html')
@@ -102,6 +105,10 @@ def carrito(request):
 
     # Calcular subtotal por producto y total general
     for item in carrito:
+        #Probando
+        print("ITEM CARRITO:", item)  # ← agregá esta línea
+        producto = Producto.objects.get(pk=item['producto'])
+        #Probando
         total_adicionales = sum(a['precio'] for a in item['adicionales'])
         item['subtotal'] = (item['precio'] + total_adicionales) * item['cantidad']
 
@@ -351,7 +358,8 @@ def confirmar_pedido(request):
                 hora_retiro=hora_retiro,
                 direccion_entrega=direccion_obj,
                 costo_delivery=costo_delivery,
-                estado='PE',
+                estado_cocina='PE',
+                estado_entrega='PE',
             )
 
             for item in carrito:
@@ -373,14 +381,33 @@ def confirmar_pedido(request):
                         cantidad=ad.get('cantidad', 1)
                     )
 
-                ingredientes_eliminados = item.get('ingredientes_eliminados', [])
+                #Probando
+                ingredientes_eliminados = item.get('sin', [])
+                print("SIN INGREDIENTES:", ingredientes_eliminados) 
+                for nombre_ing in ingredientes_eliminados:
+                    print("Buscando ingrediente:", nombre_ing, "en producto:", producto.id)  
+                    try:
+                        ingrediente_obj = IngredienteProducto.objects.get(
+                            producto=producto,
+                            item__nombre__iexact=nombre_ing
+                        )
+                        print("Encontrado:", ingrediente_obj)  
+                        IngredienteEliminadoPedido.objects.create(
+                            detalle_pedido=detalle,
+                            ingrediente=ingrediente_obj
+                        )
+                    except IngredienteProducto.DoesNotExist:
+                        print("NO ENCONTRADO:", nombre_ing) 
+                
+                '''
+                ingredientes_eliminados = item.get('sin', [])
                 for ing_id in ingredientes_eliminados:
                     ingrediente_obj = IngredienteProducto.objects.get(pk=ing_id)
                     IngredienteEliminadoPedido.objects.create(
                         detalle_pedido=detalle,
                         ingrediente=ingrediente_obj
                     )
-
+                '''
             # Si llega acá, todo fue bien, se hace commit automático
     except Exception as e:
         messages.error(request, f"Error al guardar el pedido: {e}")
@@ -433,9 +460,205 @@ def detalle_mi_pedido(request, pedido_id):
 
 #Orden de pedidos
 #Empleado/Cajero
-def ordenes_view(request):
-    return render(request, 'orden_pedidos/orden.html')
+def _get_filtros(request):
+    return {
+        'estado_activo': request.GET.get('estado', 'all'),
+        'tipo_entrega':  request.GET.get('entrega', ''),
+        'q':             request.GET.get('q', ''),
+    }
 
-#Cocina
+
+def _enriquecer(pedido):
+    """Agrega atributos calculados al pedido para usarlos en el template."""
+    ahora = timezone.now()
+    diff  = ahora - pedido.fecha
+    pedido.minutos_transcurridos = int(diff.total_seconds() // 60)
+
+    labels = {'PE': 'Marcar entregado', 'EN': 'Facturar'}
+    pedido.btn_label = labels.get(pedido.estado_entrega, '')
+
+    # Nombre del cliente para mostrar en la tabla
+    persona = pedido.cliente.persona
+    pedido.cliente_nombre = f"{persona.nombre} {persona.apellido}"
+
+    return pedido
+
+
+def _get_pedidos_empleado(filtros):
+    qs = (
+        Pedido.objects
+        .select_related('cliente__persona')
+        .prefetch_related('detalle__producto', 'detalle__adicionales__adicional', 'detalle__ingredientes_eliminados__ingrediente')
+        .exclude(estado_entrega__in=['FA', 'CA'])
+        .order_by('fecha')
+    )
+
+    if filtros['estado_activo'] != 'all':
+        qs = qs.filter(estado_entrega=filtros['estado_activo'])
+
+    if filtros['tipo_entrega']:
+        qs = qs.filter(tipo_entrega=filtros['tipo_entrega'])
+
+    if filtros['q']:
+        qs = qs.filter(
+            cliente__persona__nombre__icontains=filtros['q']
+        ) | qs.filter(
+            cliente__persona__apellido__icontains=filtros['q']
+        )
+
+    return [_enriquecer(p) for p in qs]
+
+
+def _chips(filtros):
+    base = Pedido.objects.exclude(estado_entrega__in=['FA', 'CA'])
+    return {
+        'cnt_all':       base.count(),
+        'cnt_pendiente': base.filter(estado_entrega='PE').count(),
+        'cnt_entregado': base.filter(estado_entrega='EN').count(),
+        'cnt_listos':    base.filter(estado_cocina='LI', estado_entrega='PE').count(),
+    }
+
+
+# Vistas
+
+@login_required
+def panel_empleado(request):
+    filtros = _get_filtros(request)
+    pedidos = _get_pedidos_empleado(filtros)
+    return render(request, 'orden_pedidos/panel_empleado.html', {
+        **filtros, **_chips(filtros), 'pedidos': pedidos,
+    })
+
+
+@login_required
+def empleado_tabla(request):
+    filtros = _get_filtros(request)
+    pedidos = _get_pedidos_empleado(filtros)
+    return render(request, 'orden_pedidos/partials/empleado_tabla.html', {
+        **filtros, **_chips(filtros), 'pedidos': pedidos,
+    })
+
+
+@login_required
+def empleado_modal(request, pedido_id):
+    pedido = get_object_or_404(
+        Pedido.objects
+        .select_related('cliente__persona')
+        .prefetch_related('detalle__producto', 'detalle__adicionales__adicional', 'detalle__ingredientes_eliminados__ingrediente'),
+        pk=pedido_id
+    )
+    _enriquecer(pedido)
+    return render(request, 'orden_pedidos/partials/empleado_modal.html', {'pedido': pedido})
+
+
+@login_required
+@require_http_methods(['POST'])
+def empleado_avanzar(request, pedido_id):
+    pedido    = get_object_or_404(Pedido, pk=pedido_id)
+    siguiente = pedido.siguiente_estado_entrega
+    if siguiente:
+        pedido.estado_entrega = siguiente
+        pedido.save(update_fields=['estado_entrega'])
+
+    filtros = _get_filtros(request)
+    pedidos = _get_pedidos_empleado(filtros)
+    return render(request, 'orden_pedidos/partials/empleado_tabla.html', {
+        **filtros, **_chips(filtros), 'pedidos': pedidos,
+    })
+
+
+@login_required
+@require_http_methods(['POST'])
+def empleado_actualizar(request, pedido_id):
+    pedido        = get_object_or_404(Pedido, pk=pedido_id)
+    nuevo_entrega = request.POST.get('estado_entrega', pedido.estado_entrega)
+
+    if nuevo_entrega in ['PE', 'EN', 'FA', 'CA']:
+        pedido.estado_entrega = nuevo_entrega
+        pedido.save(update_fields=['estado_entrega'])
+
+    filtros = _get_filtros(request)
+    pedidos = _get_pedidos_empleado(filtros)
+    return render(request, 'orden_pedidos/partials/empleado_tabla.html', {
+        **filtros, **_chips(filtros), 'pedidos': pedidos,
+    })
+
+#COCINA
+
+def _enriquecer_cocina(pedido):
+    """Agrega atributos calculados al pedido para el panel de cocina."""
+    from django.utils import timezone
+    ahora = timezone.now()
+    diff  = ahora - pedido.fecha
+    pedido.minutos_transcurridos = int(diff.total_seconds() // 60)
+
+    labels = {'PE': 'Iniciar preparación', 'EP': 'Marcar listo'}
+    pedido.btn_label = labels.get(pedido.estado_cocina, '')
+
+    persona = pedido.cliente.persona
+    pedido.cliente_nombre = f"{persona.nombre} {persona.apellido}"
+
+    return pedido
+
+
+def _get_pedidos_cocina():
+    """Devuelve solo los pedidos que cocina debe ver: PE y EP. Los LI se ocultan cuando ya fueron entregados."""
+    from .models import Pedido
+    qs = (
+        Pedido.objects
+        .select_related('cliente__persona')
+        .prefetch_related('detalle__producto', 'detalle__adicionales__adicional', 'detalle__ingredientes_eliminados__ingrediente')
+        .exclude(estado_cocina='LI', estado_entrega='EN')   # ya entregados, fuera
+        .exclude(estado_cocina='LI', estado_entrega='FA')   # ya facturados, fuera
+        .exclude(estado_entrega='CA')                        # cancelados, fuera
+        .filter(estado_cocina__in=['PE', 'EP', 'LI'])        # solo los relevantes
+        .order_by('fecha')                                   # más antiguos primero
+    )
+    return [_enriquecer_cocina(p) for p in qs]
+
+
+# Vistas cocina
+
+@login_required
 def cocina_view(request):
-    return render(request,'orden_pedidos/cocina.html')
+    """Pantalla principal del panel de cocina."""
+    pedidos = _get_pedidos_cocina()
+    return render(request, 'orden_pedidos/cocina.html', {
+        'pedidos':     pedidos,
+        'cnt_pe':      sum(1 for p in pedidos if p.estado_cocina == 'PE'),
+        'cnt_ep':      sum(1 for p in pedidos if p.estado_cocina == 'EP'),
+        'cnt_li':      sum(1 for p in pedidos if p.estado_cocina == 'LI'),
+    })
+
+
+@login_required
+def cocina_cards(request):
+    """Fragmento de tarjetas — htmx lo recarga cada 5s."""
+    pedidos = _get_pedidos_cocina()
+    return render(request, 'orden_pedidos/partials/cocina_cards.html', {
+        'pedidos': pedidos,
+        'cnt_pe':  sum(1 for p in pedidos if p.estado_cocina == 'PE'),
+        'cnt_ep':  sum(1 for p in pedidos if p.estado_cocina == 'EP'),
+        'cnt_li':  sum(1 for p in pedidos if p.estado_cocina == 'LI'),
+    })
+
+
+@login_required
+@require_http_methods(['POST'])
+def cocina_avanzar(request, pedido_id):
+    """Avanza el estado de cocina al siguiente: PE→EP→LI."""
+    from .models import Pedido
+    pedido    = get_object_or_404(Pedido, pk=pedido_id)
+    siguiente = pedido.siguiente_estado_cocina   # propiedad del modelo
+    if siguiente:
+        pedido.estado_cocina = siguiente
+        pedido.save(update_fields=['estado_cocina'])
+
+    # Devuelve las tarjetas actualizadas
+    pedidos = _get_pedidos_cocina()
+    return render(request, 'orden_pedidos/partials/cocina_cards.html', {
+        'pedidos': pedidos,
+        'cnt_pe':  sum(1 for p in pedidos if p.estado_cocina == 'PE'),
+        'cnt_ep':  sum(1 for p in pedidos if p.estado_cocina == 'EP'),
+        'cnt_li':  sum(1 for p in pedidos if p.estado_cocina == 'LI'),
+    })
