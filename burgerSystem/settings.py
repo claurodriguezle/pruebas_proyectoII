@@ -94,11 +94,11 @@ WSGI_APPLICATION = 'burgerSystem.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME':'Db_Burger_App',
-        'USER':'crodriguez',
-        'PASSWORD':'12345',
+        'NAME':'db_burgerapp',
+        'USER':'ruizj',
+        'PASSWORD':'admin',
         'HOST':'localhost',
-        'PORT': '5433',
+        'PORT': '5432',
     }
 }
 

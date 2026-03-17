@@ -12,7 +12,11 @@
         hx-swap="beforeend"
     {% endif %}
     
-    hx-on="htmx:afterSwap: window.dispatchEvent(new Event('modalProductoCerrado'))"
+    hx-on::after-request="
+        if(event.detail.successful) {
+            bootstrap.Modal.getInstance(document.getElementById('productModal')).hide();
+        }
+    "
     >
     {% csrf_token %}
     {{ form.as_p }}

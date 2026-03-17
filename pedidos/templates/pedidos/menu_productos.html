@@ -51,9 +51,13 @@ Menu
               hx-post="{% url 'pedidos:agregar_al_carrito' %}"
               hx-swap="none"
               hx-trigger="submit"
+              hx-on::after-request="
+                if (event.detail.successful) {
+                  bootstrap.Modal.getInstance(document.getElementById('personalizarModal')).hide();
+                }
+              "
               class="actualiza-contador">
 
-              >
             <input type="hidden" name="producto_id" id="input-producto-id">
             {% csrf_token %}
             <div class="modal-header">
@@ -104,7 +108,7 @@ Menu
     </div>
   </section>
 
-   <!-- Carga el input con el producto_id seleccionado -->
+  <!-- Carga el input con el producto_id seleccionado -->
   <script>
     function cargarDatosProducto(boton) {
       const productoId = boton.getAttribute('data-producto-id');
@@ -115,6 +119,11 @@ Menu
 
       // (Opcional) Cambiar el título del modal
       document.getElementById('personalizarModalLabel').textContent = "Personalizar " + productoNombre;
+
+      // Limpia el formulario cuando el modal se cierra
+      document.getElementById('personalizarModal').addEventListener('hidden.bs.modal', function() {
+        document.getElementById('form-personalizado').reset();
+      });
     }
   </script>
 {% endblock %}
