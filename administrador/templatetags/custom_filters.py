@@ -4,4 +4,7 @@ register = template.Library()
 
 @register.filter
 def punto_miles(value):
-    return str(value).replace(",", ".")
+    try:
+        return f"{int(value):,}".replace(",", ".")
+    except (ValueError, TypeError):
+        return value

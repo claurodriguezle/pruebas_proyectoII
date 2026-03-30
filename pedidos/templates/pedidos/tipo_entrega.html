@@ -44,4 +44,19 @@
 
   </div>
 </div>
+
+<script>
+  function actualizarMinimo() {
+    const input = document.getElementById('{{ form.hora_retiro.id_for_label }}');
+    const ahora = new Date();
+    ahora.setMinutes(ahora.getMinutes() + 10); // Minimo 10 min.
+    const hh = String(ahora.getHours()).padStart(2, '0')
+    const mm = String(ahora.getMinutes).padStart(2, '0')
+    input.min = `${hh}:${mm}`;
+  }
+
+  // Actualizar al cargar y cada 30 segundos
+  actualizarMinimo();
+  setInterval(actualizarMinimo, 30000);
+</script>
 {% endblock %}

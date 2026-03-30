@@ -42,7 +42,7 @@
                             <strong>Distancia:</strong> {{ distancia_km }} km        
                         </p>
                         <p>
-                            <strong>Costo de envío:</strong> ₲{{ costo_delivery }}   
+                            <strong>Costo de envío:</strong> ₲{{ costo_delivery|punto_miles }}   
                         </p>
                     {% endif %}
                 {% endif %}
@@ -64,7 +64,7 @@
                 </div>
                 <!-- Vista solo lectura -->
                 <div id="facturacion-read" class="mt-3">
-                    <p id="read-nombre" class="mb-1"><strong>Nombre:</strong> {{persona.nombre}}{{persona.apellido}}</p>
+                    <p id="read-nombre" class="mb-1"><strong>Nombre:</strong> {{ persona.nombre }} {{ persona.apellido }}</p>
                     <p id="read-documento" class="mb-0"><strong>CI / RUC:</strong> {{ documento_factura }}</p>
                 </div>
 
@@ -108,7 +108,7 @@
         <!-- Total y botón de confirmar -->
         <div class="d-flex justify-content-end mt-4">
             <div class="text-end">
-                <h4><strong>Total a pagar: <span id="total-carrito">{{ total }} Gs</span></strong></h4>
+                <h4><strong>Total a pagar: <span id="total-carrito">{{ total|punto_miles }} Gs</span></strong></h4>
 
                 <form action="{% url 'pedidos:confirmar_pedido' %}" method="post" class="mt-3">
                     {% csrf_token %}

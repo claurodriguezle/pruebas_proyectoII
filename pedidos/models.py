@@ -145,4 +145,4 @@ class IngredienteEliminadoPedido(models.Model):
     ingrediente = models.ForeignKey('administrador.IngredienteProducto', on_delete=models.CASCADE)
 
     def __str__(self):
-        return f"{self.ingrediente.nombre} en {self.detalle_pedido}"
+        return f"{self.ingrediente.item.nombre} en {self.detalle_pedido}"

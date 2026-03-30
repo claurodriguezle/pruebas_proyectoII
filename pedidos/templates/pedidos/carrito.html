@@ -13,7 +13,7 @@
 
                 <div class="d-flex justify-content-end mt-4">
                     <div class="text-end">
-                        <h4><strong>Total: <span id="total-carrito">{{ total }} Gs</span></strong></h4>
+                        <h4><strong>Total: <span id="total-carrito">{{ total|punto_miles }} Gs</span></strong></h4>
                         <div class="d-flex gap-2 justify-content-end mt-2">
                             <a href="{% url 'pedidos:menu_productos' %}" class="btn btn-danger">Seguir comprando</a>
                             {% if request.user.is_authenticated %}

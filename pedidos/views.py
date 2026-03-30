@@ -369,7 +369,7 @@ def confirmar_pedido(request):
                     producto=producto,
                     cantidad=item['cantidad'],
                     precio_unitario=item['precio'],
-                    nota=item.get('nota', '')
+                    nota=item.get('comentario', '')
                 )
 
                 adicionales = item.get('adicionales', [])
@@ -425,7 +425,7 @@ def confirmar_pedido(request):
 def mis_pedidos(request):
     try:
         cliente = request.user.cliente
-    except:
+    except Cliente.DoesNotExist:
         messages.error(request, "No tenés un perfil de cliente asociado.")
         return redirect('pedidos:menu_productos')
 
@@ -439,26 +439,16 @@ def mis_pedidos(request):
 
     return render(request, 'pedidos/estado_pedido.html', {'pedidos': pedidos})
 
-
-'''
 @login_required
-def mis_pedidos(request): # Muestra el estado e historial del pedido de CLIENTE
-
-    # Aseguramos si el pedido pertenece al cliente logueado
+def mis_pedidos_partial(request):
     try:
         cliente = request.user.cliente
     except Cliente.DoesNotExist:
-        messages.error(request, "No tienes un perfil de cliente asociado.")
-        return redirect('pedidos:menu_productos')
-
+        return HttpResponse('Ocurrio un error.')
+    
     pedidos = Pedido.objects.filter(cliente=cliente).order_by('-id')
+    return render(request, 'pedidos/partials/mis_pedidos_cards.html', {'pedidos': pedidos})
 
-    context = {
-        "pedidos": pedidos
-    }
-
-    return render(request, 'pedidos/estado_pedido.html', context)
-'''
 @login_required
 def detalle_mi_pedido(request, pedido_id):
     # Obtiene el pedido y nos asegura que sea del cliente loguedo
@@ -514,15 +504,19 @@ def _enriquecer(pedido):
     # Nombre del cliente para mostrar en la tabla
     persona = pedido.cliente.persona
     pedido.cliente_nombre = f"{persona.nombre} {persona.apellido}"
+    pedido.total_con_delivery = pedido.total + (pedido.costo_delivery or 0)
 
     return pedido
 
 
 def _get_pedidos_empleado(filtros):
+    hoy = timezone.localdate() # Fecha de hoy
+
     qs = (
         Pedido.objects
         .select_related('cliente__persona')
         .prefetch_related('detalle__producto', 'detalle__adicionales__adicional', 'detalle__ingredientes_eliminados__ingrediente')
+        .filter(fecha__date=hoy) # Solo los pedidos de hoy!
         .exclude(estado_entrega__in=['FA', 'CA'])
         .order_by('fecha')
     )
@@ -544,7 +538,13 @@ def _get_pedidos_empleado(filtros):
 
 
 def _chips(filtros):
-    base = Pedido.objects.exclude(estado_entrega__in=['FA', 'CA'])
+    hoy = timezone.localdate()
+
+    base = (
+        Pedido.objects
+        .filter(fecha__date=hoy)
+        .exclude(estado_entrega__in=['FA', 'CA'])
+    )
     return {
         'cnt_all':       base.count(),
         'cnt_pendiente': base.filter(estado_entrega='PE').count(),
@@ -555,7 +555,7 @@ def _chips(filtros):
 
 # Vistas
 
-@login_required
+#@login_required
 def panel_empleado(request):
     filtros = _get_filtros(request)
     pedidos = _get_pedidos_empleado(filtros)
@@ -564,7 +564,7 @@ def panel_empleado(request):
     })
 
 
-@login_required
+#@login_required
 def empleado_tabla(request):
     filtros = _get_filtros(request)
     pedidos = _get_pedidos_empleado(filtros)
@@ -573,7 +573,7 @@ def empleado_tabla(request):
     })
 
 
-@login_required
+#@login_required
 def empleado_modal(request, pedido_id):
     pedido = get_object_or_404(
         Pedido.objects
@@ -585,7 +585,7 @@ def empleado_modal(request, pedido_id):
     return render(request, 'orden_pedidos/partials/empleado_modal.html', {'pedido': pedido})
 
 
-@login_required
+#@login_required
 @require_http_methods(['POST'])
 def empleado_avanzar(request, pedido_id):
     from facturacion.services import generar_factura_desde_pedido
@@ -599,11 +599,16 @@ def empleado_avanzar(request, pedido_id):
 
         # ── Generar factura al marcar Entregado ──────────────────────────────
         if siguiente == 'EN':
-            factura = generar_factura_desde_pedido(pedido)
-            if factura:
-                # Avanzar automáticamente a Facturado
-                pedido.estado_entrega = 'FA'
-                pedido.save(update_fields=['estado_entrega'])
+            try: 
+                factura = generar_factura_desde_pedido(pedido)
+                if factura:
+                    # Avanzar automáticamente a Facturado
+                    pedido.estado_entrega = 'FA'
+                    pedido.save(update_fields=['estado_entrega'])
+                else:
+                    print("⚠️ generar_factura_desde_pedido retornó None")
+            except Exception as e:
+                print(f"❌ Error al generar factura: {e}")
 
     filtros = _get_filtros(request)
     pedidos = _get_pedidos_empleado(filtros)
@@ -612,7 +617,7 @@ def empleado_avanzar(request, pedido_id):
     })
 
 
-@login_required
+#@login_required
 @require_http_methods(['POST'])
 def empleado_actualizar(request, pedido_id):
     pedido        = get_object_or_404(Pedido, pk=pedido_id)
@@ -648,11 +653,14 @@ def _enriquecer_cocina(pedido):
 
 def _get_pedidos_cocina():
     """Devuelve solo los pedidos que cocina debe ver: PE y EP. Los LI se ocultan cuando ya fueron entregados."""
-    from .models import Pedido
+
+    hoy = timezone.localdate()
+
     qs = (
         Pedido.objects
         .select_related('cliente__persona')
         .prefetch_related('detalle__producto', 'detalle__adicionales__adicional', 'detalle__ingredientes_eliminados__ingrediente')
+        .filter(fecha__date=hoy)
         .exclude(estado_cocina='LI', estado_entrega='EN')   # ya entregados, fuera
         .exclude(estado_cocina='LI', estado_entrega='FA')   # ya facturados, fuera
         .exclude(estado_entrega='CA')                        # cancelados, fuera
@@ -664,7 +672,7 @@ def _get_pedidos_cocina():
 
 # Vistas cocina
 
-@login_required
+#@login_required
 def cocina_view(request):
     """Pantalla principal del panel de cocina."""
     pedidos = _get_pedidos_cocina()
@@ -676,7 +684,7 @@ def cocina_view(request):
     })
 
 
-@login_required
+#@login_required
 def cocina_cards(request):
     """Fragmento de tarjetas — htmx lo recarga cada 5s."""
     pedidos = _get_pedidos_cocina()
@@ -688,7 +696,7 @@ def cocina_cards(request):
     })
 
 
-@login_required
+#@login_required
 @require_http_methods(['POST'])
 def cocina_avanzar(request, pedido_id):
     """Avanza el estado de cocina al siguiente: PE→EP→LI."""
@@ -720,16 +728,3 @@ def mi_factura(request, pedido_id):
         pedido=pedido
     )
     return render(request, 'pedidos/mi_factura.html', {'factura': factura, 'pedido': pedido})
-
-
-@login_required
-@require_http_methods(['POST'])
-def cancelar_pedido(request, pedido_id):
-    pedido = get_object_or_404(Pedido, pk=pedido_id, cliente=request.user.cliente)
-    if pedido.estado_cocina == 'PE':
-        pedido.estado_entrega = 'CA'
-        pedido.save(update_fields=['estado_entrega'])
-        messages.success(request, "Tu pedido fue cancelado correctamente.")
-    else:
-        messages.error(request, "No podés cancelar este pedido, ya está en preparación.")
-    return redirect('pedidos:mis_pedidos')

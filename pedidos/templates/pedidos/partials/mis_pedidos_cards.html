@@ -1,0 +1,117 @@
+{% if pedidos %}
+    {% for pedido in pedidos %}
+    <div class="pedido-card mb-4 p-4">
+
+        {# Cabecera #}
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h5 class="mb-0 fw-semibold">Pedido #{{ pedido.id }}</h5>
+                <small class="text-muted">
+                    <i class="bi bi-calendar-event"></i>
+                    {{ pedido.fecha|date:"d/m/Y" }}
+                    {% if pedido.hora_retiro %}
+                    — <i class="bi bi-clock"></i> {{ pedido.hora_retiro|time:"H:i" }}
+                    {% endif %}
+                </small>
+            </div>
+            <strong class="fs-5">Gs {{ pedido.total|punto_miles }}</strong>
+        </div>
+
+        {# Barra de progreso #}
+        <div class="progress-steps mb-3">
+
+            <div class="step done">
+                <div class="step-dot done"><i class="bi bi-check" style="font-size:12px"></i></div>
+                <span class="step-label">Recibido</span>
+            </div>
+
+            <div class="step {% if pedido.estado_cocina == 'EP' %}active{% elif pedido.estado_cocina == 'LI' or pedido.estado_entrega != 'PE' %}done{% endif %}">
+                <div class="step-dot {% if pedido.estado_cocina == 'EP' %}active{% elif pedido.estado_cocina == 'LI' or pedido.estado_entrega != 'PE' %}done{% endif %}">
+                    {% if pedido.estado_cocina == 'LI' or pedido.estado_entrega != 'PE' %}
+                        <i class="bi bi-check" style="font-size:12px"></i>
+                    {% else %}
+                        <i class="bi bi-fire" style="font-size:12px"></i>
+                    {% endif %}
+                </div>
+                <span class="step-label">En preparación</span>
+            </div>
+
+            <div class="step {% if pedido.estado_cocina == 'LI' and pedido.estado_entrega == 'PE' %}active{% elif pedido.estado_entrega != 'PE' %}done{% endif %}">
+                <div class="step-dot {% if pedido.estado_cocina == 'LI' and pedido.estado_entrega == 'PE' %}active{% elif pedido.estado_entrega != 'PE' %}done{% endif %}">
+                    {% if pedido.estado_entrega != 'PE' %}
+                        <i class="bi bi-check" style="font-size:12px"></i>
+                    {% else %}
+                        <i class="bi bi-bag-check" style="font-size:12px"></i>
+                    {% endif %}
+                </div>
+                <span class="step-label">Listo</span>
+            </div>
+
+            <div class="step {% if pedido.estado_entrega == 'EN' %}active{% elif pedido.estado_entrega == 'FA' %}done{% endif %}">
+                <div class="step-dot {% if pedido.estado_entrega == 'EN' %}active{% elif pedido.estado_entrega == 'FA' %}done{% endif %}">
+                    {% if pedido.estado_entrega == 'FA' %}
+                        <i class="bi bi-check" style="font-size:12px"></i>
+                    {% else %}
+                        <i class="bi bi-box-seam" style="font-size:12px"></i>
+                    {% endif %}
+                </div>
+                <span class="step-label">Entregado</span>
+            </div>
+
+            <div class="step {% if pedido.estado_entrega == 'FA' %}done{% endif %}">
+                <div class="step-dot {% if pedido.estado_entrega == 'FA' %}done{% endif %}">
+                    <i class="bi bi-receipt" style="font-size:12px"></i>
+                </div>
+                <span class="step-label">Facturado</span>
+            </div>
+
+        </div>
+
+        {# Tipo de entrega #}
+        <p class="text-muted small mb-3">
+            <i class="bi bi-{% if pedido.tipo_entrega == 'DE' %}truck{% else %}shop{% endif %}"></i>
+            {{ pedido.get_tipo_entrega_display }}
+            {% if pedido.estado_entrega == 'CA' %}
+                — <span class="text-danger fw-semibold">Cancelado</span>
+            {% endif %}
+        </p>
+
+        {# Acciones #}
+        <div class="d-flex justify-content-end gap-2 flex-wrap">
+
+            {% if pedido.estado_cocina == 'PE' and pedido.estado_entrega == 'PE' %}
+            <form method="POST"
+                  action="{% url 'pedidos:cancelar_pedido' pedido.id %}"
+                  onsubmit="return confirm('¿Seguro que querés cancelar este pedido?')">
+                <button type="submit" class="btn btn-outline-danger rounded-pill px-4 btn-sm">
+                    <i class="bi bi-x-circle"></i> Cancelar pedido
+                </button>
+            </form>
+            {% endif %}
+
+            {% if pedido.estado_entrega == 'FA' %}
+                {% if pedido.factura_pedido %}
+                <a href="{% url 'pedidos:mi_factura' pedido.id %}" class="btn-factura">
+                    <i class="bi bi-file-earmark-pdf"></i> Ver factura
+                </a>
+                {% endif %}
+            {% endif %}
+
+            <a href="{% url 'pedidos:detalle_mi_pedido' pedido.id %}"
+               class="btn btn-dark rounded-pill px-4 btn-sm">
+                Ver detalle
+            </a>
+        </div>
+
+    </div>
+    {% endfor %}
+
+{% else %}
+    <div class="text-center mt-5">
+        <h5 class="text-muted">Aún no hiciste ningún pedido 🍔</h5>
+        <a href="{% url 'pedidos:menu_productos' %}"
+           class="btn btn-primary mt-3 rounded-pill px-4">
+            Ir al menú
+        </a>
+    </div>
+{% endif %}

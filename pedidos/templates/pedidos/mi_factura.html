@@ -252,8 +252,8 @@
                     <td style="font-family:monospace;font-size:.78rem;color:#9ca3af">{{ d.codigo_producto }}</td>
                     <td>{{ d.descripcion }}</td>
                     <td class="text-center">{{ d.cantidad }}</td>
-                    <td class="text-end">{{ d.precio_unitario|floatformat:0 }} Gs.</td>
-                    <td class="text-end fw-semibold">{{ d.total|floatformat:0 }} Gs.</td>
+                    <td class="text-end">{{ d.precio_unitario|punto_miles }} Gs.</td>
+                    <td class="text-end fw-semibold">{{ d.total|punto_miles }} Gs.</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -264,21 +264,21 @@
             <div class="totales-box">
                 <div class="tot-row">
                     <label>Subtotal (sin IVA)</label>
-                    <span>{{ factura.subtotal|floatformat:0 }} Gs.</span>
+                    <span>{{ factura.subtotal|punto_miles }} Gs.</span>
                 </div>
                 <div class="tot-row">
                     <label>IVA (10%)</label>
-                    <span>{{ factura.iva_10|floatformat:0 }} Gs.</span>
+                    <span>{{ factura.iva_10|punto_miles }} Gs.</span>
                 </div>
                 {% if factura.descuento > 0 %}
                 <div class="tot-row">
                     <label>Descuento</label>
-                    <span>- {{ factura.descuento|floatformat:0 }} Gs.</span>
+                    <span>- {{ factura.descuento|punto_miles }} Gs.</span>
                 </div>
                 {% endif %}
                 <div class="tot-row final">
                     <label>Total</label>
-                    <span>{{ factura.monto_total|floatformat:0 }} Gs.</span>
+                    <span>{{ factura.monto_total|punto_miles }} Gs.</span>
                 </div>
             </div>
         </div>
@@ -289,15 +289,15 @@
             <div class="iva-grid">
                 <div class="iva-col">
                     <label>Gravado 10%</label>
-                    <span>{{ factura.subtotal|floatformat:0 }} Gs.</span>
+                    <span>{{ factura.subtotal|punto_miles }} Gs.</span>
                 </div>
                 <div class="iva-col">
                     <label>IVA 10%</label>
-                    <span>{{ factura.iva_10|floatformat:0 }} Gs.</span>
+                    <span>{{ factura.iva_10|punto_miles }} Gs.</span>
                 </div>
                 <div class="iva-col">
                     <label>Total IVA</label>
-                    <span>{{ factura.total_iva|floatformat:0 }} Gs.</span>
+                    <span>{{ factura.total_iva|punto_miles }} Gs.</span>
                 </div>
             </div>
         </div>

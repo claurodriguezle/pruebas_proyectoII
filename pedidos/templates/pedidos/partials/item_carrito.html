@@ -11,7 +11,7 @@
         <!-- Nombre y detalles -->
         <div class="ms-3 flex-fill">
             <h5 class="mb-1">{{ item.nombre }}</h5>
-            <small class="text-muted">Precio unitario: {{ item.precio }} Gs</small>
+            <small class="text-muted">Precio unitario: {{ item.precio|punto_miles }} Gs</small>
 
             {% if item.sin or item.adicionales or item.comentario %}
                 <div class="mt-2">
@@ -59,7 +59,7 @@
         <!-- Subtotal -->
         <div class="text-end ms-4" style="width: 120px;">
             <p class="mb-0 fw-bold text-success">Subtotal:</p>
-            <p class="mb-0">{{ item.subtotal }} Gs</p>
+            <p class="mb-0">{{ item.subtotal|punto_miles }} Gs</p>
         </div>
 
         <!-- Botón eliminar -->

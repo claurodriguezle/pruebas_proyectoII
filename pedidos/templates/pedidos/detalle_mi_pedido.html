@@ -136,7 +136,7 @@
                     <strong>{{ det.cantidad }} x {{ det.producto.nombre }}</strong>
                   </div>
                   <div>
-                    Gs {{ det.subtotal }}
+                    Gs {{ det.subtotal|punto_miles }}
                   </div>
                 </div>
 
@@ -166,7 +166,7 @@
           <div class="d-flex justify-content-between align-items-center mt-4">
             <h5 class="mb-0 fw-bold">Total</h5>
             <h4 class="mb-0 fw-bold text-dark">
-              Gs {{ pedido.total }}
+              Gs {{ pedido.total|punto_miles }}
             </h4>
           </div>
 

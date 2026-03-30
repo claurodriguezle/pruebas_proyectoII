@@ -11,7 +11,7 @@
             
             <h3>{{ producto.nombre }}</h3>
             <p>{{ producto.descripcion }}</p>
-            <p class="precio">{{ producto.precio}} ₲</p>
+            <p class="precio">{{ producto.precio|punto_miles }} ₲</p>
 
             <div class="d-flex justify-content-center gap-3">
                 {% if producto.personalizable %}
