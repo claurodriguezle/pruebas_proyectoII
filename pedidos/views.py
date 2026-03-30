@@ -429,15 +429,23 @@ def mis_pedidos(request):
         messages.error(request, "No tenés un perfil de cliente asociado.")
         return redirect('pedidos:menu_productos')
 
-    pedidos = Pedido.objects.filter(cliente=cliente).order_by('-id')
+    pedidos_activos = (
+        Pedido.objects
+        .filter(cliente=cliente)
+        .exclude(estado_entrega__in=['FA', 'CA'])
+        .order_by('-id')
+    )
 
-    for pedido in pedidos:
-        try:
-            pedido.factura_cliente = pedido.factura_pedido
-        except:
-            pedido.factura_cliente = None
+    historial = (
+        Pedido.objects
+        .filter(cliente=cliente, estado_entrega__in=['FA', 'CA'])
+        .order_by('-id')
+    )
 
-    return render(request, 'pedidos/estado_pedido.html', {'pedidos': pedidos})
+    return render(request, 'pedidos/estado_pedido.html', {
+        'pedidos_activos': pedidos_activos,
+        'historial': historial,
+        })
 
 @login_required
 def mis_pedidos_partial(request):
@@ -446,8 +454,13 @@ def mis_pedidos_partial(request):
     except Cliente.DoesNotExist:
         return HttpResponse('Ocurrio un error.')
     
-    pedidos = Pedido.objects.filter(cliente=cliente).order_by('-id')
-    return render(request, 'pedidos/partials/mis_pedidos_cards.html', {'pedidos': pedidos})
+    pedidos_activos = (
+        Pedido.objects
+        .filter(cliente=cliente)
+        .exclude(estado_entrega__in=['FA', 'CA'])
+        .order_by('-id')
+    )
+    return render(request, 'pedidos/partials/mis_pedidos_cards.html', {'pedidos': pedidos_activos})
 
 @login_required
 def detalle_mi_pedido(request, pedido_id):

@@ -140,15 +140,43 @@
     <div class="row justify-content-center">
         <div class="col-lg-7 col-md-9">
             <h2 class="mb-4 fw-bold text-center">Mis pedidos</h2>
-            <div id="pedidos-wrap"
-            hx-get="{% url 'pedidos:mis_pedidos_partial' %}"
-            hx-trigger="every 5s"
-            hx-swap="innerHTML">
 
-            {% include 'pedidos/partials/mis_pedidos_cards.html' %}
-            
+            <!-- Pestañas -->
+            <ul class="nav nav-tabs mb-4" id="pedidosTabs">
+                <li class="nav-item">
+                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#activos">
+                        🟡 Activos
+                        {% if pedidos_activos %}
+                            <span class="badge bg-warning text-dark ms-1">{{ pedidos_activos|length }}</span>
+                        {% endif %}
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#historial">
+                        📋 Historial
+                    </button>
+                </li>
+            </ul>
+
+            <!-- Contenido de pestañas-->
+            <div class="tab-content">
+
+                <!-- Pestaña Activos — con polling-->
+                <div class="tab-pane fade show active" id="activos">
+                    <div id="pedidos-wrap"
+                        hx-get="{% url 'pedidos:mis_pedidos_partial' %}"
+                        hx-trigger="every 10s"
+                        hx-swap="innerHTML">
+                        {% include 'pedidos/partials/mis_pedidos_cards.html' with pedidos=pedidos_activos %}
+                    </div>
+                </div>
+
+                <!-- Pestaña Historial — sin polling-->
+                <div class="tab-pane fade" id="historial">
+                    {% include 'pedidos/partials/mis_pedidos_cards.html' with pedidos=historial %}
+                </div>
+
             </div>
-        </div>
     </div>
 </div>
 
