@@ -84,6 +84,7 @@
                   action="{% url 'pedidos:cancelar_pedido' pedido.id %}"
                   onsubmit="return confirm('¿Seguro que querés cancelar este pedido?')">
                 <button type="submit" class="btn btn-outline-danger rounded-pill px-4 btn-sm">
+                     {% csrf_token %}
                     <i class="bi bi-x-circle"></i> Cancelar pedido
                 </button>
             </form>

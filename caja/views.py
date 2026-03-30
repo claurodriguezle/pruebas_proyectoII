@@ -1,309 +1,376 @@
 from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
-from django.views.decorators.http import require_http_methods
-from django.views.decorators.csrf import csrf_exempt
+from django.db import transaction
 from django.utils import timezone
+from django.contrib import messages
+
+from .models import Caja, VentaCaja, MovimientoCaja
+from administrador.models import Producto, Cliente, Persona, Ciudad, Barrio
+from pedidos.models import Pedido, DetallePedido
+
 import json
-import uuid
+from datetime import date
 
-def caja_view(request):
-    """Vista principal de caja"""
-    context = {
-        'caja_abierta': request.session.get('caja_abierta', False),
-        'caja_empleado': request.session.get('caja_empleado', ''),
-        'caja_monto_inicial': request.session.get('caja_monto_inicial', 0),
-        'caja_monto_actual': request.session.get('caja_monto', 0),
-    }
-    return render(request, 'caja/index.html', context)
 
-def caja_abierta_view(request):
-    """Vista de caja abierta"""
-    if not request.session.get('caja_abierta', False):
-        return redirect('caja:caja_view')
-    
-    # Calcular resumen
-    monto_inicial = float(request.session.get('caja_monto_inicial', 0))
-    movimientos = request.session.get('caja_movimientos', [])
-    monto_actual = float(request.session.get('caja_monto', 0))
-    
-    ingresos = sum(float(m['monto']) for m in movimientos if m['tipo'] == 'ingreso')
-    egresos = sum(float(m['monto']) for m in movimientos if m['tipo'] == 'egreso')
-    ganancia_real = ingresos - egresos
-    
-    context = {
-        'caja_empleado': request.session.get('caja_empleado', ''),
-        'resumen': {
-            'monto_inicial': monto_inicial,
-            'ingresos': ingresos,
-            'egresos': egresos,
-            'monto_actual': monto_actual,
-            'ganancia_real': ganancia_real,
-        },
-        'movimientos': movimientos
-    }
-    return render(request, 'caja/caja_abierta.html', context)
+# ─────────────────────────────────────────────
+#  HELPERS
+# ─────────────────────────────────────────────
 
-def nuevo_pedido_view(request):
-    """Vista para crear nuevo pedido"""
-    if not request.session.get('caja_abierta', False):
-        return redirect('caja:caja_view')
-    
-    return render(request, 'caja/nuevo_pedido.html')
+def get_caja_abierta(user):
+    """Devuelve la caja abierta del usuario, o None."""
+    return Caja.objects.filter(usuario_apertura=user, estado='abierta').first()
 
-def facturacion_view(request):
-    """Vista para facturación"""
-    if not request.session.get('caja_abierta', False):
-        return redirect('caja:caja_view')
-    
-    # Obtener el último pedido registrado
-    ultimo_pedido = None
-    movimientos = request.session.get('caja_movimientos', [])
-    
-    for movimiento in reversed(movimientos):
-        if movimiento['tipo'] == 'ingreso' and 'pedido_data' in movimiento:
-            ultimo_pedido = movimiento['pedido_data']
-            break
-    
-    if not ultimo_pedido:
-        return redirect('caja:nuevo_pedido')
-    
-    # Calcular subtotales para cada item
-    for item in ultimo_pedido['items']:
-        item['subtotal'] = item['precio'] * item['cantidad']
-    
-    # Generar número de factura y fecha
-    numero_factura = f"FAC-{uuid.uuid4().hex[:8].upper()}"
-    fecha_actual = timezone.now().strftime('%d/%m/%Y')
-    hora_actual = timezone.now().strftime('%H:%M:%S')
-    
-    # Traducir tipo de entrega
-    tipo_entrega = {
-        'local': 'Consumo en Local',
-        'takeaway': 'Para Llevar',
-        'delivery': 'Delivery'
-    }.get(ultimo_pedido['tipoEntrega'], ultimo_pedido['tipoEntrega'])
-    
-    context = {
-        'pedido_actual': ultimo_pedido,
-        'numero_factura': numero_factura,
-        'fecha_actual': fecha_actual,
-        'hora_actual': hora_actual,
-        'tipo_entrega': tipo_entrega,
-        'caja_empleado': request.session.get('caja_empleado', '')
-    }
-    
-    return render(request, 'caja/facturacion.html', context)
 
-@require_http_methods(["POST"])
-@csrf_exempt
-def generar_factura(request):
-    """Generar factura"""
-    try:
-        if not request.session.get('caja_abierta', False):
-            return JsonResponse({'success': False, 'message': 'La caja no está abierta'})
-        
-        data = json.loads(request.body)
-        
-        # Obtener el último pedido registrado
-        ultimo_pedido = None
-        movimientos = request.session.get('caja_movimientos', [])
-        
-        for movimiento in reversed(movimientos):
-            if movimiento['tipo'] == 'ingreso' and 'pedido_data' in movimiento:
-                ultimo_pedido = movimiento['pedido_data']
-                movimiento_id = movimientos.index(movimiento)
-                break
-        
-        if not ultimo_pedido:
-            return JsonResponse({'success': False, 'message': 'No hay pedido para facturar'})
-        
-        # Generar número de factura y fecha
-        numero_factura = f"FAC-{uuid.uuid4().hex[:8].upper()}"
-        fecha_actual = timezone.now().strftime('%d/%m/%Y')
-        hora_actual = timezone.now().strftime('%H:%M:%S')
-        
-        # Crear factura
-        factura = {
-            'numero': numero_factura,
-            'fecha': fecha_actual,
-            'hora': hora_actual,
-            'cliente': data['cliente'],
-            'pedido': ultimo_pedido,
-            'observaciones': data.get('observaciones', ''),
-            'empleado': request.session.get('caja_empleado', ''),
-            'total': ultimo_pedido['total']
+def _get_or_create_cliente_ocasional():
+    """
+    Devuelve el cliente "Ocasional" usado cuando no se especifica cliente.
+    Requiere que exista al menos una Ciudad y un Barrio en la BD.
+    """
+    ciudad = Ciudad.objects.first()
+    barrio = Barrio.objects.first()
+    if not ciudad or not barrio:
+        raise ValueError(
+            "No hay Ciudad ni Barrio registrados. "
+            "Cargá al menos uno desde el admin para poder operar."
+        )
+    persona, _ = Persona.objects.get_or_create(
+        cedula='0000000',
+        defaults={
+            'nombre': 'Cliente',
+            'apellido': 'Ocasional',
+            'telefono': '000000000',
+            'fecha_nacimiento': date(2000, 1, 1),
+            'nacionalidad': 'Paraguaya',
+            'ciudad': ciudad,
+            'barrio': barrio,
         }
-        
-        # Guardar factura en sesión
-        facturas = request.session.get('facturas', [])
-        facturas.append(factura)
-        request.session['facturas'] = facturas
-        
-        # Actualizar movimiento con datos de factura
-        movimientos[movimiento_id]['factura'] = numero_factura
-        request.session['caja_movimientos'] = movimientos
-        
+    )
+    cliente, _ = Cliente.objects.get_or_create(persona=persona)
+    return cliente
+
+
+def _crear_cliente_desde_nombre(nombre_completo, ciudad, barrio):
+    """
+    Crea una Persona + Cliente con el nombre ingresado desde la caja.
+    Si ya existe alguien con ese nombre, lo reutiliza.
+    """
+    partes = nombre_completo.strip().split(' ', 1)
+    nombre = partes[0]
+    apellido = partes[1] if len(partes) > 1 else 'S/A'
+
+    # Cedula temporal única basada en timestamp para no colisionar
+    import time
+    cedula_temp = f'CAJA-{int(time.time())}'
+
+    persona = Persona.objects.create(
+        nombre=nombre,
+        apellido=apellido,
+        cedula=cedula_temp,
+        telefono='000000000',
+        fecha_nacimiento=date(2000, 1, 1),
+        nacionalidad='Paraguaya',
+        ciudad=ciudad,
+        barrio=barrio,
+    )
+    cliente = Cliente.objects.create(persona=persona)
+    return cliente
+
+
+# ─────────────────────────────────────────────
+#  APERTURA DE CAJA
+# ─────────────────────────────────────────────
+
+@login_required
+def apertura_caja(request):
+    caja_existente = get_caja_abierta(request.user)
+    if caja_existente:
+        messages.info(request, "Ya tenés una caja abierta.")
+        return redirect('caja:punto_de_venta')
+
+    if request.method == 'POST':
+        monto_str = request.POST.get('monto_inicial', '0').replace('.', '').replace(',', '')
+        try:
+            monto_inicial = int(monto_str)
+        except ValueError:
+            monto_inicial = 0
+
+        Caja.objects.create(
+            usuario_apertura=request.user,
+            monto_inicial=monto_inicial,
+            monto_final_esperado=monto_inicial,
+            estado='abierta',
+        )
+        messages.success(request, "Caja abierta exitosamente.")
+        return redirect('caja:punto_de_venta')
+
+    return render(request, 'caja/apertura_caja.html')
+
+
+# ─────────────────────────────────────────────
+#  PUNTO DE VENTA (POS)
+# ─────────────────────────────────────────────
+
+@login_required
+def punto_de_venta(request):
+    caja = get_caja_abierta(request.user)
+    if not caja:
+        messages.warning(request, "Debes abrir la caja antes de operar.")
+        return redirect('caja:apertura_caja')
+
+    productos = Producto.objects.filter(estado='A').select_related('categoria').order_by('categoria', 'nombre')
+    clientes = Cliente.objects.select_related('persona').exclude(
+        persona__cedula='0000000'   # excluir el cliente ocasional del selector
+    ).order_by('persona__nombre')
+
+    context = {
+        'caja': caja,
+        'productos': productos,
+        'clientes': clientes,
+    }
+    return render(request, 'caja/punto_de_venta.html', context)
+
+
+# ─────────────────────────────────────────────
+#  COMPLETAR VENTA (AJAX)
+# ─────────────────────────────────────────────
+
+@login_required
+def completar_venta(request):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Método no permitido'})
+
+    caja = get_caja_abierta(request.user)
+    if not caja:
+        return JsonResponse({'success': False, 'error': 'No hay caja abierta'})
+
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'JSON inválido'})
+
+    productos_data = data.get('productos', [])
+    monto_recibido = int(data.get('monto_recibido', 0))
+    cliente_id = data.get('cliente_id') or None
+    cliente_nombre = (data.get('cliente_nombre') or '').strip() or None
+    tipo_entrega = data.get('tipo_entrega', 'RE')
+
+    if not productos_data:
+        return JsonResponse({'success': False, 'error': 'No hay productos en la venta'})
+
+    # Verificar productos y calcular total
+    ids = [int(p['producto_id']) for p in productos_data]
+    productos_db = {p.id: p for p in Producto.objects.filter(id__in=ids, estado='A')}
+
+    total = 0
+    for item in productos_data:
+        pid = int(item['producto_id'])
+        if pid not in productos_db:
+            return JsonResponse({'success': False, 'error': f'Producto #{pid} no encontrado o inactivo'})
+        total += productos_db[pid].precio * int(item['cantidad'])
+
+    if monto_recibido < total:
         return JsonResponse({
-            'success': True, 
-            'message': 'Factura generada exitosamente',
-            'factura': factura
+            'success': False,
+            'error': f'Monto insuficiente. Total: ₲{total:,}'
         })
-        
-    except Exception as e:
-        return JsonResponse({'success': False, 'message': f'Error interno: {str(e)}'})
 
-@require_http_methods(["POST"])
-@csrf_exempt
-def abrir_caja(request):
-    """Abrir caja del día"""
-    try:
-        data = json.loads(request.body)
-        empleado = data.get('empleado', '').strip()
-        monto_inicial = float(data.get('monto_inicial', 0))
-        
-        if not empleado:
-            return JsonResponse({'success': False, 'message': 'El nombre del empleado es requerido'})
-        
-        if monto_inicial < 0:
-            return JsonResponse({'success': False, 'message': 'El monto inicial no puede ser negativo'})
-        
-        # Inicializar sesión de caja
-        request.session['caja_abierta'] = True
-        request.session['caja_empleado'] = empleado
-        request.session['caja_monto'] = monto_inicial
-        request.session['caja_monto_inicial'] = monto_inicial
-        request.session['caja_movimientos'] = []
-        request.session['caja_fecha_apertura'] = timezone.now().isoformat()
-        request.session['facturas'] = []
-        
-        return JsonResponse({'success': True, 'message': 'Caja abierta exitosamente'})
-        
-    except ValueError as e:
-        return JsonResponse({'success': False, 'message': 'Monto inicial inválido'})
-    except Exception as e:
-        return JsonResponse({'success': False, 'message': f'Error interno: {str(e)}'})
+    vuelto = monto_recibido - total
 
-@require_http_methods(["POST"])
-@csrf_exempt
-def cerrar_caja(request):
-    """Cerrar caja del día"""
+    # ── Resolver cliente ──────────────────────────────
     try:
-        if not request.session.get('caja_abierta', False):
-            return JsonResponse({'success': False, 'message': 'La caja no está abierta'})
-        
-        # Guardar datos de cierre
-        request.session['caja_abierta'] = False
-        request.session['caja_fecha_cierre'] = timezone.now().isoformat()
-        
-        return JsonResponse({'success': True, 'message': 'Caja cerrada exitosamente'})
-        
-    except Exception as e:
-        return JsonResponse({'success': False, 'message': f'Error interno: {str(e)}'})
+        ciudad = Ciudad.objects.first()
+        barrio = Barrio.objects.first()
 
-@require_http_methods(["POST"])
-@csrf_exempt
-def registrar_movimiento(request):
-    """Registrar movimiento de caja"""
-    try:
-        if not request.session.get('caja_abierta', False):
-            return JsonResponse({'success': False, 'message': 'La caja no está abierta'})
-        
-        data = json.loads(request.body)
-        tipo = data.get('tipo', '').lower()
-        concepto = data.get('concepto', '').strip()
-        monto = float(data.get('monto', 0))
-        
-        if tipo not in ['ingreso', 'egreso']:
-            return JsonResponse({'success': False, 'message': 'Tipo de movimiento inválido'})
-        
-        if not concepto:
-            return JsonResponse({'success': False, 'message': 'El concepto es requerido'})
-        
-        if monto <= 0:
-            return JsonResponse({'success': False, 'message': 'El monto debe ser mayor a cero'})
-        
-        # Crear movimiento
-        movimientos = request.session.get('caja_movimientos', [])
-        nuevo_movimiento = {
-            'hora': timezone.now().strftime('%H:%M:%S'),
-            'tipo': tipo,
-            'concepto': concepto,
-            'monto': monto,
-            'responsable': request.session.get('caja_empleado', 'Empleado'),
-            'fecha': timezone.now().strftime('%Y-%m-%d')
-        }
-        
-        # Agregar datos del pedido si existen
-        if 'pedido_data' in data:
-            nuevo_movimiento['pedido_data'] = data['pedido_data']
-        
-        movimientos.append(nuevo_movimiento)
-        request.session['caja_movimientos'] = movimientos
-        
-        # Actualizar monto en caja
-        monto_actual = float(request.session.get('caja_monto', 0))
-        if tipo == 'ingreso':
-            monto_actual += monto
+        if cliente_id:
+            # Cliente registrado seleccionado
+            try:
+                cliente = Cliente.objects.get(id=int(cliente_id))
+            except Cliente.DoesNotExist:
+                cliente = _get_or_create_cliente_ocasional()
+
+        elif cliente_nombre:
+            # Nombre ingresado manualmente desde caja
+            cliente = _crear_cliente_desde_nombre(cliente_nombre, ciudad, barrio)
+
         else:
-            monto_actual -= monto
-        
-        request.session['caja_monto'] = monto_actual
-        
-        return JsonResponse({
-            'success': True, 
-            'message': 'Movimiento registrado exitosamente',
-            'movimiento': nuevo_movimiento,
-            'monto_actual': monto_actual
-        })
-        
+            # Sin datos → cliente ocasional
+            cliente = _get_or_create_cliente_ocasional()
+
     except ValueError as e:
-        return JsonResponse({'success': False, 'message': 'Monto inválido'})
-    except Exception as e:
-        return JsonResponse({'success': False, 'message': f'Error interno: {str(e)}'})
+        return JsonResponse({'success': False, 'error': str(e)})
 
-@csrf_exempt
-def verificar_caja(request):
-    """Verificar estado de caja"""
-    try:
-        caja_abierta = request.session.get('caja_abierta', False)
-        movimientos = request.session.get('caja_movimientos', [])
-        
-        return JsonResponse({
-            'success': True,
-            'abierta': caja_abierta,
-            'empleado': request.session.get('caja_empleado', ''),
-            'monto_actual': request.session.get('caja_monto', 0),
-            'movimientos': movimientos
-        })
-        
-    except Exception as e:
-        return JsonResponse({'success': False, 'message': f'Error interno: {str(e)}'})
+    # ── Crear pedido + venta en una transacción ───────
+    with transaction.atomic():
+        # Pedido — estado 'PE' (Pendiente) en cocina para que aparezca en el panel
+        pedido = Pedido.objects.create(
+            cliente=cliente,
+            total=total,
+            tipo_entrega=tipo_entrega,
+            estado_cocina='PE',    # pendiente → aparece en panel de cocina
+            estado_entrega='PE',   # pendiente → aparece en panel de empleado
+        )
 
-@csrf_exempt
-def resumen_caja(request):
-    """Obtener resumen de caja"""
+        # Detalles del pedido
+        for item in productos_data:
+            pid = int(item['producto_id'])
+            cantidad = int(item['cantidad'])
+            prod = productos_db[pid]
+            DetallePedido.objects.create(
+                pedido=pedido,
+                producto=prod,
+                cantidad=cantidad,
+                precio_unitario=prod.precio,
+            )
+
+        # Registrar en caja
+        venta = VentaCaja.objects.create(
+            caja=caja,
+            pedido=pedido,
+            cliente=cliente,
+            total=total,
+            monto_recibido=monto_recibido,
+            vuelto=vuelto,
+            tipo_entrega=tipo_entrega,
+        )
+
+        # Actualizar monto esperado
+        caja.recalcular_monto_esperado()
+
+    return JsonResponse({
+        'success': True,
+        'pedido_id': pedido.id,
+        'venta_id': venta.id,
+        'total': total,
+        'monto_recibido': monto_recibido,
+        'vuelto': vuelto,
+    })
+
+
+# ─────────────────────────────────────────────
+#  REGISTRAR EGRESO (AJAX)
+# ─────────────────────────────────────────────
+
+@login_required
+def registrar_egreso(request):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Método no permitido'})
+
+    caja = get_caja_abierta(request.user)
+    if not caja:
+        return JsonResponse({'success': False, 'error': 'No hay caja abierta'})
+
     try:
-        if not request.session.get('caja_abierta', False):
-            return JsonResponse({'success': False, 'message': 'La caja no está abierta'})
-        
-        monto_inicial = float(request.session.get('caja_monto_inicial', 0))
-        movimientos = request.session.get('caja_movimientos', [])
-        monto_actual = float(request.session.get('caja_monto', 0))
-        
-        ingresos = sum(float(m['monto']) for m in movimientos if m['tipo'] == 'ingreso')
-        egresos = sum(float(m['monto']) for m in movimientos if m['tipo'] == 'egreso')
-        ganancia_real = ingresos - egresos
-        
-        return JsonResponse({
-            'success': True,
-            'resumen': {
-                'monto_inicial': monto_inicial,
-                'ingresos': ingresos,
-                'egresos': egresos,
-                'monto_actual': monto_actual,
-                'ganancia_real': ganancia_real,
-            }
+        data = json.loads(request.body)
+        descripcion = data.get('descripcion', '').strip()
+        monto = int(data.get('monto', 0))
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'success': False, 'error': 'Datos inválidos'})
+
+    if not descripcion:
+        return JsonResponse({'success': False, 'error': 'La descripción es obligatoria'})
+    if monto <= 0:
+        return JsonResponse({'success': False, 'error': 'El monto debe ser mayor a 0'})
+
+    MovimientoCaja.objects.create(
+        caja=caja,
+        tipo='egreso',
+        descripcion=descripcion,
+        monto=monto,
+        usuario=request.user,
+    )
+    caja.recalcular_monto_esperado()
+
+    return JsonResponse({
+        'success': True,
+        'mensaje': f'Egreso de ₲{monto:,} registrado correctamente.',
+        'nuevo_esperado': caja.monto_final_esperado,
+    })
+
+
+# ─────────────────────────────────────────────
+#  CIERRE DE CAJA
+# ─────────────────────────────────────────────
+
+@login_required
+def cierre_caja(request):
+    caja = get_caja_abierta(request.user)
+    if not caja:
+        messages.error(request, "No hay caja abierta para cerrar.")
+        return redirect('caja:reporte_caja')
+
+    caja.recalcular_monto_esperado()
+
+    totales = {
+        'ventas': caja.total_ventas,
+        'egresos': caja.total_egresos,
+        'ganancia': caja.total_ventas - caja.total_egresos,
+    }
+
+    if request.method == 'POST':
+        monto_str = request.POST.get('monto_final_real', '0').replace('.', '').replace(',', '')
+        try:
+            monto_final_real = int(monto_str)
+        except ValueError:
+            monto_final_real = 0
+
+        with transaction.atomic():
+            caja.monto_final_real = monto_final_real
+            caja.observaciones_cierre = request.POST.get('observaciones', '')
+            caja.fecha_cierre = timezone.now()
+            caja.usuario_cierre = request.user
+            caja.estado = 'cerrada'
+            caja.save()
+
+        return render(request, 'caja/resumen_cierre.html', {
+            'caja': caja,
+            'totales': totales,
+            'diferencia': caja.diferencia,
         })
-        
-    except Exception as e:
-        return JsonResponse({'success': False, 'message': f'Error interno: {str(e)}'})
+
+    ventas_recientes = caja.ventas.filter(anulado=False).select_related(
+        'cliente__persona'
+    ).order_by('-fecha')[:10]
+
+    context = {
+        'caja': caja,
+        'totales': totales,
+        'movimientos': caja.movimientos.order_by('-fecha'),
+        'ventas_recientes': ventas_recientes,
+    }
+    return render(request, 'caja/cierre_caja.html', context)
+
+
+# ─────────────────────────────────────────────
+#  REPORTE DE CAJAS
+# ─────────────────────────────────────────────
+
+@login_required
+def reporte_caja(request):
+    fecha_inicio = request.GET.get('fecha_inicio')
+    fecha_fin = request.GET.get('fecha_fin')
+
+    cajas = Caja.objects.prefetch_related('ventas', 'movimientos')
+    if fecha_inicio:
+        cajas = cajas.filter(fecha_apertura__date__gte=fecha_inicio)
+    if fecha_fin:
+        cajas = cajas.filter(fecha_apertura__date__lte=fecha_fin)
+
+    cajas_data = []
+    for c in cajas:
+        ventas = c.total_ventas
+        egresos = c.total_egresos
+        cajas_data.append({
+            'obj': c,
+            'ventas': ventas,
+            'egresos': egresos,
+            'ganancia': ventas - egresos,
+        })
+
+    context = {
+        'cajas': cajas_data,
+        'total_ventas': sum(c['ventas'] for c in cajas_data),
+        'total_egresos': sum(c['egresos'] for c in cajas_data),
+        'total_ganancias': sum(c['ganancia'] for c in cajas_data),
+    }
+    return render(request, 'caja/reporte_caja.html', context)

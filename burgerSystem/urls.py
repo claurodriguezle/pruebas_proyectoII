@@ -26,6 +26,7 @@ urlpatterns = [
     path('facturacion/', include('facturacion.urls')),
     path('pedidos/', include(('pedidos.urls', 'pedidos'), namespace='pedidos')),
     path('usuarios/', include('usuarios.urls')),
+    path('caja/', include('caja.urls')),
 ]
 
 if settings.DEBUG:

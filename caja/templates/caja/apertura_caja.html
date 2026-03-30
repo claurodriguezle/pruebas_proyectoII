@@ -1,0 +1,62 @@
+{% extends "administrador/layout.html" %}
+{% load static %}
+
+{% block title %}Apertura de Caja{% endblock %}
+
+{% block body %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white text-center">
+                    <h3><i class="fas fa-cash-register"></i> Apertura de Caja</h3>
+                </div>
+                <div class="card-body">
+                    {% if error %}
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle"></i> {{ error }}
+                    </div>
+                    {% endif %}
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-4">
+                            <label for="monto_inicial" class="form-label">
+                                <i class="fas fa-money-bill-wave"></i> 
+                                Monto Inicial de Caja
+                            </label>
+                            <div class="input-group input-group-lg">
+                                <span class="input-group-text">Gs</span>
+                                <input type="number" class="form-control" id="monto_inicial" name="monto_inicial" step="0.01" min="0" required placeholder="0.00" autofocus>
+                            </div>
+                            <div class="form-text">
+                                Ingrese el monto con el que inicia la caja (fondos iniciales)
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> 
+                            <strong>Información:</strong><br>
+                            <small>
+                                • Usuario: {{ user.username }}<br>
+                                • Fecha: {% now "d/m/Y H:i" %}<br>
+                                • Solo se permite una caja abierta por usuario
+                            </small>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="fas fa-play"></i> Abrir Caja
+                            </button>
+                            <a href="{% url 'caja:punto_de_venta' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left"></i> Cancelar
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

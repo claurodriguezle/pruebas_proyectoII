@@ -1,0 +1,197 @@
+{% extends "administrador/layout.html" %}
+{% load static %}
+
+{% block title %}Cierre de Caja{% endblock %}
+
+{% block body %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-12 mb-3">
+            <h2><i class="fas fa-lock"></i> Cierre de Caja #{{ caja.id }}</h2>
+            <p class="text-muted">
+                Apertura: {{ caja.fecha_apertura|date:"d/m/Y H:i" }} |
+                Usuario: {{ caja.usuario_apertura.username }}
+            </p>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Resumen del Día -->
+        <div class="col-md-6">
+            <div class="card mb-3">
+                <div class="card-header bg-primary text-white">
+                    <i class="fas fa-chart-bar"></i> Resumen del Día
+                </div>
+                <div class="card-body">
+                    <div class="row text-center mb-3">
+                        <div class="col-4">
+                            <div class="p-3 bg-success bg-opacity-10 rounded">
+                                <h6 class="text-success">Ventas</h6>
+                                <h5>₲{{ totales.ventas|floatformat:0 }}</h5>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-3 bg-danger bg-opacity-10 rounded">
+                                <h6 class="text-danger">Egresos</h6>
+                                <h5>₲{{ totales.egresos|floatformat:0 }}</h5>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-3 bg-success bg-opacity-10 rounded">
+                                <h6 class="text-success">Ganancia</h6>
+                                <h5>₲{{ totales.ganancia|floatformat:0 }}</h5>
+                            </div>
+                        </div>
+                    </div>
+
+                    <table class="table table-sm">
+                        <tr>
+                            <td>Monto Inicial:</td>
+                            <td class="text-end">₲{{ caja.monto_inicial|floatformat:0 }}</td>
+                        </tr>
+                        <tr>
+                            <td>+ Total Ventas:</td>
+                            <td class="text-end text-success">₲{{ totales.ventas|floatformat:0 }}</td>
+                        </tr>
+                        <tr>
+                            <td>− Total Egresos:</td>
+                            <td class="text-end text-danger">₲{{ totales.egresos|floatformat:0 }}</td>
+                        </tr>
+                        <tr class="table-primary fw-bold">
+                            <td>Monto Esperado:</td>
+                            <td class="text-end">₲{{ caja.monto_final_esperado|floatformat:0 }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Últimas ventas del día -->
+            {% if ventas_recientes %}
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-receipt"></i> Últimas ventas
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush" style="max-height:200px;overflow-y:auto;">
+                        {% for v in ventas_recientes %}
+                        <div class="list-group-item py-1 d-flex justify-content-between">
+                            <small>
+                                Pedido #{{ v.pedido_id }} —
+                                {% if v.cliente %}{{ v.cliente.persona.nombre }}{% else %}Ocasional{% endif %}
+                            </small>
+                            <small class="text-success fw-bold">₲{{ v.total|floatformat:0 }}</small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Formulario de Cierre -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <i class="fas fa-calculator"></i> Cierre de Caja
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+
+                        <div class="mb-3">
+                            <label class="form-label">Monto Esperado en Caja</label>
+                            <div class="input-group">
+                                <span class="input-group-text">Gs</span>
+                                <input type="text"
+                                       class="form-control"
+                                       value="₲{{ caja.monto_final_esperado|floatformat:0 }}"
+                                       disabled>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="monto_final_real" class="form-label fw-bold">
+                                Monto Real Contado
+                            </label>
+                            <div class="input-group input-group-lg">
+                                <span class="input-group-text">Gs</span>
+                                <input type="number"
+                                       class="form-control"
+                                       id="monto_final_real"
+                                       name="monto_final_real"
+                                       step="1"
+                                       min="0"
+                                       required
+                                       placeholder="0"
+                                       autofocus>
+                            </div>
+                            <div class="form-text">Ingrese el monto real que hay en la caja</div>
+                        </div>
+
+                        <!-- Diferencia — calculada con JS puro, sin mezclar Django -->
+                        <div id="diferencia-info" class="mb-3 d-none">
+                            <div id="diferencia-alert" class="alert mb-0 py-2"></div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="observaciones" class="form-label">Observaciones</label>
+                            <textarea class="form-control"
+                                      id="observaciones"
+                                      name="observaciones"
+                                      rows="3"
+                                      placeholder="Ingrese observaciones si es necesario..."></textarea>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-danger btn-lg">
+                                <i class="fas fa-lock"></i> Cerrar Caja
+                            </button>
+                            <a href="{% url 'caja:punto_de_venta' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left"></i> Volver al POS
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// El monto esperado viene del servidor como número entero — sin texto ni símbolos
+//const montoEsperado = {{ caja.monto_final_esperado|default:0 }};
+const montoEsperado = parseFloat("{{ caja.monto_final_esperado|default:0|floatformat:2 }}");
+
+document.getElementById('monto_final_real').addEventListener('input', function () {
+    const montoReal = parseInt(this.value) || 0;
+    const diferencia = montoReal - montoEsperado;
+
+    const diffInfo = document.getElementById('diferencia-info');
+    const diffAlert = document.getElementById('diferencia-alert');
+
+    if (this.value !== '') {
+        diffInfo.classList.remove('d-none');
+        const absDif = Math.abs(diferencia).toLocaleString('es-PY');
+
+        if (diferencia > 0) {
+            diffAlert.className = 'alert alert-success mb-0 py-2';
+            diffAlert.innerHTML =
+                '<strong>Diferencia: ₲' + absDif + '</strong><br>' +
+                '<small><i class="fas fa-plus-circle"></i> Sobrante</small>';
+        } else if (diferencia < 0) {
+            diffAlert.className = 'alert alert-danger mb-0 py-2';
+            diffAlert.innerHTML =
+                '<strong>Diferencia: ₲' + absDif + '</strong><br>' +
+                '<small><i class="fas fa-minus-circle"></i> Faltante</small>';
+        } else {
+            diffAlert.className = 'alert alert-success mb-0 py-2';
+            diffAlert.innerHTML =
+                '<strong>Diferencia: ₲0</strong><br>' +
+                '<small><i class="fas fa-check-circle"></i> Cuadre perfecto</small>';
+        }
+    } else {
+        diffInfo.classList.add('d-none');
+    }
+});
+</script>
+{% endblock %}
