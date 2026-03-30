@@ -1,0 +1,174 @@
+{% extends "administrador/layout.html" %}
+{% load static %}
+
+{% block title %}Cierre de Caja{% endblock %}
+
+{% block body %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-12 mb-3">
+            <h2><i class="fas fa-lock"></i> Cierre de Caja #{{ caja.id }}</h2>
+            <p class="text-muted">
+                Apertura: {{ caja.fecha_apertura|date:"d/m/Y H:i" }} | 
+                Usuario: {{ caja.usuario_apertura.username }}
+            </p>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Resumen de Movimientos -->
+        <div class="col-md-6">
+            <div class="card mb-3">
+                <div class="card-header bg-primary text-white">
+                    <i class="fas fa-chart-bar"></i> Resumen del Día
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="p-3 bg-success bg-opacity-10 rounded">
+                                <h6 class="text-success">Ventas</h6>
+                                <h4>Gs{{ totales.ventas|floatformat:2 }}</h4>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-3 bg-danger bg-opacity-10 rounded">
+                                <h6 class="text-danger">Egresos</h6>
+                                <h4>Gs{{ totales.egresos|floatformat:2 }}</h4>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-3 bg-success bg-opacity-10 rounded">
+                                <h6 class="text-success">Ganancia</h6>
+                                <h4>Gs{{ totales.ganancia|floatformat:2 }}</h4>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <table class="table table-sm">
+                        <tr>
+                            <td><strong>Monto Inicial:</strong></td>
+                            <td class="text-end">Gs{{ caja.monto_inicial|floatformat:2 }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Total Ventas:</strong></td>
+                            <td class="text-end text-success">+ Gs{{ totales.ventas|floatformat:2 }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Total Egresos:</strong></td>
+                            <td class="text-end text-danger">- Gs{{ totales.egresos|floatformat:2 }}</td>
+                        </tr>
+                        <tr class="table-primary">
+                            <td><strong>Monto Esperado:</strong></td>
+                            <td class="text-end"><strong>Gs{{ caja.monto_final_esperado|floatformat:2 }}</strong></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Formulario de Cierre -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <i class="fas fa-calculator"></i> Cierre de Caja
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="caja_id" value="{{ caja.id }}">
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Monto Esperado en Caja</label>
+                            <div class="input-group input-group-lg">
+                                <span class="input-group-text">Gs</span>
+                                <input type="text" 
+                                       class="form-control" 
+                                       value="Gs{{ caja.monto_final_esperado|floatformat:2 }}" 
+                                       disabled>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="monto_final_real" class="form-label">
+                                <strong>Monto Real Contado</strong>
+                            </label>
+                            <div class="input-group input-group-lg">
+                                <span class="input-group-text">Gs</span>
+                                <input type="number" 
+                                       class="form-control" 
+                                       id="monto_final_real" 
+                                       name="monto_final_real" 
+                                       step="0.01" 
+                                       min="0" 
+                                       required
+                                       placeholder="0.00"
+                                       autofocus>
+                            </div>
+                            <div class="form-text">
+                                Ingrese el monto real que hay en la caja
+                            </div>
+                        </div>
+                        
+                        <div id="diferencia-info" class="mb-3 d-none">
+                            <div class="alert alert-success">
+                                <strong>Diferencia: Gs<span id="diferencia-monto">0.00</span></strong>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="observaciones" class="form-label">Observaciones</label>
+                            <textarea class="form-control" 
+                                      id="observaciones" 
+                                      name="observaciones" 
+                                      rows="3" 
+                                      placeholder="Ingrese observaciones si es necesario..."></textarea>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-danger btn-lg">
+                                <i class="fas fa-lock"></i> Cerrar Caja
+                            </button>
+                            <a href="{% url 'caja:punto_de_venta' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left"></i> Volver al POS
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('monto_final_real').addEventListener('input', function() {
+    const montoReal = parseFloat(this.value) || 0;
+    const montoEsperado = parseFloat("{{ caja.monto_final_esperado|default:0|floatformat:2 }}");
+    const diferencia = montoReal - montoEsperado;
+    
+    const diffInfo = document.getElementById('diferencia-info');
+    const diffMonto = document.getElementById('diferencia-monto');
+    const alertDiv = diffInfo.querySelector('.alert');
+    
+    diffMonto.textContent = Math.abs(diferencia).toFixed(2);
+    
+    if (this.value) {
+        diffInfo.classList.remove('d-none');
+        
+        if (diferencia > 0) {
+            alertDiv.className = 'alert alert-success';
+            alertDiv.innerHTML = `<strong>Diferencia: $Gs{diferencia.toFixed(2)}</strong><br><small><i class="fas fa-plus-circle"></i> Sobrante</small>`;
+        } else if (diferencia < 0) {
+            alertDiv.className = 'alert alert-danger';
+            alertDiv.innerHTML = `<strong>Diferencia: $Gs{Math.abs(diferencia).toFixed(2)}</strong><br><small><i class="fas fa-minus-circle"></i> Faltante</small>`;
+        } else {
+            alertDiv.className = 'alert alert-success';
+            alertDiv.innerHTML = `<strong>Diferencia: Gs0.00</strong><br><small><i class="fas fa-check-circle"></i> Cuadre perfecto</small>`;
+        }
+    } else {
+        diffInfo.classList.add('d-none');
+    }
+});
+</script>
+{% endblock %}

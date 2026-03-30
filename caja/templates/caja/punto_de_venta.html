@@ -1,199 +1,232 @@
 {% extends "administrador/layout.html" %}
 {% load static %}
 
-{% block title %}Punto de Venta - Brother's Burger{% endblock %}
+{% block title %}Punto de Venta — Brother's Burger{% endblock %}
 
 {% block body %}
 <div class="container-fluid">
     <div class="row mb-3">
-        <div class="col-12">
-            <h2><i class="fas fa-cash-register"></i> Caja y Facturación</h2>
-            <span class="badge bg-success">Caja Abierta #{{ caja.id }}</span>
+        <div class="col-12 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h2 class="mb-0"><i class="fas fa-cash-register"></i> Punto de Venta</h2>
+            <div>
+                <span class="badge bg-success fs-6 me-2">
+                    <i class="fas fa-circle"></i> Caja #{{ caja.id }} Abierta
+                </span>
+                <span class="badge bg-secondary">
+                    {{ caja.fecha_apertura|date:"d/m/Y H:i" }}
+                </span>
+                <a href="{% url 'caja:cierre_caja' %}" class="btn btn-sm btn-outline-danger ms-2">
+                    <i class="fas fa-lock"></i> Cerrar Caja
+                </a>
+            </div>
         </div>
     </div>
-    
-    <!-- Tabs -->
-    <ul class="nav nav-tabs mb-3">
-        <li class="nav-item">
-            <a class="nav-link active" href="#">Punto de Venta</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link" href="{% url 'caja:reporte_caja' %}">Reportes</a>
-        </li>
-    </ul>
-    
+
     <div class="row">
-        <!-- Menú de Productos -->
-        <div class="col-md-8">
+        <!-- ── MENÚ DE PRODUCTOS ── -->
+        <div class="col-lg-8">
+
+            <!-- Filtro por categoría -->
+            <div class="mb-2 d-flex flex-wrap gap-2">
+                <button class="btn btn-danger btn-sm btn-filtro active" data-cat="todos">
+                    Todos
+                </button>
+                {% regroup productos by categoria as productos_por_cat %}
+                {% for grupo in productos_por_cat %}
+                    {% if grupo.grouper %}
+                    <button class="btn btn-outline-danger btn-sm btn-filtro"
+                            data-cat="{{ grupo.grouper.id }}">
+                        {{ grupo.grouper.nombre_categ }}
+                    </button>
+                    {% endif %}
+                {% endfor %}
+            </div>
+
             <div class="card">
                 <div class="card-header bg-danger text-white">
                     <i class="fas fa-hamburger"></i> Menú Brother's Burger
                 </div>
                 <div class="card-body">
-                    <div class="row">
-                        <!-- Producto Ejemplo 1 -->
-                        <div class="col-md-4 mb-3">
-                            <div class="card h-100 producto-card" 
-                                 data-producto-id="1"
-                                 data-producto-nombre="Hamburguesa Clásica"
-                                 data-producto-precio="8.50"
-                                 style="cursor: pointer;">
-                                <div class="card-body">
-                                    <h5 class="card-title">Hamburguesa Clásica</h5>
-                                    <p class="card-text">
-                                        <strong class="text-danger">$8.50</strong>
-                                    </p>
-                                    <button class="btn btn-outline-danger btn-sm btn-agregar w-100">
+                    <div class="row" id="grilla-productos">
+                        {% for producto in productos %}
+                        <div class="col-md-4 col-6 mb-3 producto-item"
+                             data-cat="{{ producto.categoria_id|default:'sin-cat' }}">
+                            <div class="card h-100 producto-card border-0 shadow-sm"
+                                 data-producto-id="{{ producto.id }}"
+                                 data-producto-nombre="{{ producto.nombre }}"
+                                 data-producto-precio="{{ producto.precio }}"
+                                 style="cursor:pointer; transition: box-shadow .15s;">
+                                {% if producto.imagen %}
+                                <img src="{{ producto.imagen.url }}"
+                                     class="card-img-top"
+                                     style="height:110px;object-fit:cover;"
+                                     alt="{{ producto.nombre }}">
+                                {% else %}
+                                <div class="d-flex align-items-center justify-content-center
+                                            bg-light text-secondary"
+                                     style="height:70px;font-size:2rem;">
+                                    <i class="fas fa-hamburger"></i>
+                                </div>
+                                {% endif %}
+                                <div class="card-body py-2 px-2">
+                                    <h6 class="card-title mb-0 small fw-bold">{{ producto.nombre }}</h6>
+                                    <span class="text-danger fw-bold">
+                                        ₲{{ producto.precio|floatformat:0 }}
+                                    </span>
+                                </div>
+                                <div class="card-footer p-1 bg-white border-0">
+                                    <button class="btn btn-outline-danger btn-sm btn-agregar w-100 py-1">
                                         <i class="fas fa-plus"></i> Agregar
                                     </button>
                                 </div>
                             </div>
                         </div>
-                        
-                        <!-- Producto Ejemplo 2 -->
-                        <div class="col-md-4 mb-3">
-                            <div class="card h-100 producto-card" 
-                                 data-producto-id="2"
-                                 data-producto-nombre="Hamburguesa con Queso"
-                                 data-producto-precio="9.50"
-                                 style="cursor: pointer;">
-                                <div class="card-body">
-                                    <h5 class="card-title">Hamburguesa con Queso</h5>
-                                    <p class="card-text">
-                                        <strong class="text-danger">$9.50</strong>
-                                    </p>
-                                    <button class="btn btn-outline-danger btn-sm btn-agregar w-100">
-                                        <i class="fas fa-plus"></i> Agregar
-                                    </button>
-                                </div>
-                            </div>
+                        {% empty %}
+                        <div class="col-12 text-center text-muted py-5">
+                            <i class="fas fa-hamburger fa-3x mb-2"></i><br>
+                            No hay productos activos cargados.
                         </div>
-                        
-                        <!-- Producto Ejemplo 3 -->
-                        <div class="col-md-4 mb-3">
-                            <div class="card h-100 producto-card" 
-                                 data-producto-id="3"
-                                 data-producto-nombre="Hamburguesa Bacon"
-                                 data-producto-precio="10.50"
-                                 style="cursor: pointer;">
-                                <div class="card-body">
-                                    <h5 class="card-title">Hamburguesa Bacon</h5>
-                                    <p class="card-text">
-                                        <strong class="text-danger">$10.50</strong>
-                                    </p>
-                                    <button class="btn btn-outline-danger btn-sm btn-agregar w-100">
-                                        <i class="fas fa-plus"></i> Agregar
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+                        {% endfor %}
                     </div>
                 </div>
             </div>
         </div>
-        
-        <!-- Orden Actual -->
-        <div class="col-md-4">
-            <div class="card">
+
+        <!-- ── ORDEN ACTUAL ── -->
+        <div class="col-lg-4">
+            <div class="card sticky-top shadow" style="top:1rem;">
                 <div class="card-header bg-dark text-white">
                     <i class="fas fa-shopping-cart"></i> Orden Actual
                 </div>
                 <div class="card-body">
-                    <form id="form-venta">
-                        {% csrf_token %}
-                        
-                        <!-- Cliente -->
-                        <div class="mb-3">
-                            <label class="form-label"><i class="fas fa-user"></i> Cliente</label>
-                            <select class="form-select" name="cliente_id" id="cliente">
-                                <option value="">Cliente ocasional</option>
-                                <option value="1">Cliente Frecuente</option>
-                                <option value="2">Cliente VIP</option>
+                    {% csrf_token %}
+
+                    <!-- CLIENTE -->
+                    <div class="mb-3">
+                        <label class="form-label mb-1 fw-bold">
+                            <i class="fas fa-user"></i> Cliente
+                        </label>
+                        <div class="btn-group w-100 mb-2" role="group">
+                            <input type="radio" class="btn-check" name="modo-cliente"
+                                   id="modo-existente" value="existente" checked>
+                            <label class="btn btn-outline-secondary btn-sm" for="modo-existente">
+                                Registrado
+                            </label>
+                            <input type="radio" class="btn-check" name="modo-cliente"
+                                   id="modo-nuevo" value="nuevo">
+                            <label class="btn btn-outline-secondary btn-sm" for="modo-nuevo">
+                                Ingresar nombre
+                            </label>
+                        </div>
+
+                        <div id="panel-existente">
+                            <select class="form-select form-select-sm" id="cliente-select">
+                                <option value="">— Cliente ocasional —</option>
+                                {% for c in clientes %}
+                                <option value="{{ c.id }}">
+                                    {{ c.persona.nombre }} {{ c.persona.apellido }}
+                                    {% if c.persona.telefono %} · {{ c.persona.telefono }}{% endif %}
+                                </option>
+                                {% endfor %}
                             </select>
                         </div>
-                        
-                        <!-- Tipo de Venta -->
-                        <div class="mb-3">
-                            <label class="form-label"><i class="fas fa-store"></i> Tipo de venta</label>
-                            <select class="form-select" name="tipo_venta" id="tipo_venta">
-                                <option value="local">Consumo en local</option>
-                                <option value="takeaway">Para llevar</option>
-                            </select>
+
+                        <div id="panel-nuevo" class="d-none">
+                            <input type="text" class="form-control form-control-sm"
+                                   id="cliente-nombre"
+                                   placeholder="Nombre del cliente (ej: Juan Pérez)">
+                            <div class="form-text">Se guardará como cliente al completar la venta.</div>
                         </div>
-                        
-                        <!-- Productos -->
-                        <div class="mb-3">
-                            <label class="form-label"><i class="fas fa-list"></i> Productos</label>
-                            <div id="lista-productos" class="list-group mb-2" style="max-height: 200px; overflow-y: auto;">
-                                <div class="text-muted text-center py-3">
-                                    No hay productos añadidos
-                                </div>
-                            </div>
-                            
-                            <div class="d-flex justify-content-between align-items-center p-2 bg-light rounded">
-                                <strong>Total:</strong>
-                                <strong class="text-danger fs-4" id="total-venta">$0.00</strong>
-                            </div>
+                    </div>
+
+                    <!-- Tipo de entrega — solo local -->
+                    <div class="mb-3">
+                        <label class="form-label mb-1 fw-bold">
+                            <i class="fas fa-store"></i> Tipo de entrega
+                        </label>
+                        <div class="alert alert-light border py-2 mb-0 d-flex align-items-center gap-2">
+                            <i class="fas fa-utensils text-danger"></i>
+                            <span>Consumo en local</span>
                         </div>
-                        
-                        <!-- Pago en Efectivo -->
-                        <div class="mb-3">
-                            <label class="form-label"><i class="fas fa-money-bill-wave"></i> Pago en Efectivo</label>
-                            <div class="input-group">
-                                <span class="input-group-text">$</span>
-                                <input type="number" 
-                                       class="form-control form-control-lg" 
-                                       id="monto-recibido" 
-                                       name="monto_recibido" 
-                                       placeholder="0.00" 
-                                       step="0.01" 
-                                       min="0">
-                            </div>
-                            <div id="vuelto-info" class="mt-2 d-none">
-                                <div class="alert alert-success mb-0 py-2">
-                                    <strong>Vuelto: $<span id="vuelto-monto">0.00</span></strong>
-                                </div>
+                    </div>
+
+                    <!-- Lista de productos -->
+                    <div class="mb-2">
+                        <label class="form-label mb-1 fw-bold">
+                            <i class="fas fa-list"></i> Productos
+                        </label>
+                        <div id="lista-productos"
+                             class="border rounded mb-2"
+                             style="min-height:60px;max-height:240px;overflow-y:auto;">
+                            <div class="text-muted text-center py-3 small">
+                                <i class="fas fa-shopping-cart"></i><br>
+                                No hay productos añadidos
                             </div>
                         </div>
-                        
-                        <!-- Botones -->
-                        <button type="button" class="btn btn-danger btn-lg w-100 mb-2" 
-                                id="btn-completar" disabled>
-                            <i class="fas fa-check-circle"></i> Completar Venta
-                        </button>
-                        <button type="button" class="btn btn-outline-secondary w-100" 
-                                id="btn-cancelar">
-                            <i class="fas fa-times"></i> Cancelar Orden
-                        </button>
-                    </form>
+                        <div class="d-flex justify-content-between align-items-center
+                                    px-2 py-2 bg-light rounded">
+                            <span class="fw-bold">Total:</span>
+                            <span class="text-danger fw-bold fs-5" id="total-venta">₲0</span>
+                        </div>
+                    </div>
+
+                    <!-- Pago -->
+                    <div class="mb-3">
+                        <label class="form-label mb-1 fw-bold">
+                            <i class="fas fa-money-bill-wave"></i> Efectivo recibido (₲)
+                        </label>
+                        <input type="number"
+                               class="form-control form-control-lg"
+                               id="monto-recibido"
+                               placeholder="0" min="0" step="1">
+                        <div id="vuelto-info" class="mt-1 d-none">
+                            <div class="alert alert-success mb-0 py-2 text-center">
+                                <strong>Vuelto: ₲<span id="vuelto-monto">0</span></strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="button" class="btn btn-danger btn-lg w-100 mb-2"
+                            id="btn-completar" disabled>
+                        <i class="fas fa-check-circle"></i> Completar Venta
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary w-100 btn-sm"
+                            id="btn-cancelar">
+                        <i class="fas fa-times"></i> Cancelar Orden
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Modal de Confirmación -->
+<!-- Modal Confirmación -->
 <div class="modal fade" id="modalConfirmacion" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header bg-danger text-white">
+            <div class="modal-header bg-dark text-white">
                 <h5 class="modal-title"><i class="fas fa-receipt"></i> Confirmar Venta</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <div class="mb-3">
-                    <h6>Resumen de la Venta:</h6>
-                    <div id="resumen-venta"></div>
+                <p class="mb-2"><strong>Cliente:</strong> <span id="modal-cliente">—</span></p>
+                <div id="resumen-venta" class="mb-3 small border rounded p-2 bg-light"></div>
+                <hr class="my-2">
+                <div class="d-flex justify-content-between">
+                    <span>Total:</span>
+                    <strong class="text-danger">₲<span id="modal-total">0</span></strong>
                 </div>
-                <div class="alert alert-info">
-                    <strong>Total:</strong> $<span id="modal-total">0.00</span><br>
-                    <strong>Recibido:</strong> $<span id="modal-recibido">0.00</span><br>
-                    <strong class="text-success">Vuelto: $<span id="modal-vuelto">0.00</span></strong>
+                <div class="d-flex justify-content-between">
+                    <span>Recibido:</span>
+                    <strong>₲<span id="modal-recibido">0</span></strong>
                 </div>
-                <p class="mb-0"><small class="text-muted">Pago: <strong>EFECTIVO</strong></small></p>
+                <div class="d-flex justify-content-between">
+                    <span>Vuelto:</span>
+                    <strong class="text-success">₲<span id="modal-vuelto">0</span></strong>
+                </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-secondary"
+                        data-bs-dismiss="modal">Cancelar</button>
                 <button type="button" class="btn btn-danger" id="btn-confirmar-venta">
                     <i class="fas fa-check"></i> Confirmar
                 </button>
@@ -202,7 +235,7 @@
     </div>
 </div>
 
-<!-- Modal de Éxito -->
+<!-- Modal Éxito -->
 <div class="modal fade" id="modalExito" tabindex="-1" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -210,17 +243,29 @@
                 <h5 class="modal-title"><i class="fas fa-check-circle"></i> ¡Venta Completada!</h5>
             </div>
             <div class="modal-body text-center">
-                <div class="mb-3">
-                    <i class="fas fa-receipt fa-4x text-success"></i>
+                <i class="fas fa-receipt fa-4x text-success mb-3 d-block"></i>
+                <h4>Pedido #<span id="exito-pedido-id">—</span></h4>
+                <p class="text-muted small mb-2">
+                    <i class="fas fa-fire text-danger"></i> Enviado al panel de cocina
+                </p>
+                <hr>
+                <div class="d-flex justify-content-between px-3">
+                    <span>Total</span>
+                    <strong class="text-danger">₲<span id="exito-total">0</span></strong>
                 </div>
-                <h4>Pedido #<span id="exito-pedido-id">123</span></h4>
-                <p class="mb-1">Total: $<span id="exito-total">0.00</span></p>
-                <p class="mb-1">Recibido: $<span id="exito-recibido">0.00</span></p>
-                <p class="mb-0"><strong class="text-success">Vuelto: $<span id="exito-vuelto">0.00</span></strong></p>
+                <div class="d-flex justify-content-between px-3">
+                    <span>Recibido</span>
+                    <strong>₲<span id="exito-recibido">0</span></strong>
+                </div>
+                <div class="d-flex justify-content-between px-3 mt-1">
+                    <span>Vuelto</span>
+                    <strong class="text-success fs-5">₲<span id="exito-vuelto">0</span></strong>
+                </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-success w-100" data-bs-dismiss="modal" onclick="location.reload()">
-                    Nueva Venta
+                <button type="button" class="btn btn-success w-100"
+                        data-bs-dismiss="modal" onclick="nuevaVenta()">
+                    <i class="fas fa-plus"></i> Nueva Venta
                 </button>
             </div>
         </div>
@@ -228,150 +273,219 @@
 </div>
 
 <script>
+const CSRF = document.querySelector('[name=csrfmiddlewaretoken]').value;
 let ventaActual = { productos: [], total: 0 };
 
-// Agregar producto al hacer clic
-document.querySelectorAll('.producto-card').forEach(card => {
-    card.addEventListener('click', function(e) {
-        if (!e.target.closest('button')) {
-            const productoId = this.dataset.productoId;
-            const productoNombre = this.dataset.productoNombre;
-            const productoPrecio = parseFloat(this.dataset.productoPrecio);
-            agregarProducto(productoId, productoNombre, productoPrecio, 1);
-        }
+// Filtro categorías
+document.querySelectorAll('.btn-filtro').forEach(btn => {
+    btn.addEventListener('click', function () {
+        document.querySelectorAll('.btn-filtro').forEach(b => {
+            b.classList.remove('active', 'btn-danger');
+            b.classList.add('btn-outline-danger');
+        });
+        this.classList.add('active', 'btn-danger');
+        this.classList.remove('btn-outline-danger');
+        const cat = this.dataset.cat;
+        document.querySelectorAll('.producto-item').forEach(item => {
+            item.style.display =
+                (cat === 'todos' || item.dataset.cat === cat) ? '' : 'none';
+        });
     });
 });
 
-function agregarProducto(id, nombre, precio, cantidad) {
-    // Verificar si el producto ya está en la venta
-    let productoEnVenta = false;
-    for (let item of ventaActual.productos) {
-        if (item.producto_id === id) {
-            item.cantidad += cantidad;
-            item.subtotal = item.precio * item.cantidad;
-            productoEnVenta = true;
-            break;
-        }
-    }
-    
-    if (!productoEnVenta) {
-        ventaActual.productos.push({
-            producto_id: id,
-            nombre: nombre,
-            precio: precio,
-            cantidad: cantidad,
-            subtotal: precio * cantidad
-        });
-    }
-    
-    // Recalcular total
-    ventaActual.total = ventaActual.productos.reduce((sum, item) => sum + item.subtotal, 0);
-    actualizarListaProductos();
+// Hover tarjetas
+document.querySelectorAll('.producto-card').forEach(card => {
+    card.addEventListener('mouseenter', () =>
+        card.style.boxShadow = '0 4px 12px rgba(220,53,69,.35)');
+    card.addEventListener('mouseleave', () =>
+        card.style.boxShadow = '');
+});
+
+// Agregar producto
+document.querySelectorAll('.producto-card').forEach(card => {
+    card.addEventListener('click', function (e) {
+        if (e.target.closest('.btn-agregar')) return;
+        agregarProducto(this.dataset.productoId, this.dataset.productoNombre,
+                        parseInt(this.dataset.productoPrecio));
+    });
+    card.querySelector('.btn-agregar').addEventListener('click', e => {
+        e.stopPropagation();
+        const c = e.target.closest('.producto-card');
+        agregarProducto(c.dataset.productoId, c.dataset.productoNombre,
+                        parseInt(c.dataset.productoPrecio));
+    });
+});
+
+function agregarProducto(id, nombre, precio) {
+    const ex = ventaActual.productos.find(p => p.producto_id === id);
+    if (ex) { ex.cantidad += 1; ex.subtotal = ex.precio * ex.cantidad; }
+    else ventaActual.productos.push({ producto_id: id, nombre, precio, cantidad: 1, subtotal: precio });
+    ventaActual.total = ventaActual.productos.reduce((s, p) => s + p.subtotal, 0);
+    renderLista();
 }
 
-function actualizarListaProductos() {
+function eliminarProducto(idx) {
+    ventaActual.productos.splice(idx, 1);
+    ventaActual.total = ventaActual.productos.reduce((s, p) => s + p.subtotal, 0);
+    renderLista();
+}
+
+function cambiarCantidad(idx, delta) {
+    const item = ventaActual.productos[idx];
+    item.cantidad = Math.max(1, item.cantidad + delta);
+    item.subtotal = item.precio * item.cantidad;
+    ventaActual.total = ventaActual.productos.reduce((s, p) => s + p.subtotal, 0);
+    renderLista();
+}
+
+function gs(n) { return '₲' + n.toLocaleString('es-PY'); }
+
+function renderLista() {
     const lista = document.getElementById('lista-productos');
-    const totalElement = document.getElementById('total-venta');
-    
     if (ventaActual.productos.length === 0) {
-        lista.innerHTML = '<div class="text-muted text-center py-3">No hay productos añadidos</div>';
-        totalElement.textContent = '$0.00';
+        lista.innerHTML =
+            '<div class="text-muted text-center py-3 small">' +
+            '<i class="fas fa-shopping-cart"></i><br>No hay productos añadidos</div>';
+        document.getElementById('total-venta').textContent = '₲0';
         document.getElementById('btn-completar').disabled = true;
+        document.getElementById('vuelto-info').classList.add('d-none');
         return;
     }
-    
-    let html = '';
-    ventaActual.productos.forEach((item, index) => {
-        html += `
-            <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
-                <div>
-                    <strong>${item.nombre}</strong><br>
-                    <small>$${item.precio} x ${item.cantidad}</small>
-                </div>
-                <div>
-                    <strong>$${item.subtotal.toFixed(2)}</strong>
-                    <button type="button" class="btn btn-sm btn-danger ms-2" onclick="eliminarProducto(${index})">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
+    lista.innerHTML = ventaActual.productos.map((item, i) => `
+        <div class="d-flex justify-content-between align-items-center border-bottom px-2 py-1">
+            <div class="flex-grow-1 me-1">
+                <span class="small fw-bold">${item.nombre}</span><br>
+                <small class="text-muted">${gs(item.precio)} c/u</small>
             </div>
-        `;
+            <div class="d-flex align-items-center gap-1 flex-shrink-0">
+                <button class="btn btn-sm btn-outline-secondary py-0 px-1 lh-1"
+                        onclick="cambiarCantidad(${i},-1)">−</button>
+                <span class="fw-bold px-1">${item.cantidad}</span>
+                <button class="btn btn-sm btn-outline-secondary py-0 px-1 lh-1"
+                        onclick="cambiarCantidad(${i},1)">+</button>
+                <span class="text-danger fw-bold small ms-1" style="min-width:58px;text-align:right">
+                    ${gs(item.subtotal)}
+                </span>
+                <button class="btn btn-sm btn-danger py-0 px-1 ms-1 lh-1"
+                        onclick="eliminarProducto(${i})">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>`).join('');
+    document.getElementById('total-venta').textContent = gs(ventaActual.total);
+    calcularVuelto();
+}
+
+// Toggle modo cliente
+document.querySelectorAll('input[name="modo-cliente"]').forEach(r => {
+    r.addEventListener('change', function () {
+        const esNuevo = this.value === 'nuevo';
+        document.getElementById('panel-existente').classList.toggle('d-none', esNuevo);
+        document.getElementById('panel-nuevo').classList.toggle('d-none', !esNuevo);
     });
-    
-    lista.innerHTML = html;
-    totalElement.textContent = '$' + ventaActual.total.toFixed(2);
-    document.getElementById('btn-completar').disabled = false;
-}
+});
 
-function eliminarProducto(index) {
-    ventaActual.productos.splice(index, 1);
-    ventaActual.total = ventaActual.productos.reduce((sum, item) => sum + item.subtotal, 0);
-    actualizarListaProductos();
-}
-
-// Calcular vuelto cuando se ingresa monto
-document.getElementById('monto-recibido').addEventListener('input', function() {
-    const montoRecibido = parseFloat(this.value) || 0;
-    const vueltoInfo = document.getElementById('vuelto-info');
-    const vueltoMonto = document.getElementById('vuelto-monto');
-    
-    if (montoRecibido >= ventaActual.total && ventaActual.total > 0) {
-        const vuelto = montoRecibido - ventaActual.total;
-        vueltoMonto.textContent = vuelto.toFixed(2);
-        vueltoInfo.classList.remove('d-none');
+// Vuelto en tiempo real
+function calcularVuelto() {
+    const recibido = parseInt(document.getElementById('monto-recibido').value) || 0;
+    const vi = document.getElementById('vuelto-info');
+    if (recibido >= ventaActual.total && ventaActual.total > 0) {
+        document.getElementById('vuelto-monto').textContent =
+            (recibido - ventaActual.total).toLocaleString('es-PY');
+        vi.classList.remove('d-none');
         document.getElementById('btn-completar').disabled = false;
     } else {
-        vueltoInfo.classList.add('d-none');
-        if (ventaActual.total > 0) {
-            document.getElementById('btn-completar').disabled = true;
-        }
+        vi.classList.add('d-none');
+        document.getElementById('btn-completar').disabled = ventaActual.total > 0;
     }
-});
+}
+document.getElementById('monto-recibido').addEventListener('input', calcularVuelto);
 
-// Completar venta
-document.getElementById('btn-completar').addEventListener('click', function() {
-    const montoRecibido = parseFloat(document.getElementById('monto-recibido').value) || 0;
-    
-    if (montoRecibido < ventaActual.total) {
-        alert('El monto recibido es insuficiente');
-        return;
+function getClienteData() {
+    const modo = document.querySelector('input[name="modo-cliente"]:checked').value;
+    return modo === 'existente'
+        ? { cliente_id: document.getElementById('cliente-select').value || null, cliente_nombre: null }
+        : { cliente_id: null, cliente_nombre: document.getElementById('cliente-nombre').value.trim() || null };
+}
+
+// Abrir modal confirmación
+document.getElementById('btn-completar').addEventListener('click', function () {
+    const recibido = parseInt(document.getElementById('monto-recibido').value) || 0;
+    if (recibido < ventaActual.total) { alert('El monto recibido es insuficiente.'); return; }
+
+    const cd = getClienteData();
+    let nombreMostrar = 'Cliente ocasional';
+    if (cd.cliente_nombre) nombreMostrar = cd.cliente_nombre;
+    else if (cd.cliente_id) {
+        const opt = document.getElementById('cliente-select');
+        nombreMostrar = opt.options[opt.selectedIndex].text;
     }
-    
-    // Mostrar modal de confirmación
-    document.getElementById('modal-total').textContent = ventaActual.total.toFixed(2);
-    document.getElementById('modal-recibido').textContent = montoRecibido.toFixed(2);
-    document.getElementById('modal-vuelto').textContent = (montoRecibido - ventaActual.total).toFixed(2);
-    
-    let resumenHTML = '';
-    ventaActual.productos.forEach(item => {
-        resumenHTML += `<div>${item.nombre} x${item.cantidad} - $${item.subtotal.toFixed(2)}</div>`;
-    });
-    document.getElementById('resumen-venta').innerHTML = resumenHTML;
-    
+    document.getElementById('modal-cliente').textContent = nombreMostrar;
+    document.getElementById('modal-total').textContent = ventaActual.total.toLocaleString('es-PY');
+    document.getElementById('modal-recibido').textContent = recibido.toLocaleString('es-PY');
+    document.getElementById('modal-vuelto').textContent = (recibido - ventaActual.total).toLocaleString('es-PY');
+    document.getElementById('resumen-venta').innerHTML =
+        ventaActual.productos.map(p =>
+            `<div class="d-flex justify-content-between">
+                <span>${p.nombre} × ${p.cantidad}</span><span>${gs(p.subtotal)}</span>
+             </div>`).join('');
     new bootstrap.Modal(document.getElementById('modalConfirmacion')).show();
 });
 
-// Confirmar venta (simulada)
-document.getElementById('btn-confirmar-venta').addEventListener('click', function() {
-    // Cerrar modal de confirmación
-    bootstrap.Modal.getInstance(document.getElementById('modalConfirmacion')).hide();
-    
-    // Mostrar modal de éxito
-    document.getElementById('exito-pedido-id').textContent = Math.floor(Math.random() * 1000);
-    document.getElementById('exito-total').textContent = ventaActual.total.toFixed(2);
-    document.getElementById('exito-recibido').textContent = document.getElementById('monto-recibido').value;
-    document.getElementById('exito-vuelto').textContent = (parseFloat(document.getElementById('monto-recibido').value) - ventaActual.total).toFixed(2);
-    new bootstrap.Modal(document.getElementById('modalExito')).show();
+// Confirmar → AJAX
+document.getElementById('btn-confirmar-venta').addEventListener('click', function () {
+    this.disabled = true;
+    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
+    const recibido = parseInt(document.getElementById('monto-recibido').value) || 0;
+    const cd = getClienteData();
+
+    fetch("{% url 'caja:completar_venta' %}", {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+        body: JSON.stringify({
+            productos: ventaActual.productos,
+            monto_recibido: recibido,
+            cliente_id: cd.cliente_id,
+            cliente_nombre: cd.cliente_nombre,
+            tipo_entrega: 'RE',
+        }),
+    })
+    .then(r => r.json())
+    .then(data => {
+        bootstrap.Modal.getInstance(document.getElementById('modalConfirmacion')).hide();
+        if (data.success) {
+            document.getElementById('exito-pedido-id').textContent = data.pedido_id;
+            document.getElementById('exito-total').textContent = data.total.toLocaleString('es-PY');
+            document.getElementById('exito-recibido').textContent = data.monto_recibido.toLocaleString('es-PY');
+            document.getElementById('exito-vuelto').textContent = data.vuelto.toLocaleString('es-PY');
+            new bootstrap.Modal(document.getElementById('modalExito')).show();
+        } else {
+            alert('Error: ' + data.error);
+            this.disabled = false;
+            this.innerHTML = '<i class="fas fa-check"></i> Confirmar';
+        }
+    })
+    .catch(() => {
+        alert('Error de conexión. Reintentá.');
+        this.disabled = false;
+        this.innerHTML = '<i class="fas fa-check"></i> Confirmar';
+    });
 });
 
-// Cancelar orden
-document.getElementById('btn-cancelar').addEventListener('click', function() {
-    if (confirm('¿Está seguro de cancelar esta orden?')) {
-        ventaActual = { productos: [], total: 0 };
-        actualizarListaProductos();
-        document.getElementById('monto-recibido').value = '';
-        document.getElementById('vuelto-info').classList.add('d-none');
-    }
+function nuevaVenta() {
+    ventaActual = { productos: [], total: 0 };
+    document.getElementById('monto-recibido').value = '';
+    document.getElementById('cliente-select').value = '';
+    document.getElementById('cliente-nombre').value = '';
+    document.getElementById('modo-existente').checked = true;
+    document.getElementById('panel-existente').classList.remove('d-none');
+    document.getElementById('panel-nuevo').classList.add('d-none');
+    renderLista();
+}
+
+document.getElementById('btn-cancelar').addEventListener('click', function () {
+    if (ventaActual.productos.length === 0) return;
+    if (confirm('¿Cancelar esta orden?')) nuevaVenta();
 });
 </script>
 {% endblock %}

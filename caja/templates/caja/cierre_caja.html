@@ -9,65 +9,85 @@
         <div class="col-md-12 mb-3">
             <h2><i class="fas fa-lock"></i> Cierre de Caja #{{ caja.id }}</h2>
             <p class="text-muted">
-                Apertura: {{ caja.fecha_apertura|date:"d/m/Y H:i" }} | 
+                Apertura: {{ caja.fecha_apertura|date:"d/m/Y H:i" }} |
                 Usuario: {{ caja.usuario_apertura.username }}
             </p>
         </div>
     </div>
-    
+
     <div class="row">
-        <!-- Resumen de Movimientos -->
+        <!-- Resumen del Día -->
         <div class="col-md-6">
             <div class="card mb-3">
                 <div class="card-header bg-primary text-white">
                     <i class="fas fa-chart-bar"></i> Resumen del Día
                 </div>
                 <div class="card-body">
-                    <div class="row text-center">
+                    <div class="row text-center mb-3">
                         <div class="col-4">
                             <div class="p-3 bg-success bg-opacity-10 rounded">
                                 <h6 class="text-success">Ventas</h6>
-                                <h4>Gs{{ totales.ventas|floatformat:2 }}</h4>
+                                <h5>₲{{ totales.ventas|floatformat:0 }}</h5>
                             </div>
                         </div>
                         <div class="col-4">
                             <div class="p-3 bg-danger bg-opacity-10 rounded">
                                 <h6 class="text-danger">Egresos</h6>
-                                <h4>Gs{{ totales.egresos|floatformat:2 }}</h4>
+                                <h5>₲{{ totales.egresos|floatformat:0 }}</h5>
                             </div>
                         </div>
                         <div class="col-4">
                             <div class="p-3 bg-success bg-opacity-10 rounded">
                                 <h6 class="text-success">Ganancia</h6>
-                                <h4>Gs{{ totales.ganancia|floatformat:2 }}</h4>
+                                <h5>₲{{ totales.ganancia|floatformat:0 }}</h5>
                             </div>
                         </div>
                     </div>
-                    
-                    <hr>
-                    
+
                     <table class="table table-sm">
                         <tr>
-                            <td><strong>Monto Inicial:</strong></td>
-                            <td class="text-end">Gs{{ caja.monto_inicial|floatformat:2 }}</td>
+                            <td>Monto Inicial:</td>
+                            <td class="text-end">₲{{ caja.monto_inicial|floatformat:0 }}</td>
                         </tr>
                         <tr>
-                            <td><strong>Total Ventas:</strong></td>
-                            <td class="text-end text-success">+ Gs{{ totales.ventas|floatformat:2 }}</td>
+                            <td>+ Total Ventas:</td>
+                            <td class="text-end text-success">₲{{ totales.ventas|floatformat:0 }}</td>
                         </tr>
                         <tr>
-                            <td><strong>Total Egresos:</strong></td>
-                            <td class="text-end text-danger">- Gs{{ totales.egresos|floatformat:2 }}</td>
+                            <td>− Total Egresos:</td>
+                            <td class="text-end text-danger">₲{{ totales.egresos|floatformat:0 }}</td>
                         </tr>
-                        <tr class="table-primary">
-                            <td><strong>Monto Esperado:</strong></td>
-                            <td class="text-end"><strong>Gs{{ caja.monto_final_esperado|floatformat:2 }}</strong></td>
+                        <tr class="table-primary fw-bold">
+                            <td>Monto Esperado:</td>
+                            <td class="text-end">₲{{ caja.monto_final_esperado|floatformat:0 }}</td>
                         </tr>
                     </table>
                 </div>
             </div>
+
+            <!-- Últimas ventas del día -->
+            {% if ventas_recientes %}
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-receipt"></i> Últimas ventas
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush" style="max-height:200px;overflow-y:auto;">
+                        {% for v in ventas_recientes %}
+                        <div class="list-group-item py-1 d-flex justify-content-between">
+                            <small>
+                                Pedido #{{ v.pedido_id }} —
+                                {% if v.cliente %}{{ v.cliente.persona.nombre }}{% else %}Ocasional{% endif %}
+                            </small>
+                            <small class="text-success fw-bold">₲{{ v.total|floatformat:0 }}</small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
         </div>
-        
+
         <!-- Formulario de Cierre -->
         <div class="col-md-6">
             <div class="card">
@@ -77,55 +97,51 @@
                 <div class="card-body">
                     <form method="post">
                         {% csrf_token %}
-                        <input type="hidden" name="caja_id" value="{{ caja.id }}">
-                        
+
                         <div class="mb-3">
                             <label class="form-label">Monto Esperado en Caja</label>
-                            <div class="input-group input-group-lg">
+                            <div class="input-group">
                                 <span class="input-group-text">Gs</span>
-                                <input type="text" 
-                                       class="form-control" 
-                                       value="Gs{{ caja.monto_final_esperado|floatformat:2 }}" 
+                                <input type="text"
+                                       class="form-control"
+                                       value="₲{{ caja.monto_final_esperado|floatformat:0 }}"
                                        disabled>
                             </div>
                         </div>
-                        
+
                         <div class="mb-3">
-                            <label for="monto_final_real" class="form-label">
-                                <strong>Monto Real Contado</strong>
+                            <label for="monto_final_real" class="form-label fw-bold">
+                                Monto Real Contado
                             </label>
                             <div class="input-group input-group-lg">
                                 <span class="input-group-text">Gs</span>
-                                <input type="number" 
-                                       class="form-control" 
-                                       id="monto_final_real" 
-                                       name="monto_final_real" 
-                                       step="0.01" 
-                                       min="0" 
+                                <input type="number"
+                                       class="form-control"
+                                       id="monto_final_real"
+                                       name="monto_final_real"
+                                       step="1"
+                                       min="0"
                                        required
-                                       placeholder="0.00"
+                                       placeholder="0"
                                        autofocus>
                             </div>
-                            <div class="form-text">
-                                Ingrese el monto real que hay en la caja
-                            </div>
+                            <div class="form-text">Ingrese el monto real que hay en la caja</div>
                         </div>
-                        
+
+                        <!-- Diferencia — calculada con JS puro, sin mezclar Django -->
                         <div id="diferencia-info" class="mb-3 d-none">
-                            <div class="alert alert-success">
-                                <strong>Diferencia: Gs<span id="diferencia-monto">0.00</span></strong>
-                            </div>
+                            <div id="diferencia-alert" class="alert mb-0 py-2"></div>
                         </div>
-                        
+
                         <div class="mb-3">
                             <label for="observaciones" class="form-label">Observaciones</label>
-                            <textarea class="form-control" 
-                                      id="observaciones" 
-                                      name="observaciones" 
-                                      rows="3" 
+                            <textarea class="form-control"
+                                      id="observaciones"
+                                      name="observaciones"
+                                      rows="3"
                                       placeholder="Ingrese observaciones si es necesario..."></textarea>
                         </div>
-                        
+
                         <div class="d-grid gap-2">
                             <button type="submit" class="btn btn-danger btn-lg">
                                 <i class="fas fa-lock"></i> Cerrar Caja
@@ -142,29 +158,36 @@
 </div>
 
 <script>
-document.getElementById('monto_final_real').addEventListener('input', function() {
-    const montoReal = parseFloat(this.value) || 0;
-    const montoEsperado = parseFloat("{{ caja.monto_final_esperado|default:0|floatformat:2 }}");
+// El monto esperado viene del servidor como número entero — sin texto ni símbolos
+//const montoEsperado = {{ caja.monto_final_esperado|default:0 }};
+const montoEsperado = parseFloat("{{ caja.monto_final_esperado|default:0|floatformat:2 }}");
+
+document.getElementById('monto_final_real').addEventListener('input', function () {
+    const montoReal = parseInt(this.value) || 0;
     const diferencia = montoReal - montoEsperado;
-    
+
     const diffInfo = document.getElementById('diferencia-info');
-    const diffMonto = document.getElementById('diferencia-monto');
-    const alertDiv = diffInfo.querySelector('.alert');
-    
-    diffMonto.textContent = Math.abs(diferencia).toFixed(2);
-    
-    if (this.value) {
+    const diffAlert = document.getElementById('diferencia-alert');
+
+    if (this.value !== '') {
         diffInfo.classList.remove('d-none');
-        
+        const absDif = Math.abs(diferencia).toLocaleString('es-PY');
+
         if (diferencia > 0) {
-            alertDiv.className = 'alert alert-success';
-            alertDiv.innerHTML = `<strong>Diferencia: $Gs{diferencia.toFixed(2)}</strong><br><small><i class="fas fa-plus-circle"></i> Sobrante</small>`;
+            diffAlert.className = 'alert alert-success mb-0 py-2';
+            diffAlert.innerHTML =
+                '<strong>Diferencia: ₲' + absDif + '</strong><br>' +
+                '<small><i class="fas fa-plus-circle"></i> Sobrante</small>';
         } else if (diferencia < 0) {
-            alertDiv.className = 'alert alert-danger';
-            alertDiv.innerHTML = `<strong>Diferencia: $Gs{Math.abs(diferencia).toFixed(2)}</strong><br><small><i class="fas fa-minus-circle"></i> Faltante</small>`;
+            diffAlert.className = 'alert alert-danger mb-0 py-2';
+            diffAlert.innerHTML =
+                '<strong>Diferencia: ₲' + absDif + '</strong><br>' +
+                '<small><i class="fas fa-minus-circle"></i> Faltante</small>';
         } else {
-            alertDiv.className = 'alert alert-success';
-            alertDiv.innerHTML = `<strong>Diferencia: Gs0.00</strong><br><small><i class="fas fa-check-circle"></i> Cuadre perfecto</small>`;
+            diffAlert.className = 'alert alert-success mb-0 py-2';
+            diffAlert.innerHTML =
+                '<strong>Diferencia: ₲0</strong><br>' +
+                '<small><i class="fas fa-check-circle"></i> Cuadre perfecto</small>';
         }
     } else {
         diffInfo.classList.add('d-none');
