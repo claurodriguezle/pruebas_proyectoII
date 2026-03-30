@@ -1,0 +1,377 @@
+{% extends "administrador/layout.html" %}
+{% load static %}
+
+{% block title %}Punto de Venta - Brother's Burger{% endblock %}
+
+{% block body %}
+<div class="container-fluid">
+    <div class="row mb-3">
+        <div class="col-12">
+            <h2><i class="fas fa-cash-register"></i> Caja y Facturación</h2>
+            <span class="badge bg-success">Caja Abierta #{{ caja.id }}</span>
+        </div>
+    </div>
+    
+    <!-- Tabs -->
+    <ul class="nav nav-tabs mb-3">
+        <li class="nav-item">
+            <a class="nav-link active" href="#">Punto de Venta</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="{% url 'caja:reporte_caja' %}">Reportes</a>
+        </li>
+    </ul>
+    
+    <div class="row">
+        <!-- Menú de Productos -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <i class="fas fa-hamburger"></i> Menú Brother's Burger
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Producto Ejemplo 1 -->
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100 producto-card" 
+                                 data-producto-id="1"
+                                 data-producto-nombre="Hamburguesa Clásica"
+                                 data-producto-precio="8.50"
+                                 style="cursor: pointer;">
+                                <div class="card-body">
+                                    <h5 class="card-title">Hamburguesa Clásica</h5>
+                                    <p class="card-text">
+                                        <strong class="text-danger">$8.50</strong>
+                                    </p>
+                                    <button class="btn btn-outline-danger btn-sm btn-agregar w-100">
+                                        <i class="fas fa-plus"></i> Agregar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Producto Ejemplo 2 -->
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100 producto-card" 
+                                 data-producto-id="2"
+                                 data-producto-nombre="Hamburguesa con Queso"
+                                 data-producto-precio="9.50"
+                                 style="cursor: pointer;">
+                                <div class="card-body">
+                                    <h5 class="card-title">Hamburguesa con Queso</h5>
+                                    <p class="card-text">
+                                        <strong class="text-danger">$9.50</strong>
+                                    </p>
+                                    <button class="btn btn-outline-danger btn-sm btn-agregar w-100">
+                                        <i class="fas fa-plus"></i> Agregar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Producto Ejemplo 3 -->
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100 producto-card" 
+                                 data-producto-id="3"
+                                 data-producto-nombre="Hamburguesa Bacon"
+                                 data-producto-precio="10.50"
+                                 style="cursor: pointer;">
+                                <div class="card-body">
+                                    <h5 class="card-title">Hamburguesa Bacon</h5>
+                                    <p class="card-text">
+                                        <strong class="text-danger">$10.50</strong>
+                                    </p>
+                                    <button class="btn btn-outline-danger btn-sm btn-agregar w-100">
+                                        <i class="fas fa-plus"></i> Agregar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Orden Actual -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <i class="fas fa-shopping-cart"></i> Orden Actual
+                </div>
+                <div class="card-body">
+                    <form id="form-venta">
+                        {% csrf_token %}
+                        
+                        <!-- Cliente -->
+                        <div class="mb-3">
+                            <label class="form-label"><i class="fas fa-user"></i> Cliente</label>
+                            <select class="form-select" name="cliente_id" id="cliente">
+                                <option value="">Cliente ocasional</option>
+                                <option value="1">Cliente Frecuente</option>
+                                <option value="2">Cliente VIP</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Tipo de Venta -->
+                        <div class="mb-3">
+                            <label class="form-label"><i class="fas fa-store"></i> Tipo de venta</label>
+                            <select class="form-select" name="tipo_venta" id="tipo_venta">
+                                <option value="local">Consumo en local</option>
+                                <option value="takeaway">Para llevar</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Productos -->
+                        <div class="mb-3">
+                            <label class="form-label"><i class="fas fa-list"></i> Productos</label>
+                            <div id="lista-productos" class="list-group mb-2" style="max-height: 200px; overflow-y: auto;">
+                                <div class="text-muted text-center py-3">
+                                    No hay productos añadidos
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between align-items-center p-2 bg-light rounded">
+                                <strong>Total:</strong>
+                                <strong class="text-danger fs-4" id="total-venta">$0.00</strong>
+                            </div>
+                        </div>
+                        
+                        <!-- Pago en Efectivo -->
+                        <div class="mb-3">
+                            <label class="form-label"><i class="fas fa-money-bill-wave"></i> Pago en Efectivo</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" 
+                                       class="form-control form-control-lg" 
+                                       id="monto-recibido" 
+                                       name="monto_recibido" 
+                                       placeholder="0.00" 
+                                       step="0.01" 
+                                       min="0">
+                            </div>
+                            <div id="vuelto-info" class="mt-2 d-none">
+                                <div class="alert alert-success mb-0 py-2">
+                                    <strong>Vuelto: $<span id="vuelto-monto">0.00</span></strong>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Botones -->
+                        <button type="button" class="btn btn-danger btn-lg w-100 mb-2" 
+                                id="btn-completar" disabled>
+                            <i class="fas fa-check-circle"></i> Completar Venta
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary w-100" 
+                                id="btn-cancelar">
+                            <i class="fas fa-times"></i> Cancelar Orden
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmación -->
+<div class="modal fade" id="modalConfirmacion" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="fas fa-receipt"></i> Confirmar Venta</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <h6>Resumen de la Venta:</h6>
+                    <div id="resumen-venta"></div>
+                </div>
+                <div class="alert alert-info">
+                    <strong>Total:</strong> $<span id="modal-total">0.00</span><br>
+                    <strong>Recibido:</strong> $<span id="modal-recibido">0.00</span><br>
+                    <strong class="text-success">Vuelto: $<span id="modal-vuelto">0.00</span></strong>
+                </div>
+                <p class="mb-0"><small class="text-muted">Pago: <strong>EFECTIVO</strong></small></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" id="btn-confirmar-venta">
+                    <i class="fas fa-check"></i> Confirmar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Éxito -->
+<div class="modal fade" id="modalExito" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title"><i class="fas fa-check-circle"></i> ¡Venta Completada!</h5>
+            </div>
+            <div class="modal-body text-center">
+                <div class="mb-3">
+                    <i class="fas fa-receipt fa-4x text-success"></i>
+                </div>
+                <h4>Pedido #<span id="exito-pedido-id">123</span></h4>
+                <p class="mb-1">Total: $<span id="exito-total">0.00</span></p>
+                <p class="mb-1">Recibido: $<span id="exito-recibido">0.00</span></p>
+                <p class="mb-0"><strong class="text-success">Vuelto: $<span id="exito-vuelto">0.00</span></strong></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success w-100" data-bs-dismiss="modal" onclick="location.reload()">
+                    Nueva Venta
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let ventaActual = { productos: [], total: 0 };
+
+// Agregar producto al hacer clic
+document.querySelectorAll('.producto-card').forEach(card => {
+    card.addEventListener('click', function(e) {
+        if (!e.target.closest('button')) {
+            const productoId = this.dataset.productoId;
+            const productoNombre = this.dataset.productoNombre;
+            const productoPrecio = parseFloat(this.dataset.productoPrecio);
+            agregarProducto(productoId, productoNombre, productoPrecio, 1);
+        }
+    });
+});
+
+function agregarProducto(id, nombre, precio, cantidad) {
+    // Verificar si el producto ya está en la venta
+    let productoEnVenta = false;
+    for (let item of ventaActual.productos) {
+        if (item.producto_id === id) {
+            item.cantidad += cantidad;
+            item.subtotal = item.precio * item.cantidad;
+            productoEnVenta = true;
+            break;
+        }
+    }
+    
+    if (!productoEnVenta) {
+        ventaActual.productos.push({
+            producto_id: id,
+            nombre: nombre,
+            precio: precio,
+            cantidad: cantidad,
+            subtotal: precio * cantidad
+        });
+    }
+    
+    // Recalcular total
+    ventaActual.total = ventaActual.productos.reduce((sum, item) => sum + item.subtotal, 0);
+    actualizarListaProductos();
+}
+
+function actualizarListaProductos() {
+    const lista = document.getElementById('lista-productos');
+    const totalElement = document.getElementById('total-venta');
+    
+    if (ventaActual.productos.length === 0) {
+        lista.innerHTML = '<div class="text-muted text-center py-3">No hay productos añadidos</div>';
+        totalElement.textContent = '$0.00';
+        document.getElementById('btn-completar').disabled = true;
+        return;
+    }
+    
+    let html = '';
+    ventaActual.productos.forEach((item, index) => {
+        html += `
+            <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>${item.nombre}</strong><br>
+                    <small>$${item.precio} x ${item.cantidad}</small>
+                </div>
+                <div>
+                    <strong>$${item.subtotal.toFixed(2)}</strong>
+                    <button type="button" class="btn btn-sm btn-danger ms-2" onclick="eliminarProducto(${index})">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+    
+    lista.innerHTML = html;
+    totalElement.textContent = '$' + ventaActual.total.toFixed(2);
+    document.getElementById('btn-completar').disabled = false;
+}
+
+function eliminarProducto(index) {
+    ventaActual.productos.splice(index, 1);
+    ventaActual.total = ventaActual.productos.reduce((sum, item) => sum + item.subtotal, 0);
+    actualizarListaProductos();
+}
+
+// Calcular vuelto cuando se ingresa monto
+document.getElementById('monto-recibido').addEventListener('input', function() {
+    const montoRecibido = parseFloat(this.value) || 0;
+    const vueltoInfo = document.getElementById('vuelto-info');
+    const vueltoMonto = document.getElementById('vuelto-monto');
+    
+    if (montoRecibido >= ventaActual.total && ventaActual.total > 0) {
+        const vuelto = montoRecibido - ventaActual.total;
+        vueltoMonto.textContent = vuelto.toFixed(2);
+        vueltoInfo.classList.remove('d-none');
+        document.getElementById('btn-completar').disabled = false;
+    } else {
+        vueltoInfo.classList.add('d-none');
+        if (ventaActual.total > 0) {
+            document.getElementById('btn-completar').disabled = true;
+        }
+    }
+});
+
+// Completar venta
+document.getElementById('btn-completar').addEventListener('click', function() {
+    const montoRecibido = parseFloat(document.getElementById('monto-recibido').value) || 0;
+    
+    if (montoRecibido < ventaActual.total) {
+        alert('El monto recibido es insuficiente');
+        return;
+    }
+    
+    // Mostrar modal de confirmación
+    document.getElementById('modal-total').textContent = ventaActual.total.toFixed(2);
+    document.getElementById('modal-recibido').textContent = montoRecibido.toFixed(2);
+    document.getElementById('modal-vuelto').textContent = (montoRecibido - ventaActual.total).toFixed(2);
+    
+    let resumenHTML = '';
+    ventaActual.productos.forEach(item => {
+        resumenHTML += `<div>${item.nombre} x${item.cantidad} - $${item.subtotal.toFixed(2)}</div>`;
+    });
+    document.getElementById('resumen-venta').innerHTML = resumenHTML;
+    
+    new bootstrap.Modal(document.getElementById('modalConfirmacion')).show();
+});
+
+// Confirmar venta (simulada)
+document.getElementById('btn-confirmar-venta').addEventListener('click', function() {
+    // Cerrar modal de confirmación
+    bootstrap.Modal.getInstance(document.getElementById('modalConfirmacion')).hide();
+    
+    // Mostrar modal de éxito
+    document.getElementById('exito-pedido-id').textContent = Math.floor(Math.random() * 1000);
+    document.getElementById('exito-total').textContent = ventaActual.total.toFixed(2);
+    document.getElementById('exito-recibido').textContent = document.getElementById('monto-recibido').value;
+    document.getElementById('exito-vuelto').textContent = (parseFloat(document.getElementById('monto-recibido').value) - ventaActual.total).toFixed(2);
+    new bootstrap.Modal(document.getElementById('modalExito')).show();
+});
+
+// Cancelar orden
+document.getElementById('btn-cancelar').addEventListener('click', function() {
+    if (confirm('¿Está seguro de cancelar esta orden?')) {
+        ventaActual = { productos: [], total: 0 };
+        actualizarListaProductos();
+        document.getElementById('monto-recibido').value = '';
+        document.getElementById('vuelto-info').classList.add('d-none');
+    }
+});
+</script>
+{% endblock %}

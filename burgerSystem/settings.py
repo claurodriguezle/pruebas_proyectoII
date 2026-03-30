@@ -42,6 +42,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'caja',
     'facturacion',
     'personas',
     'administrador',
@@ -97,11 +98,11 @@ WSGI_APPLICATION = 'burgerSystem.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME':'db_burgerapp',
-        'USER':'ruizj',
-        'PASSWORD':'admin',
+        'NAME':'Db_Burger_App',
+        'USER':'crodriguez',
+        'PASSWORD':'12345',
         'HOST':'localhost',
-        'PORT': '5432',
+        'PORT': '5433',
     }
 }
 
