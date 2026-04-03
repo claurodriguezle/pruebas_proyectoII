@@ -698,6 +698,11 @@ def empleado_actualizar(request, pedido_id):
     nuevo_entrega = request.POST.get('estado_entrega', pedido.estado_entrega)
 
     if nuevo_entrega in ['PE', 'EN', 'FA', 'CA']:
+
+        # Si el empleado cancela, devolver el stock
+        if nuevo_entrega == 'CA' and pedido.estado_entrega != 'CA':
+            devolver_stock(pedido)
+
         pedido.estado_entrega = nuevo_entrega
         pedido.save(update_fields=['estado_entrega'])
 
