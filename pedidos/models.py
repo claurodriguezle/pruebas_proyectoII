@@ -1,9 +1,23 @@
 from django.db import models
 from django.core.exceptions import ValidationError
+from administrador .models import Item
 
 class Adicional(models.Model):
     nombre = models.CharField(max_length=50)
     precio = models.IntegerField()
+    item = models.ForeignKey(
+        'administrador.Item',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        verbose_name='Item de stock',
+        help_text='Item que se descuenta del stock al pedir este adicional'
+    )
+    cantidad = models.DecimalField(
+        max_digits=10, decimal_places=2,
+        null=True, blank=True,
+        verbose_name='Cantidad en gramos',
+        help_text='Gramos que se descuentan del stock al pedir este adicional'
+    )
 
     def __str__(self):
         return f"{self.nombre} (₲{self.precio})"

@@ -9,9 +9,9 @@
     </td>
     <td>{{ producto.codigo }}</td>
     <td>{{ producto.nombre }}</td>
-    <td>{{ producto.precio|intcomma|punto_miles}} ₲</td>
+    <td>{{ producto.precio|punto_miles}} ₲</td>
     <td>{{ producto.categoria }}</td>
-    <td>{{ producto.descripcion }}</td>
+    <td class="small">{{ producto.descripcion }}</td>
     <td>
         <button class="btn btn-outline-primary btn-sm" title="Editar"
             data-bs-toggle="modal"

@@ -154,6 +154,9 @@
                 <li class="nav-item">
                     <button class="nav-link" data-bs-toggle="tab" data-bs-target="#historial">
                         📋 Historial
+                        {% if historial %}
+                            <span class="badge bg-warning text-dark ms-1">{{ historial|length }}</span>
+                        {% endif %}
                     </button>
                 </li>
             </ul>

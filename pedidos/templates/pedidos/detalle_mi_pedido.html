@@ -114,6 +114,13 @@
               {{ pedido.get_tipo_entrega_display }}
             </p>
 
+            {% if pedido %}
+            <p class="mb-2">
+              <strong>Costo:</strong>
+              Gs {{ pedido.costo_delivery|punto_miles }}
+            </p>
+            {% endif %}
+
             {% if pedido.hora_retiro %}
             <p class="mb-0">
               <strong>Hora:</strong>
@@ -161,7 +168,6 @@
           </div>
 
           <hr>
-
           <!-- Total -->
           <div class="d-flex justify-content-between align-items-center mt-4">
             <h5 class="mb-0 fw-bold">Total</h5>

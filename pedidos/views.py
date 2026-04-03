@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from administrador.models import Producto, CategoriaProducto, Cliente, IngredienteProducto, Direccion
+from administrador.models import Producto, CategoriaProducto, Cliente, IngredienteProducto, Direccion, Stock
 from django.contrib.auth.decorators import login_required
 from .models import Adicional, Pedido, DetallePedido, DetalleAdicionalPedido, IngredienteEliminadoPedido
 from .forms import RetiroForm
@@ -347,7 +347,7 @@ def confirmar_pedido(request):
         except ValueError:
             hora_retiro = None
 
-    total = sum(item['subtotal'] for item in carrito)
+    total = sum(item['subtotal'] for item in carrito) + (costo_delivery if tipo_entrega == 'DE' else 0)
 
     try:
         with transaction.atomic():
@@ -381,7 +381,6 @@ def confirmar_pedido(request):
                         cantidad=ad.get('cantidad', 1)
                     )
 
-                #Probando
                 ingredientes_eliminados = item.get('sin', [])
                 print("SIN INGREDIENTES:", ingredientes_eliminados) 
                 for nombre_ing in ingredientes_eliminados:
@@ -398,17 +397,10 @@ def confirmar_pedido(request):
                         )
                     except IngredienteProducto.DoesNotExist:
                         print("NO ENCONTRADO:", nombre_ing) 
+
+            # Llamamos a la funcion para descontar el stokc
+            descontar_stock(pedido)
                 
-                '''
-                ingredientes_eliminados = item.get('sin', [])
-                for ing_id in ingredientes_eliminados:
-                    ingrediente_obj = IngredienteProducto.objects.get(pk=ing_id)
-                    IngredienteEliminadoPedido.objects.create(
-                        detalle_pedido=detalle,
-                        ingrediente=ingrediente_obj
-                    )
-                '''
-            # Si llega acá, todo fue bien, se hace commit automático
     except Exception as e:
         messages.error(request, f"Error al guardar el pedido: {e}")
         return redirect('pedidos:resumen_pedido')
@@ -488,6 +480,7 @@ def cancelar_pedido(request, pedido_id):
 
     # Solo se puede cancelar si cocina aún no empezó
     if pedido.estado_cocina == 'PE':
+        devolver_stock(pedido)  # Se devuelve el stock
         pedido.estado_entrega = 'CA'
         pedido.save(update_fields=['estado_entrega'])
         messages.success(request, "Tu pedido fue cancelado correctamente.")
@@ -495,6 +488,75 @@ def cancelar_pedido(request, pedido_id):
         messages.error(request, "No podés cancelar este pedido, ya está en preparación.")
 
     return redirect('pedidos:mis_pedidos')
+
+# DESCONTAR STOCK CON PEDIDO
+
+def descontar_stock(pedido):
+    # Descontar stock de ingredientes al confirmar pedido
+    for detalle in pedido.detalle.select_related('producto'):
+
+        # Obtenemos los ingredientes que el cliente elimino en este detalle
+        eliminados = detalle.ingredientes_eliminados.values_list('ingrediente__item_id', flat=True)
+
+        for ingrediente in detalle.producto.ingredientes.select_related('item'):
+
+            # Si el ingrediente fue eliminado, lo salteamos
+            if ingrediente.item_id in eliminados:
+                continue
+
+            cantidad_total = ingrediente.cantidad * detalle.cantidad
+            try:
+                stock = Stock.objects.get(item=ingrediente.item)
+                stock.cant_disponible -= cantidad_total
+                stock.save(update_fields=['cant_disponible'])
+            except Stock.DoesNotExist:
+                pass # Si no hay stock registrado se ignora
+
+        # Desconatar adicionales
+        for adicional_detalle in detalle.adicionales.select_related('adicional__item'):
+            if adicional_detalle.adicional.item is None:
+                continue # Este adicional no tiene stock asociado
+            cantidad_total = adicional_detalle.adicional.cantidad * adicional_detalle.cantidad
+            try:
+                stock = Stock.objects.get(item=adicional_detalle.adicional.item)
+                stock.cant_disponible -= cantidad_total
+                stock.save(update_fields=['cant_disponible'])
+            except Stock.DoesNotExist:
+                pass
+
+def devolver_stock(pedido):
+    # Devuelve stock de ingrediente al cancelar un pedido
+    for detalle in pedido.detalle.select_related('producto'):
+
+        # No devolvemos, ya que el cliente lo habia eliminado
+        eliminados = detalle.ingredientes_eliminados.values_list('ingrediente__item_id', flat=True)
+
+        # Devolver ingredientes del producto
+        for ingrediente in detalle.producto.ingredientes.select_related('item'):
+
+            if ingrediente.item_id in eliminados:
+                continue
+
+            cantidad_total = ingrediente.cantidad * detalle.cantidad
+            try:
+                stock = Stock.objects.get(item=ingrediente.item)
+                stock.cant_disponible += cantidad_total
+                stock.save(update_fields=['cant_disponible'])
+            except Stock.DoesNotExist:
+                pass
+    
+        # Devolver adicionales
+        for adicional_detalle in detalle.adicionales.select_related('adicional__item'):
+            if adicional_detalle.adicional.item is None:
+                continue
+            cantidad_total = adicional_detalle.adicional.cantidad * adicional_detalle.cantidad
+            try:
+                stock = Stock.objects.get(item=adicional_detalle.adicional.item)
+                stock.cant_disponible += cantidad_total
+                stock.save(update_fields=['cant_disponible'])
+            except Stock.DoesNotExist:
+                pass
+
 #Orden de pedidos
 #Empleado/Cajero
 def _get_filtros(request):
@@ -517,7 +579,6 @@ def _enriquecer(pedido):
     # Nombre del cliente para mostrar en la tabla
     persona = pedido.cliente.persona
     pedido.cliente_nombre = f"{persona.nombre} {persona.apellido}"
-    pedido.total_con_delivery = pedido.total + (pedido.costo_delivery or 0)
 
     return pedido
 
@@ -741,3 +802,5 @@ def mi_factura(request, pedido_id):
         pedido=pedido
     )
     return render(request, 'pedidos/mi_factura.html', {'factura': factura, 'pedido': pedido})
+
+
