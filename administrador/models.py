@@ -267,10 +267,22 @@ class Compra(models.Model):
 # PRODUCTOS
 
 class CategoriaProducto(models.Model):
+
+    # El tipo se utilizara para indicar si el producto llega ingredientes o es solo un articulo
+    TIPOS = [
+        ('ingrediente', 'Ingrediente'),
+        ('articulo', 'Artículo')
+    ]
     nombre_categ = models.CharField(
     verbose_name="Nombre de categoría",
     max_length=100,
     unique=True
+    )
+    tipo = models.CharField(
+        verbose_name="Tipo",
+        max_length=15,
+        choices=TIPOS,
+        default='ingrediente'
     )
 
     def __str__(self):

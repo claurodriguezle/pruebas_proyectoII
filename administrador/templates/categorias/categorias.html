@@ -20,33 +20,22 @@
         
     </div>
 
-    <div class="table-responsive">
-        <table class="table table-striped align-middle">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Nombre</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody id="categoriaTableBody"
-                hx-get="{% url 'administrador:listar_categorias_partial' %}"
-                hx-trigger="load"
-                hx-swap="innerHTML"
-                >
-                <!-- Aquí se mostrarán las categorías -->
-            </tbody>
-        </table>
-        
+    <div class="table-responsive" id="tabla-container"
+    hx-get="{% url 'administrador:listar_categorias_partial' %}"
+    hx-trigger="load"
+    hx-swap="innerHTML"
+    >
+        <!-- Aquí se mostrarán las categorías -->
     </div>
     <a href="{% url 'administrador:productos' %}" class="btn btn-secondary">Volver</a>
 </div>
 
 <!-- Modal para añadir/editar categoría -->
-<div class="modal fade" id="modalCategoria" tabindex="-1" aria-labelledby="categoriaModalLabel" aria-hidden="true">
+<div class="modal fade" id="modalCategoria" tabindex="-1" aria-labelledby="categoriaModalLabel" aria-hidden="true"
+hx-on:modalCategoriaCerrado="bootstrap.Modal.getInstance(document.getElementById('modalCategoria')).hide()">
     <div class="modal-dialog">
         <div class="modal-content">
-            <div class="modal-body" id="modalCategoriaBody">
+            <div class="modal-body" id="modalCategoriaBody" style="min-height: 240px;">
                 <!-- Aquí se cargará el formulario dinámicamente -->
             </div>
         </div>

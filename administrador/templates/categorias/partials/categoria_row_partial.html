@@ -16,7 +16,7 @@
         <button 
             class="btn btn-sm btn-outline-danger"
             hx-delete="{% url 'administrador:eliminar_categoria' categoria.id %}"
-            hx-target="#categoriaTableBody"
+            hx-target="#tabla-container"
             hx-swap="innerHTML"
             hx-confirm="¿Estás seguro de eliminar esta categoría?">
             Eliminar

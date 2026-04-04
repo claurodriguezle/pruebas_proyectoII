@@ -1,6 +1,6 @@
 
 <select class="form-select" id="item" name="item">
-    <option selected disabled>Selecciona un ingrediente</option>
+    <option selected disabled>Seleccionar...</option>
     {% for item in items %}
         <option value="{{ item.id }}" data-nombre="{{ item.nombre }}"> {{ item.nombre }} </option>
     {% endfor %}

@@ -688,9 +688,6 @@ def actualizar_stock_desde_compra(compra):
             stock.fecha_ultima_entrada = detalle_compra.compra.fecha
             stock.save()
 
-
-
-
 def ajustar_stock(request, stock_id):
     stock = get_object_or_404(Stock, id=stock_id)
     
@@ -773,8 +770,9 @@ def crear_categorias(request):
     if request.method == 'POST':
         form = CategoriaProductoForm(request.POST)
         if form.is_valid():
-            categoria = form.save()
-            html = render_to_string('categorias/partials/categoria_row_partial.html', {'categoria': categoria})
+            form.save()
+            categorias = CategoriaProducto.objects.all().order_by('nombre_categ')
+            html = render_to_string('categorias/partials/lista.html', {'categorias': categorias})
             response = HttpResponse(html)
             response['HX-Trigger'] = 'modalCategoriaCerrado'
             return response
@@ -804,16 +802,17 @@ def editar_categoria(request, pk):
     if request.method == 'POST':
         form = CategoriaProductoForm(request.POST, instance=categoria)
         if form.is_valid():
-            categoria = form.save()
-            html = render_to_string('categorias/partials/categoria_row_partial.html', {'categoria': categoria})
+            form.save()
+            categorias = CategoriaProducto.objects.all().order_by('nombre_categ')
+            html = render_to_string('categorias/partials/lista.html', {'categorias': categorias})
             response = HttpResponse(html)
             response['HX-Trigger'] = 'modalCategoriaCerrado'
             return response
         else:
-            return render(request, 'categorias/partials/categoria_form_partial.html', {'form': form})
+            return render(request, 'categorias/partials/categoria_form_partial.html', {'form': form, 'categoria': categoria})
     else:
         form = CategoriaProductoForm(instance=categoria)
-        return render(request, 'categorias/partials/categoria_form_partial.html', {'form': form})
+        return render(request, 'categorias/partials/categoria_form_partial.html', {'form': form, 'categoria': categoria})
 
 # INGREDIENTES DE PRODUCTOS
 
@@ -821,15 +820,23 @@ def editar_categoria(request, pk):
 def ingredientes(request, id):
     producto = get_object_or_404(Producto, id=id)
     ingredientes = IngredienteProducto.objects.filter(producto=producto)
+
+    tipo = producto.categoria.tipo if producto.categoria else 'ingrediente'
+    label_item = 'Artículo' if tipo == 'articulo' else 'Ingrediente'
+
     return render(request, 'ingredientes/ingredientes.html',{
         'producto': producto,
-        'ingredientes': ingredientes
+        'ingredientes': ingredientes,
+        'label_item': label_item,
     })
 
 # TRAE LOS ITEM DE LA BD Y LOS MUESTRA EN EL SELECT DEL FORM
 def cargar_items(request):
     items = Item.objects.all()
-    return render(request, 'ingredientes/partials/select_items.html', {"items": items})
+
+    return render(request, 'ingredientes/partials/select_items.html', {
+        "items": items,
+    })
 
 # GUARDA LOS INGREDIENTES
 def agregar_ingredientes(request, producto_id):

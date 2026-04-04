@@ -1,18 +1,10 @@
 <form
     method="POST"
-    {% if categoria %}
-        hx-post="{% url 'administrador:editar_categoria' categoria.id %}"
-        hx-target="#categoria-{{ categoria.id }}"
-        hx-swap="outerHTML"
-    {% else %}
-        hx-post="{% url 'administrador:crear_categorias' %}"
-        hx-target="#categoriaTableBody"
-        hx-swap="beforeend"
-    {% endif %}
-    hx-on="htmx:afterSwap: window.dispatchEvent(new Event('modalCategoriaCerrado'))"
+    hx-post="{% if categoria %}{% url 'administrador:editar_categoria' categoria.id %}{% else %}{% url 'administrador:crear_categorias' %}{% endif %}"
+    hx-target="#tabla-container"
+    hx-swap="innerHTML"
     class="form"
     >
-
     {% csrf_token %}
     <div class="mb-3">
         <label for="id_nombre_categ" class="form-label">Nombre</label>
@@ -21,6 +13,15 @@
             <div class="text-danger">{{ form.nombre_categ.errors }}</div>
         {% endif %}
     </div>
+
+    <div class="mb-3">
+        <label for="id_tipo" class="form-label">Tipo</label>
+        {{ form.tipo }}
+        {% if form.tipo.errors %}
+            <div class="text-danger">{{ form.tipo.errors }}</div>
+        {% endif %}
+    </div>
+
     <div class="d-flex justify-content-end gap-2">
         <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Cancelar</button>
         <button type="submit" class="btn btn-primary">

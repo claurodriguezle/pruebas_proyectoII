@@ -178,11 +178,14 @@ class CompraCompletaForm(forms.Form):
 class CategoriaProductoForm(forms.ModelForm):
     class Meta:
         model = CategoriaProducto
-        fields = ['nombre_categ']
+        fields = ['nombre_categ', 'tipo']
         widgets = {
             'nombre_categ': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'Nombre de la categoría'
+            }),
+            'tipo': forms.Select(attrs={
+                'class': 'form-select'
             })
         }
 

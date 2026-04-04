@@ -1,7 +1,18 @@
-{% for categoria in categorias %}
-    {% include "categorias/partials/categoria_row_partial.html" %}
-{% empty %}
-<tr>
-    <td colspan="3">No hay categorías registradas.</td>
-</tr>
-{% endfor %}
+<table class="table table-striped align-middle" id="tabla-categorias">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody id="categoriaTableBody">
+        {% for categoria in categorias %}
+            {% include "categorias/partials/categoria_row_partial.html" %}
+        {% empty %}
+            <tr>
+                <td colspan="3">No hay categorías registradas.</td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>

@@ -12,6 +12,8 @@ from .services import validar_delivery
 from usuarios.forms import DireccionForm
 from django.views.decorators.http import require_http_methods
 from django.utils import timezone
+from django.db.models import Window, F
+from django.db.models.functions import RowNumber
 
 
 def index(request):
@@ -446,12 +448,16 @@ def mis_pedidos_partial(request):
     except Cliente.DoesNotExist:
         return HttpResponse('Ocurrio un error.')
     
-    pedidos_activos = (
+    pedidos_activos = list(
         Pedido.objects
         .filter(cliente=cliente)
         .exclude(estado_entrega__in=['FA', 'CA'])
         .order_by('-id')
     )
+
+    # DEBUG
+    for p in pedidos_activos:
+        print(f"Pedido {p.id} - numero: {p.numero}")
     return render(request, 'pedidos/partials/mis_pedidos_cards.html', {'pedidos': pedidos_activos})
 
 @login_required

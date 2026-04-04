@@ -72,18 +72,18 @@ Detalles de Compra #{{ compra.numero_factura }}
                             </td>
                             <td>
                                 {% if detalle.item.unidad_medida == 'kg' %}
-                                    {{ detalle.precio_compra|floatformat:0|intcomma }} Gs/kg
+                                    {{ detalle.precio_compra|punto_miles }} Gs/kg
                                 {% elif detalle.item.unidad_medida == 'gr' %}
-                                    {{ detalle.precio_compra|floatformat:0|intcomma }} Gs/g
+                                    {{ detalle.precio_compra|punto_miles }} Gs/g
                                 {% elif detalle.item.unidad_medida == 'lt' %}
-                                    {{ detalle.precio_compra|floatformat:0|intcomma }} Gs/lt
+                                    {{ detalle.precio_compra|punto_miles }} Gs/lt
                                 {% elif detalle.item.unidad_medida == 'ml' %}
-                                    {{ detalle.precio_compra|floatformat:0|intcomma }} Gs/ml
+                                    {{ detalle.precio_compra|punto_miles }} Gs/ml
                                 {% else %}
-                                    {{ detalle.precio_compra|floatformat:0|intcomma }} Gs/{{ detalle.item.get_unidad_medida_display }}
+                                    {{ detalle.precio_compra|punto_miles }} Gs/{{ detalle.item.get_unidad_medida_display }}
                                 {% endif %}
                             </td>
-                            <td>{{ detalle.subtotal|floatformat:0|intcomma }} Gs.</td>
+                            <td>{{ detalle.subtotal|punto_miles }} Gs.</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -103,19 +103,19 @@ Detalles de Compra #{{ compra.numero_factura }}
                     <table class="table table-bordered">
                         <tr>
                             <th class="bg-light">Subtotal sin IVA:</th>
-                            <td class="text-end">{{ compra.total_sin_iva|intcomma }} Gs.</td>
+                            <td class="text-end">{{ compra.total_sin_iva|punto_miles }} Gs.</td>
                         </tr>
                         <tr>
                             <th class="bg-light">IVA 5%:</th>
-                            <td class="text-end">{{ compra.iva_5|intcomma }} Gs.</td>
+                            <td class="text-end">{{ compra.iva_5|punto_miles }} Gs.</td>
                         </tr>
                         <tr>
                             <th class="bg-light">IVA 10%:</th>
-                            <td class="text-end">{{ compra.iva_10|intcomma }} Gs.</td>
+                            <td class="text-end">{{ compra.iva_10|punto_miles }} Gs.</td>
                         </tr>
                         <tr class="table-active">
                             <th class="bg-light">TOTAL:</th>
-                            <td class="text-end fw-bold">{{ compra.monto_total|intcomma }} Gs.</td>
+                            <td class="text-end fw-bold">{{ compra.monto_total|punto_miles }} Gs.</td>
                         </tr>
                     </table>
                 </div>
