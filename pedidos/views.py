@@ -12,9 +12,6 @@ from .services import validar_delivery
 from usuarios.forms import DireccionForm
 from django.views.decorators.http import require_http_methods
 from django.utils import timezone
-from django.db.models import Window, F
-from django.db.models.functions import RowNumber
-
 
 def index(request):
     return render(request, 'pedidos/index.html')
@@ -39,7 +36,29 @@ def lista_productos(request):
         productos = Producto.objects.filter(estado='A', categoria__nombre_categ=categoria_nombre)
     else:
         productos = Producto.objects.filter(estado='A')
-    return render(request, 'pedidos/partials/productos_lista.html', {'productos': productos})
+    
+    # Verificar Stock por producto
+    productos_con_stock = []
+    for producto in productos:
+        tiene_stock = True
+        ingredientes = producto.ingredientes.select_related('item')
+        
+        if not ingredientes.exists():
+            tiene_stock = False
+        else:
+            for ingrediente in ingredientes:
+                try:
+                    stock = Stock.objects.get(item=ingrediente.item)
+                    if stock.cant_disponible < ingrediente.cantidad:
+                        tiene_stock = False
+                        break
+                except Stock.DoesNotExist:
+                    tiene_stock = False
+                    break
+
+        producto.tiene_stock = tiene_stock
+        productos_con_stock.append(producto)
+    return render(request, 'pedidos/partials/productos_lista.html', {'productos': productos_con_stock})
 
 def contador_carrito(request):
     carrito = request.session.get('carrito', [])
@@ -351,6 +370,23 @@ def confirmar_pedido(request):
 
     total = sum(item['subtotal'] for item in carrito) + (costo_delivery if tipo_entrega == 'DE' else 0)
 
+    # Verificar stock antes de crear el pedido
+    for item in carrito:
+        producto = Producto.objects.get(pk=item['producto'])
+        ingredientes = producto.ingredientes.select_related('item')
+        if not ingredientes.exists():
+            messages.error(request, f"'{producto.nombre}' no tiene item configurados.")
+            return redirect('pedidos:resumen_pedido')
+        for ingrediente in ingredientes:
+            try:
+                stock = Stock.objects.get(item=ingrediente.item)
+                cantidad_necesaria = ingrediente.cantidad * item['cantidad']
+                if stock.cant_disponible < cantidad_necesaria:
+                    messages.error(request, f"No hay stock suficiente de '{producto.nombre}'.")
+                    return redirect('pedidos:resumen_pedido')
+            except Stock.DoesNotExist:
+                messages.error(request, f"No hay stock registrado para: '{producto.nombre}'.")
+                return redirect('pedidos:resumen_pedido')
     try:
         with transaction.atomic():
             pedido = Pedido.objects.create(
@@ -455,9 +491,6 @@ def mis_pedidos_partial(request):
         .order_by('-id')
     )
 
-    # DEBUG
-    for p in pedidos_activos:
-        print(f"Pedido {p.id} - numero: {p.numero}")
     return render(request, 'pedidos/partials/mis_pedidos_cards.html', {'pedidos': pedidos_activos})
 
 @login_required
