@@ -1,0 +1,27 @@
+<!-- Adicionales -->
+<div class="mb-4">
+    <h6 class="fw-bold">Adicionales</h6>
+    {% for adicional in extras %}
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="adicional[]" value="{{ adicional.id }}" id="adicional-{{ adicional.id }}">
+            <label class="form-check-label" for="adicional-{{ adicional.id }}">
+                Extra {{ adicional.nombre }} <span class="text-muted">+ Gs{{ adicional.precio }}</span>
+            </label>
+        </div>
+    {% empty %}
+        <p class="text-muted small">No hay adicionales disponibles.</p>
+    {% endfor %}
+</div>
+
+<!-- Sin -->
+<div class="mb-4">
+    <h6 class="fw-bold">Sin</h6>
+    {% for ingrediente in eliminables %}
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="sin[]" value="{{ ingrediente.item.nombre }}" id="sin-{{ ingrediente.id }}">
+            <label class="form-check-label" for="sin-{{ ingrediente.id }}">Sin {{ ingrediente.item.nombre }}</label>
+        </div>
+    {% empty %}
+        <p class="text-muted small">Este producto no tiene ingredientes removibles.</p>
+    {% endfor %}
+</div>

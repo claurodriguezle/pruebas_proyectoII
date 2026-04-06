@@ -902,6 +902,8 @@ def actualizar_ingrediente(request, pk):
         return HttpResponseBadRequest('Cantidad faltante')
     
     ingrediente.cantidad = cantidad
+    ingrediente.puede_eliminarse = request.POST.get('puede_eliminarse') == 'on'
+    ingrediente.puede_ser_extra = request.POST.get('puede_ser_extra') == 'on'
     ingrediente.save()
 
     return render(request, 'ingredientes/partials/fila_ingrediente.html', {'ingrediente': ingrediente})

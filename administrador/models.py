@@ -331,6 +331,12 @@ class Producto(models.Model):
         null=True,
         blank=True
     )
+
+    adicionales = models.ManyToManyField(
+        'pedidos.Adicional',
+        blank=True,
+        verbose_name='Adicionales disponibles'
+    )
     def __str__(self):
         return f"{self.codigo} - {self.nombre}"
     
@@ -399,6 +405,9 @@ class IngredienteProducto(models.Model):
         verbose_name="cantidad en gramos",
         help_text="Cantidad usada en gramos(ej: 150) "
     )
+
+    puede_eliminarse = models.BooleanField(default=False)
+    puede_ser_extra = models.BooleanField(default=False)
 
     class Meta:
         unique_together = ('producto', 'item')

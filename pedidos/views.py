@@ -60,6 +60,21 @@ def lista_productos(request):
         productos_con_stock.append(producto)
     return render(request, 'pedidos/partials/productos_lista.html', {'productos': productos_con_stock})
 
+def modal_personalizacion(request, producto_id):
+    producto = get_object_or_404(Producto, pk=producto_id)
+
+    eliminables = IngredienteProducto.objects.filter(
+        producto=producto,
+        puede_eliminarse=True
+    ).select_related('item')
+
+    extras = producto.adicionales.all()
+
+    return render(request, 'pedidos/partials/modal_personalizacion.html', {
+        'eliminables': eliminables,
+        'extras': extras,
+    })
+
 def contador_carrito(request):
     carrito = request.session.get('carrito', [])
     total = sum(item['cantidad'] for item in carrito)
