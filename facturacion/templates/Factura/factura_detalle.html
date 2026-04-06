@@ -19,7 +19,6 @@
     padding: 0 1rem;
   }
 
-  /* Barra de acciones */
   .fact-actions {
     display: flex;
     gap: .75rem;
@@ -45,7 +44,6 @@
   }
   .btn-print:hover { opacity: .88; }
 
-  /* Factura */
   .factura {
     background: #fff;
     border: 1px solid #e5e7eb;
@@ -54,196 +52,90 @@
     box-shadow: 0 1px 4px rgba(0,0,0,.06);
   }
 
-  /* Header */
+  /* ENCABEZADO DOS COLUMNAS */
   .fact-head {
     display: grid;
-    grid-template-columns: 1fr auto;
+    grid-template-columns: 1fr 1fr;
     gap: 1.5rem;
     margin-bottom: 2rem;
     padding-bottom: 1.5rem;
     border-bottom: 2px solid #f5a623;
   }
   .fact-empresa h1 {
-    font-size: 1.6rem;
+    font-size: 1.4rem;
     font-weight: 800;
     color: #92400e;
-    letter-spacing: -.01em;
-    margin-bottom: .2rem;
+    margin-bottom: .3rem;
   }
-  .fact-empresa p {
-    font-size: .83rem;
-    color: #6b7280;
-    margin: 0;
-  }
-  .fact-nro {
-    text-align: right;
-  }
-  .fact-nro .label {
-    font-size: .7rem;
-    text-transform: uppercase;
-    letter-spacing: .08em;
-    color: #9ca3af;
-    margin-bottom: .2rem;
-  }
-  .fact-nro .numero {
-    font-size: 1.2rem;
-    font-weight: 700;
-    color: #111827;
-    font-family: 'Courier New', monospace;
-  }
-  .fact-nro .fecha {
-    font-size: .82rem;
-    color: #6b7280;
-    margin-top: .25rem;
-  }
+  .fact-empresa p { font-size: .85rem; color: #374151; margin: .15rem 0; }
+  .fact-nro-col { text-align: right; }
+  .fact-nro-col p { font-size: .85rem; color: #374151; margin: .15rem 0; }
+  .factura-electronica { color: #d04e00; font-size: .95rem !important; margin-top: .75rem !important; }
+  .numero-factura { font-size: 1.1rem !important; font-weight: 700; font-family: 'Courier New', monospace; color: #111827 !important; }
 
-  /* Timbrado */
-  .fact-timbrado {
-    background: #fff7ed;
-    border: 1px solid #fed7aa;
-    border-radius: 6px;
-    padding: .5rem 1rem;
-    font-size: .8rem;
-    color: #92400e;
-    margin-bottom: 1.5rem;
-    display: flex;
-    gap: 2rem;
-    flex-wrap: wrap;
-  }
-  .fact-timbrado span { font-weight: 600; }
-
-  /* Datos cliente / empresa */
   .fact-partes {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
     gap: 1.5rem;
     margin-bottom: 1.75rem;
   }
   .fact-parte h4 {
-    font-size: .68rem;
-    text-transform: uppercase;
-    letter-spacing: .1em;
-    color: #9ca3af;
-    margin-bottom: .6rem;
-    font-weight: 600;
+    font-size: .68rem; text-transform: uppercase; letter-spacing: .1em;
+    color: #9ca3af; margin-bottom: .6rem; font-weight: 600;
   }
-  .fact-parte p {
-    font-size: .88rem;
-    color: #111827;
-    margin: .2rem 0;
-  }
-  .fact-parte p span {
-    color: #6b7280;
-    font-size: .78rem;
-    margin-right: .3rem;
-  }
+  .fact-parte p { font-size: .88rem; color: #111827; margin: .2rem 0; }
+  .fact-parte p span { color: #6b7280; font-size: .78rem; margin-right: .3rem; }
 
-  /* Tabla de items */
   .fact-items {
-    width: 100%;
-    border-collapse: collapse;
-    margin-bottom: 1.5rem;
-    font-size: .875rem;
+    width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; font-size: .875rem;
   }
   .fact-items thead th {
-    background: #f9fafb;
-    border-bottom: 2px solid #e5e7eb;
-    padding: .6rem .8rem;
-    text-align: left;
-    font-size: .72rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: .08em;
-    color: #6b7280;
+    background: #f9fafb; border-bottom: 2px solid #e5e7eb;
+    padding: .6rem .8rem; text-align: left;
+    font-size: .72rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .08em; color: #6b7280;
   }
   .fact-items thead th:last-child { text-align: right; }
   .fact-items tbody td {
-    padding: .65rem .8rem;
-    border-bottom: 1px solid #f3f4f6;
-    color: #111827;
-    vertical-align: top;
+    padding: .65rem .8rem; border-bottom: 1px solid #f3f4f6; color: #111827; vertical-align: top;
   }
   .fact-items tbody td:last-child { text-align: right; font-weight: 600; }
   .fact-items tbody tr:last-child td { border-bottom: none; }
-  .fact-items .cod {
-    font-size: .75rem;
-    color: #9ca3af;
-    font-family: monospace;
-  }
+  .fact-items .cod { font-size: .75rem; color: #9ca3af; font-family: monospace; }
 
-  /* Totales */
-  .fact-totales {
-    display: flex;
-    justify-content: flex-end;
-    margin-bottom: 1.75rem;
-  }
-  .totales-box {
-    min-width: 260px;
-  }
+  .fact-totales { display: flex; justify-content: flex-end; margin-bottom: 1.75rem; }
+  .totales-box { min-width: 260px; }
   .totales-row {
-    display: flex;
-    justify-content: space-between;
-    padding: .35rem 0;
-    font-size: .875rem;
-    border-bottom: 1px solid #f3f4f6;
-    color: #374151;
+    display: flex; justify-content: space-between;
+    padding: .35rem 0; font-size: .875rem;
+    border-bottom: 1px solid #f3f4f6; color: #374151;
   }
   .totales-row:last-child { border: none; }
   .totales-row.total-final {
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: #111827;
-    border-top: 2px solid #f5a623;
-    margin-top: .25rem;
-    padding-top: .6rem;
+    font-size: 1.1rem; font-weight: 700; color: #111827;
+    border-top: 2px solid #f5a623; margin-top: .25rem; padding-top: .6rem;
   }
   .totales-row label { color: #6b7280; font-size: .82rem; }
   .totales-row.total-final label { color: #111827; font-weight: 700; font-size: 1rem; }
 
-  /* IVA breakdown */
   .fact-iva {
-    border: 1px solid #e5e7eb;
-    border-radius: 6px;
-    padding: .75rem 1rem;
-    margin-bottom: 1.5rem;
+    border: 1px solid #e5e7eb; border-radius: 6px;
+    padding: .75rem 1rem; margin-bottom: 1.5rem;
   }
   .fact-iva h4 {
-    font-size: .68rem;
-    text-transform: uppercase;
-    letter-spacing: .1em;
-    color: #9ca3af;
-    margin-bottom: .5rem;
-    font-weight: 600;
+    font-size: .68rem; text-transform: uppercase; letter-spacing: .1em;
+    color: #9ca3af; margin-bottom: .5rem; font-weight: 600;
   }
-  .iva-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: .5rem;
-    text-align: center;
-  }
-  .iva-col label {
-    font-size: .72rem;
-    color: #9ca3af;
-    display: block;
-    margin-bottom: .2rem;
-  }
-  .iva-col span {
-    font-size: .9rem;
-    font-weight: 600;
-    color: #111827;
-  }
+  .iva-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; text-align: center; }
+  .iva-col label { font-size: .72rem; color: #9ca3af; display: block; margin-bottom: .2rem; }
+  .iva-col span { font-size: .9rem; font-weight: 600; color: #111827; }
 
-  /* Footer */
   .fact-footer {
-    text-align: center;
-    font-size: .78rem;
-    color: #9ca3af;
-    border-top: 1px solid #f3f4f6;
-    padding-top: 1rem;
+    text-align: center; font-size: .78rem; color: #9ca3af;
+    border-top: 1px solid #f3f4f6; padding-top: 1rem;
   }
   .fact-footer strong { color: #f5a623; }
 
-  /* Pago badge */
   .pago-badge {
     display: inline-flex; align-items: center; gap: .3rem;
     background: #f0fdf4; color: #15803d;
@@ -256,49 +148,40 @@
 {% block body %}
 <div class="fact-wrapper">
 
-  {# Acciones #}
   <div class="fact-actions no-print">
-    <a href="{% url 'facturacion:facturas_list' %}" class="btn-back">← Volver</a>
+    <a href="{% url 'caja:punto_venta' %}" class="btn-back">← Volver</a>
     <button class="btn-print" onclick="window.print()">🖨 Imprimir</button>
   </div>
 
   <div class="factura print-area">
 
-    {# Cabecera #}
+    {# ENCABEZADO DOS COLUMNAS #}
     <div class="fact-head">
       <div class="fact-empresa">
         <h1>🍔 Brother's Burger</h1>
-        <p>RUC: {{ factura.timbrado.ruc }}</p>
-        <p>Coronel Oviedo, Paraguay</p>
+        <p><strong>Titular:</strong> Juan Perez Lopez</p>
+        <p><strong>Tel.:</strong> 0971607003</p>
+        <p>Coronel Oviedo - Paraguay</p>
         <div style="margin-top:.5rem">
           <span class="pago-badge">✓ {{ factura.get_forma_de_pago_display }}</span>
         </div>
       </div>
-      <div class="fact-nro">
-        <div class="label">Número de factura</div>
-        <div class="numero">{{ factura.nro_fact }}</div>
-        <div class="fecha">{{ factura.fecha_emision|date:"d/m/Y" }}</div>
+      <div class="fact-nro-col">
+        <p><strong>RUC:</strong> {{ factura.timbrado.ruc }}</p>
+        <p><strong>Timbrado:</strong> {{ factura.timbrado.numero }}</p>
+        <p><strong>Inicio de Vigencia:</strong> {{ factura.timbrado.fecha_inicio_vigencia|date:"d/m/Y" }}</p>
+        <p><strong>Fin de Vigencia:</strong> {{ factura.timbrado.fecha_fin_vigencia|date:"d/m/Y" }}</p>
+        <p class="factura-electronica"><strong>FACTURA ELECTRÓNICA</strong></p>
+        <p class="numero-factura">{{ factura.nro_fact }}</p>
       </div>
-    </div>
-
-    {# Timbrado #}
-    <div class="fact-timbrado">
-      Timbrado: <span>{{ factura.timbrado.numero }}</span>
-      &nbsp;·&nbsp;
-      Vigencia: <span>{{ factura.timbrado.fecha_inicio_vigencia|date:"d/m/Y" }}</span>
-      al <span>{{ factura.timbrado.fecha_fin_vigencia|date:"d/m/Y" }}</span>
     </div>
 
     {# Partes #}
     <div class="fact-partes">
       <div class="fact-parte">
-        <h4>Emisor</h4>
-        <p><span>Empresa:</span> Brother's Burger</p>
-        <p><span>RUC:</span> {{ factura.timbrado.ruc }}</p>
-      </div>
-      <div class="fact-parte">
-        <h4>Cliente</h4>
-        <p><span>Nombre:</span> {{ factura.nombre_cliente }}</p>
+        <!-- <h4>Cliente</h4> -->
+         <p><span>Nombre:</span> {{ factura.nombre_cliente }}</p>
+        <p><span>Fecha de emisión:</span> {{ factura.fecha_emision|date:"d/m/Y" }}</p>
         <p><span>RUC/CI:</span> {{ factura.ruc_cliente }}</p>
         <p><span>Teléfono:</span> {{ factura.telefono_cliente }}</p>
         {% if factura.direccion_cliente %}
@@ -324,8 +207,8 @@
           <td><span class="cod">{{ d.codigo_producto }}</span></td>
           <td>{{ d.descripcion }}</td>
           <td style="text-align:center">{{ d.cantidad }}</td>
-          <td style="text-align:right">{{ d.precio_unitario|floatformat:0 }} Gs.</td>
-          <td>{{ d.total|floatformat:0 }} Gs.</td>
+          <td style="text-align:right">{{ d.precio_unitario|punto_miles }} Gs.</td>
+          <td>{{ d.total|punto_miles }} Gs.</td>
         </tr>
         {% endfor %}
       </tbody>
@@ -336,21 +219,21 @@
       <div class="totales-box">
         <div class="totales-row">
           <label>Subtotal (sin IVA)</label>
-          <span>{{ factura.subtotal|floatformat:0 }} Gs.</span>
+          <span>{{ factura.subtotal|punto_miles }} Gs.</span>
         </div>
         <div class="totales-row">
           <label>IVA (10%)</label>
-          <span>{{ factura.iva_10|floatformat:0 }} Gs.</span>
+          <span>{{ factura.iva_10|punto_miles }} Gs.</span>
         </div>
         {% if factura.descuento > 0 %}
         <div class="totales-row">
           <label>Descuento</label>
-          <span>- {{ factura.descuento|floatformat:0 }} Gs.</span>
+          <span>- {{ factura.descuento|punto_miles }} Gs.</span>
         </div>
         {% endif %}
         <div class="totales-row total-final">
           <label>TOTAL</label>
-          <span>{{ factura.monto_total|floatformat:0 }} Gs.</span>
+          <span>{{ factura.monto_total|punto_miles }} Gs.</span>
         </div>
       </div>
     </div>
@@ -361,15 +244,15 @@
       <div class="iva-grid">
         <div class="iva-col">
           <label>Gravado 10%</label>
-          <span>{{ factura.subtotal|floatformat:0 }} Gs.</span>
+          <span>{{ factura.subtotal|punto_miles }} Gs.</span>
         </div>
         <div class="iva-col">
           <label>IVA 10%</label>
-          <span>{{ factura.iva_10|floatformat:0 }} Gs.</span>
+          <span>{{ factura.iva_10|punto_miles }} Gs.</span>
         </div>
         <div class="iva-col">
           <label>Total IVA</label>
-          <span>{{ factura.total_iva|floatformat:0 }} Gs.</span>
+          <span>{{ factura.total_iva|punto_miles }} Gs.</span>
         </div>
       </div>
     </div>
@@ -377,7 +260,7 @@
     {# Footer #}
     <div class="fact-footer">
       Gracias por su compra en <strong>Brother's Burger</strong> —
-      Documento válido como comprobante fiscal
+      Esperamos verte pronto!
     </div>
 
   </div>
