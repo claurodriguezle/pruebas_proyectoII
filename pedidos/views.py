@@ -713,10 +713,10 @@ def empleado_modal(request, pedido_id):
     return render(request, 'orden_pedidos/partials/empleado_modal.html', {'pedido': pedido})
 
 
-#@login_required
 @require_http_methods(['POST'])
 def empleado_avanzar(request, pedido_id):
     from facturacion.services import generar_factura_desde_pedido
+    from caja.models import Caja, VentaCaja  # ← agregá este import
 
     pedido    = get_object_or_404(Pedido, pk=pedido_id)
     siguiente = pedido.siguiente_estado_entrega
@@ -725,12 +725,10 @@ def empleado_avanzar(request, pedido_id):
         pedido.estado_entrega = siguiente
         pedido.save(update_fields=['estado_entrega'])
 
-        # ── Generar factura al marcar Entregado ──────────────────────────────
         if siguiente == 'EN':
-            try: 
+            try:
                 factura = generar_factura_desde_pedido(pedido)
                 if factura:
-                    # Avanzar automáticamente a Facturado
                     pedido.estado_entrega = 'FA'
                     pedido.save(update_fields=['estado_entrega'])
                 else:
@@ -738,12 +736,31 @@ def empleado_avanzar(request, pedido_id):
             except Exception as e:
                 print(f"❌ Error al generar factura: {e}")
 
+        # ── Registrar en caja cuando el pedido queda como Facturado ──
+        if pedido.estado_entrega == 'FA' and not pedido.cuenta_id:
+            # solo pedidos online (sin cuenta de mesa)
+            try:
+                caja = Caja.objects.filter(estado='abierta').first()
+                if caja and not hasattr(pedido, 'venta_caja'):
+                    total_con_delivery = pedido.total + (pedido.costo_delivery or 0)
+                    VentaCaja.objects.create(
+                        caja=caja,
+                        pedido=pedido,
+                        cliente=pedido.cliente,
+                        total=total_con_delivery,
+                        monto_recibido=total_con_delivery,  # efectivo contra entrega
+                        vuelto=0,
+                        tipo_entrega=pedido.tipo_entrega,
+                    )
+                    caja.recalcular_monto_esperado()
+            except Exception as e:
+                print(f"❌ Error al registrar venta en caja: {e}")
+
     filtros = _get_filtros(request)
     pedidos = _get_pedidos_empleado(filtros)
     return render(request, 'orden_pedidos/partials/empleado_tabla.html', {
         **filtros, **_chips(filtros), 'pedidos': pedidos,
     })
-
 
 #@login_required
 @require_http_methods(['POST'])
@@ -774,6 +791,8 @@ def _enriquecer_cocina(pedido):
     ahora = timezone.now()
     diff  = ahora - pedido.fecha
     pedido.minutos_transcurridos = int(diff.total_seconds() // 60)
+
+    pedido.fecha_local = timezone.localtime(pedido.fecha)
 
     labels = {'PE': 'Iniciar preparación', 'EP': 'Marcar listo'}
     pedido.btn_label = labels.get(pedido.estado_cocina, '')

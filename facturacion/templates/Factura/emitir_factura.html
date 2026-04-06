@@ -1,0 +1,571 @@
+{% extends "administrador/layout.html" %}
+{% load static %}
+
+{% block title %}Emitir Factura — Brother's Burger{% endblock %}
+
+{% block body %}
+<style>
+  body { background: linear-gradient(135deg, #f5f7fa, #e4e7eb); min-height: 100vh; }
+
+  .factura-card {
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    padding: 2.5rem;
+    max-width: 760px;
+    margin: 0 auto;
+  }
+
+  .fact-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding-bottom: 1.25rem;
+    border-bottom: 2px solid #f5a623;
+    margin-bottom: 1.5rem;
+  }
+  .fact-empresa h2 { font-size: 1.4rem; font-weight: 700; color: #92400e; margin-bottom: .2rem; }
+
+  .timbrado-bar {
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    border-radius: 8px;
+    padding: .55rem 1rem;
+    font-size: .82rem;
+    color: #92400e;
+    margin-bottom: 1.5rem;
+  }
+
+  /* Resumen venta */
+  .resumen-venta {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 1.1rem 1.25rem;
+    margin-bottom: 1.75rem;
+  }
+  .sec-label {
+    font-size: .7rem;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: #9ca3af;
+    font-weight: 700;
+    margin-bottom: .6rem;
+  }
+  .resumen-row { display: flex; justify-content: space-between; font-size: .875rem; padding: .2rem 0; color: #374151; }
+  .resumen-row label { color: #6b7280; font-size: .82rem; }
+  .resumen-row.total-row { border-top: 1px solid #e5e7eb; margin-top: .5rem; padding-top: .5rem; font-weight: 700; font-size: 1rem; }
+  .resumen-row.total-row span { color: #92400e; }
+  .items-pedido { margin-top: .75rem; border-top: 1px dashed #e5e7eb; padding-top: .75rem; }
+  .item-row { display: flex; justify-content: space-between; font-size: .82rem; color: #6b7280; padding: .15rem 0; }
+
+  /* Caja del buscador */
+  .buscador-box {
+    border: 1.5px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+
+  /* Fila de búsqueda */
+  .buscar-row {
+    display: flex;
+    gap: .5rem;
+    align-items: center;
+  }
+  .buscar-row input {
+    flex: 1;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 8px;
+    padding: .6rem .9rem;
+    font-size: .95rem;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .buscar-row input:focus {
+    border-color: #f5a623;
+    box-shadow: 0 0 0 3px rgba(245,166,35,.12);
+    outline: none;
+  }
+  .btn-buscar {
+    background: #1d4ed8;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: .6rem 1.1rem;
+    font-size: .88rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: opacity .15s;
+  }
+  .btn-buscar:hover { opacity: .88; }
+
+  /* Cliente encontrado */
+  .cliente-card {
+    background: #f0fdf4;
+    border: 1.5px solid #86efac;
+    border-radius: 10px;
+    padding: .9rem 1.1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+  .cliente-card .cli-nombre { font-weight: 700; font-size: 1rem; color: #15803d; margin-bottom: .2rem; }
+  .cliente-card .cli-detalle { font-size: .82rem; color: #6b7280; }
+  .btn-quitar {
+    background: none; border: none;
+    color: #dc2626; font-size: 1.1rem;
+    cursor: pointer; padding: 0; flex-shrink: 0;
+  }
+
+  /* Error */
+  .error-box {
+    background: #fff1f2;
+    border: 1px solid #fca5a5;
+    border-radius: 8px;
+    padding: .6rem .9rem;
+    font-size: .85rem;
+    color: #b91c1c;
+    margin-top: .75rem;
+    display: none;
+  }
+
+  /* Mini form de registro rápido */
+  .registro-rapido {
+    background: #fffbeb;
+    border: 1.5px solid #fcd34d;
+    border-radius: 10px;
+    padding: 1.1rem 1.25rem;
+    margin-top: 1rem;
+    display: none;
+  }
+  .registro-rapido .rr-titulo {
+    font-size: .78rem;
+    font-weight: 700;
+    color: #92400e;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    margin-bottom: .9rem;
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+  }
+  .campo-rr label {
+    font-size: .78rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: .25rem;
+    display: block;
+  }
+  .campo-rr input {
+    width: 100%;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 7px;
+    padding: .5rem .8rem;
+    font-size: .88rem;
+    transition: border-color .15s;
+  }
+  .campo-rr input:focus {
+    border-color: #f5a623;
+    box-shadow: 0 0 0 3px rgba(245,166,35,.12);
+    outline: none;
+  }
+  .btn-registrar {
+    background: #f5a623;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: .55rem 1.1rem;
+    font-size: .88rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity .15s;
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    margin-top: .25rem;
+  }
+  .btn-registrar:hover { opacity: .88; }
+  .btn-registrar:disabled { opacity: .55; cursor: not-allowed; }
+
+  /* Botones principales */
+  .btn-emitir {
+    background: #f5a623; color: #fff; border: none;
+    border-radius: 10px; padding: .75rem 1.5rem;
+    font-size: 1rem; font-weight: 700; width: 100%;
+    cursor: pointer; transition: opacity .15s, transform .1s;
+    display: flex; align-items: center; justify-content: center; gap: .5rem;
+  }
+  .btn-emitir:hover { opacity: .9; transform: translateY(-1px); }
+  .btn-emitir:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+  .btn-cancelar {
+    background: #fff; color: #6b7280;
+    border: 1.5px solid #e5e7eb; border-radius: 10px;
+    padding: .65rem 1.5rem; font-size: .9rem; font-weight: 500;
+    width: 100%; text-align: center; text-decoration: none;
+    display: inline-block; transition: background .15s;
+  }
+  .btn-cancelar:hover { background: #f9fafb; color: #374151; }
+
+  /* Alerta sin timbrado */
+  .alerta-timbrado {
+    background: #fff1f2; border: 1px solid #fca5a5;
+    border-radius: 10px; padding: 1rem 1.25rem;
+    color: #b91c1c; font-size: .9rem; margin-bottom: 1.25rem;
+    display: flex; align-items: center; gap: .6rem;
+  }
+</style>
+
+<div class="container py-5">
+
+  <div style="max-width:760px;margin:0 auto 1.25rem;">
+    <a href="{% url 'caja:punto_de_venta' %}"
+       class="btn-cancelar" style="width:auto;display:inline-flex;align-items:center;gap:.4rem;">
+      <i class="bi bi-arrow-left"></i> Volver al Punto de Venta
+    </a>
+  </div>
+
+  <div class="factura-card">
+
+    {# Cabecera #}
+    <div class="fact-header">
+      <div class="fact-empresa">
+        <h2>🍔 Brother's Burger</h2>
+        <p class="text-muted small mb-0">RUC: {{ timbrado.ruc }}</p>
+        <p class="text-muted small mb-0">Coronel Oviedo, Paraguay</p>
+      </div>
+      <div style="text-align:right;">
+        <div class="text-muted" style="font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;">Nueva Factura</div>
+        <div style="font-size:1rem;font-weight:700;font-family:monospace;color:#111827;">{{ nro_fact_preview }}</div>
+        <div class="text-muted small mt-1">{{ hoy|date:"d/m/Y" }}</div>
+      </div>
+    </div>
+
+    {% if not timbrado %}
+    <div class="alerta-timbrado">
+      <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+      <div>
+        <strong>No hay timbrado activo.</strong>
+        <a href="{% url 'facturacion:timbrado_list' %}" class="fw-semibold text-danger ms-1">Ir a Timbrados →</a>
+      </div>
+    </div>
+    {% else %}
+
+    <div class="timbrado-bar">
+      Timbrado: <strong>{{ timbrado.numero }}</strong>
+      &nbsp;·&nbsp;
+      Vigencia: <strong>{{ timbrado.fecha_inicio_vigencia|date:"d/m/Y" }}</strong>
+      al <strong>{{ timbrado.fecha_fin_vigencia|date:"d/m/Y" }}</strong>
+    </div>
+
+    {# Resumen venta #}
+    <div class="resumen-venta">
+      <div class="sec-label">Resumen de la venta</div>
+      <div class="resumen-row">
+        <label>Mesa / Origen</label>
+        <span>{% if venta.cuenta and venta.cuenta.mesa %}Mesa {{ venta.cuenta.mesa.numero }}{% else %}Mostrador / Directo{% endif %}</span>
+      </div>
+      {% if venta.cliente_nombre %}
+      <div class="resumen-row">
+        <label>Nombre en mesa</label>
+        <span>{{ venta.cliente_nombre }}</span>
+      </div>
+      {% endif %}
+      <div class="resumen-row">
+        <label>Forma de pago</label>
+        <span><i class="bi bi-cash-coin me-1 text-success"></i>Efectivo</span>
+      </div>
+      {% if venta.pedido %}
+      <div class="items-pedido">
+        <div class="sec-label" style="margin-bottom:.4rem;">Ítems</div>
+        {% for item in venta.pedido.items.all %}
+        <div class="item-row">
+          <span>{{ item.cantidad }}× {{ item.producto.nombre }}</span>
+          <span>₲{{ item.precio_unitario|floatformat:0 }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+      <div class="resumen-row total-row">
+        <label>Total cobrado</label>
+        <span>₲{{ venta.total|floatformat:0 }}</span>
+      </div>
+    </div>
+
+    {# ── Formulario principal ── #}
+    <form method="post" id="form-factura">
+      {% csrf_token %}
+      <input type="hidden" name="cliente_id"        id="cliente_id_hidden"  value="{{ cliente_previo.id|default:'' }}">
+      <input type="hidden" name="direccion_cliente"  id="direccion_hidden"   value="">
+
+      <div class="buscador-box">
+        <div class="sec-label">Cliente para la factura</div>
+
+        {# ── Cliente ya conocido (prellenado) ── #}
+        {% if cliente_previo %}
+        <div id="cliente-encontrado">
+          <div class="cliente-card">
+            <div>
+              <div class="cli-nombre">{{ cliente_previo.nombre }}</div>
+              <div class="cli-detalle">
+                RUC/CI: {{ cliente_previo.ruc }}
+                {% if cliente_previo.telefono %} · Tel: {{ cliente_previo.telefono }}{% endif %}
+              </div>
+            </div>
+            <button type="button" class="btn-quitar" onclick="quitarCliente()" title="Cambiar cliente">
+              <i class="bi bi-x-circle-fill"></i>
+            </button>
+          </div>
+        </div>
+        <div id="seccion-buscar" style="display:none;">
+        {% else %}
+        <div id="seccion-buscar">
+        {% endif %}
+
+          {# Fila buscar #}
+          <div class="buscar-row">
+            <input type="text" id="input-cedula"
+                   placeholder="Cédula o RUC del cliente…"
+                   autocomplete="off">
+            <button type="button" class="btn-buscar" onclick="buscarCliente()">
+              <i class="bi bi-search me-1"></i> Buscar
+            </button>
+          </div>
+
+          {# Error de búsqueda #}
+          <div class="error-box" id="error-busqueda"></div>
+
+          {# Resultado encontrado #}
+          <div id="cliente-encontrado" style="display:none;">
+            <div class="cliente-card">
+              <div>
+                <div class="cli-nombre" id="res-nombre"></div>
+                <div class="cli-detalle" id="res-detalle"></div>
+              </div>
+              <button type="button" class="btn-quitar" onclick="quitarCliente()" title="Cambiar cliente">
+                <i class="bi bi-x-circle-fill"></i>
+              </button>
+            </div>
+          </div>
+
+          {# ── Registro rápido (aparece si no se encuentra) ── #}
+          <div class="registro-rapido" id="registro-rapido">
+            <div class="rr-titulo">
+              <i class="bi bi-person-plus-fill"></i>
+              Registrar nuevo cliente
+            </div>
+
+            <div class="row g-2">
+              <div class="col-md-6">
+                <div class="campo-rr">
+                  <label>Nombre <span class="text-danger">*</span></label>
+                  <input type="text" id="rr-nombre" placeholder="Ej: Juan">
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="campo-rr">
+                  <label>Apellido <span class="text-danger">*</span></label>
+                  <input type="text" id="rr-apellido" placeholder="Ej: Pérez">
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="campo-rr">
+                  <label>Cédula <span class="text-danger">*</span></label>
+                  <input type="text" id="rr-cedula" placeholder="Ej: 5123456">
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="campo-rr">
+                  <label>RUC <span class="text-muted fw-normal">(opcional)</span></label>
+                  <input type="text" id="rr-ruc" placeholder="Ej: 5123456-1">
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="campo-rr">
+                  <label>Teléfono <span class="text-danger">*</span></label>
+                  <input type="text" id="rr-telefono" placeholder="Ej: 0981 123 456">
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="campo-rr">
+                  <label>Dirección <span class="text-muted fw-normal">(para la factura)</span></label>
+                  <input type="text" id="rr-direccion" placeholder="Ej: Av. Principal 123">
+                </div>
+              </div>
+            </div>
+
+            <div class="error-box" id="error-registro" style="margin-top:.75rem;"></div>
+
+            <div class="d-flex gap-2 mt-3">
+              <button type="button" class="btn-registrar" id="btn-registrar" onclick="registrarCliente()">
+                <i class="bi bi-check-lg"></i> Guardar y usar este cliente
+              </button>
+              <button type="button"
+                      onclick="ocultarRegistro()"
+                      style="background:none;border:none;color:#6b7280;font-size:.85rem;cursor:pointer;">
+                Cancelar
+              </button>
+            </div>
+          </div>
+
+        </div>{# /seccion-buscar #}
+      </div>{# /buscador-box #}
+
+      {# Botones #}
+      <div class="d-flex flex-column gap-2 mt-3">
+        <button type="submit" class="btn-emitir" id="btn-submit"
+                {% if not cliente_previo %}disabled{% endif %}>
+          <i class="bi bi-file-earmark-check"></i> Emitir Factura
+        </button>
+        <a href="{% url 'caja:punto_de_venta' %}" class="btn-cancelar">
+          Cancelar — Volver sin facturar
+        </a>
+      </div>
+    </form>
+
+    {% endif %}
+  </div>
+</div>
+
+<script>
+const URL_BUSCAR  = "{% url 'facturacion:buscar_cliente_factura' %}";
+const URL_CREAR   = "{% url 'facturacion:crear_cliente_rapido' %}";
+const CSRF        = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+const hiddenId    = document.getElementById('cliente_id_hidden');
+const hiddenDir   = document.getElementById('direccion_hidden');
+const btnSubmit   = document.getElementById('btn-submit');
+
+// ── Buscar cliente ────────────────────────────────────────
+async function buscarCliente() {
+    const q = document.getElementById('input-cedula').value.trim();
+    limpiarMensajes();
+
+    if (!q) { mostrarErrorBusqueda('Ingresá una cédula o RUC.'); return; }
+
+    try {
+        const r    = await fetch(`${URL_BUSCAR}?q=${encodeURIComponent(q)}`);
+        const data = await r.json();
+
+        if (data.found) {
+            mostrarClienteEncontrado(data);
+        } else {
+            mostrarErrorBusqueda(data.error);
+            // Precargar la cédula en el form de registro rápido
+            document.getElementById('rr-cedula').value = q;
+            mostrarRegistroRapido();
+        }
+    } catch {
+        mostrarErrorBusqueda('Error de conexión. Intentá de nuevo.');
+    }
+}
+
+// ── Mostrar cliente encontrado ────────────────────────────
+function mostrarClienteEncontrado(data) {
+    document.getElementById('res-nombre').textContent  = data.nombre;
+    document.getElementById('res-detalle').textContent =
+        `RUC/CI: ${data.ruc}` +
+        (data.telefono ? ` · Tel: ${data.telefono}` : '') +
+        (data.ciudad   ? ` · ${data.ciudad}`        : '');
+
+    hiddenId.value  = data.cliente_id;
+    hiddenDir.value = data.ciudad || '';
+
+    document.getElementById('cliente-encontrado').style.display = 'block';
+    document.getElementById('registro-rapido').style.display    = 'none';
+    btnSubmit.disabled = false;
+}
+
+// ── Quitar cliente seleccionado ───────────────────────────
+function quitarCliente() {
+    hiddenId.value  = '';
+    hiddenDir.value = '';
+    btnSubmit.disabled = true;
+
+    document.getElementById('cliente-encontrado').style.display = 'none';
+    document.getElementById('seccion-buscar').style.display     = 'block';
+    document.getElementById('input-cedula').value               = '';
+    limpiarMensajes();
+}
+
+// ── Mostrar / ocultar registro rápido ─────────────────────
+function mostrarRegistroRapido() {
+    document.getElementById('registro-rapido').style.display = 'block';
+}
+function ocultarRegistro() {
+    document.getElementById('registro-rapido').style.display = 'none';
+    document.getElementById('error-registro').style.display  = 'none';
+}
+
+// ── Registrar cliente rápido ──────────────────────────────
+async function registrarCliente() {
+    const btn = document.getElementById('btn-registrar');
+    const errBox = document.getElementById('error-registro');
+    errBox.style.display = 'none';
+
+    const payload = {
+        nombre:    document.getElementById('rr-nombre').value.trim(),
+        apellido:  document.getElementById('rr-apellido').value.trim(),
+        cedula:    document.getElementById('rr-cedula').value.trim(),
+        ruc:       document.getElementById('rr-ruc').value.trim(),
+        telefono:  document.getElementById('rr-telefono').value.trim(),
+        direccion: document.getElementById('rr-direccion').value.trim(),
+    };
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> Guardando…';
+
+    try {
+        const r    = await fetch(URL_CREAR, {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+            body:    JSON.stringify(payload),
+        });
+        const data = await r.json();
+
+        if (data.success) {
+            // Guardar dirección ingresada en el campo oculto
+            hiddenDir.value = payload.direccion;
+            mostrarClienteEncontrado(data);
+        } else {
+            errBox.textContent   = data.error;
+            errBox.style.display = 'block';
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-check-lg"></i> Guardar y usar este cliente';
+        }
+    } catch {
+        errBox.textContent   = 'Error de conexión. Intentá de nuevo.';
+        errBox.style.display = 'block';
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-check-lg"></i> Guardar y usar este cliente';
+    }
+}
+
+// ── Utilidades ────────────────────────────────────────────
+function mostrarErrorBusqueda(msg) {
+    const b = document.getElementById('error-busqueda');
+    b.textContent   = msg;
+    b.style.display = 'block';
+}
+function limpiarMensajes() {
+    document.getElementById('error-busqueda').style.display = 'none';
+    document.getElementById('cliente-encontrado').style.display = 'none';
+}
+
+// Enter en el input de búsqueda
+document.getElementById('input-cedula')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); buscarCliente(); }
+});
+
+// Doble submit
+document.getElementById('form-factura')?.addEventListener('submit', function () {
+    if (!hiddenId.value) { event.preventDefault(); return; }
+    btnSubmit.disabled = true;
+    btnSubmit.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> Emitiendo…';
+});
+</script>
+
+{% endblock %}

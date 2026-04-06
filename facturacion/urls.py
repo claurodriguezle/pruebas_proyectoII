@@ -13,5 +13,10 @@ urlpatterns = [
     #Rutas para pruebas de Factura
     path('factura/factura_view/', views.factura_view, name='factura_view'),
     path('factura/', views.facturas_list, name='facturas_list'),
-path('factura/<int:factura_id>/', views.factura_detalle, name='factura_detalle'),
+    path('factura/<int:factura_id>/', views.factura_detalle, name='factura_detalle'),
+
+    #Facturacion en Caja
+    path('emitir/<int:venta_id>/', views.emitir_factura, name='emitir_factura'),
+    path('buscar-cliente/', views.buscar_cliente_factura, name='buscar_cliente_factura'),
+    path('cliente/crear-rapido/', views.crear_cliente_rapido, name='crear_cliente_rapido'),
 ]
