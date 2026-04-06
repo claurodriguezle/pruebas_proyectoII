@@ -406,3 +406,26 @@ class IngredienteProducto(models.Model):
 
     def __str__(self):
         return f"{self.cantidad}g de {self.item.nombre} para {self.producto.nombre}"
+
+
+#APARTADO PARA PEDIDOS DESDE LOCAL
+#CARGA DE MESAS
+class Mesa(models.Model):
+    ESTADO_CHOICES = [
+        ('libre',    'Libre'),
+        ('ocupada',  'Ocupada'),
+        ('pagando',  'Pagando'),   # cliente pidió la cuenta, cajero procesando
+    ]
+    numero   = models.PositiveIntegerField(unique=True, verbose_name='Número de mesa')
+    capacidad = models.PositiveIntegerField(default=4)
+    estado   = models.CharField(max_length=10, choices=ESTADO_CHOICES, default='libre')
+    activa   = models.BooleanField(default=True)
+    es_mostrador = models.BooleanField(default=False)
+ 
+    def __str__(self):
+        return f'Mesa {self.numero}'
+ 
+    class Meta:
+        ordering = ['numero']
+        verbose_name = 'Mesa'
+        verbose_name_plural = 'Mesas'

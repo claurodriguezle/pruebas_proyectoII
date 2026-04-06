@@ -23,7 +23,7 @@
   </div>
   <div>
     <div class="field-label">Fecha</div>
-    <div class="field-value">{{ pedido.fecha|date:"d/m/Y H:i" }}</div>
+    <div class="field-value">{{ pedido.fecha_local|date:"d/m/Y H:i" }}</div>
   </div>
   {% if pedido.direccion_snapshot %}
   <div>

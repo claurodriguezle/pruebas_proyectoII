@@ -48,6 +48,20 @@ class Pedido(models.Model):
     # CODIGO PEDIENTE PARA REVISION
     fecha = models.DateTimeField(auto_now_add=True)
     total = models.IntegerField()
+    mesa = models.ForeignKey(
+        'administrador.Mesa',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='pedidos',
+        verbose_name='Mesa'
+    )
+    cuenta = models.ForeignKey(
+        'caja.Cuenta',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='pedidos'
+    )
 
     #Estados de los pedidos
     estado_cocina = models.CharField(max_length=2,choices=ESTADO_COCINA_CHOICES, default='PE', verbose_name='Estado de cocina')

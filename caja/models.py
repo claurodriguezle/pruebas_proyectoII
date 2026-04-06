@@ -10,43 +10,28 @@ class Caja(models.Model):
     ]
 
     usuario_apertura = models.ForeignKey(
-        User,
-        on_delete=models.PROTECT,
-        related_name='cajas_apertura'
+        User, on_delete=models.PROTECT, related_name='cajas_apertura'
     )
     usuario_cierre = models.ForeignKey(
-        User,
-        on_delete=models.PROTECT,
-        related_name='cajas_cierre',
-        null=True,
-        blank=True
+        User, on_delete=models.PROTECT, related_name='cajas_cierre',
+        null=True, blank=True
     )
     fecha_apertura = models.DateTimeField(default=timezone.now)
     fecha_cierre = models.DateTimeField(null=True, blank=True)
-
     monto_inicial = models.BigIntegerField(
-        default=0,
-        help_text="Monto en guaraníes con el que se abre la caja"
+        default=0, help_text="Monto en guaraníes con el que se abre la caja"
     )
     monto_final_esperado = models.BigIntegerField(
-        default=0,
-        help_text="Calculado: monto_inicial + ventas - egresos"
+        default=0, help_text="Calculado: monto_inicial + ventas - egresos"
     )
     monto_final_real = models.BigIntegerField(
-        null=True,
-        blank=True,
-        help_text="El dinero que realmente había al cerrar"
+        null=True, blank=True, help_text="El dinero que realmente había al cerrar"
     )
-    estado = models.CharField(
-        max_length=10,
-        choices=ESTADO_CHOICES,
-        default='abierta'
-    )
+    estado = models.CharField(max_length=10, choices=ESTADO_CHOICES, default='abierta')
     observaciones_cierre = models.TextField(blank=True, null=True)
 
     @property
     def diferencia(self):
-        """Sobrante (+) o faltante (-) al cerrar."""
         if self.monto_final_real is not None and self.monto_final_esperado is not None:
             return self.monto_final_real - self.monto_final_esperado
         return None
@@ -77,28 +62,20 @@ class Caja(models.Model):
 
 
 class VentaCaja(models.Model):
-    """
-    Registra cada venta realizada desde el POS.
-    Crea un Pedido en la app pedidos y lo vincula acá.
-    """
-    caja = models.ForeignKey(
-        Caja,
-        on_delete=models.PROTECT,
-        related_name='ventas'
-    )
+    caja = models.ForeignKey(Caja, on_delete=models.PROTECT, related_name='ventas')
     pedido = models.OneToOneField(
-        'pedidos.Pedido',
-        on_delete=models.PROTECT,
-        related_name='venta_caja',
-        null=True,
-        blank=True
+        'pedidos.Pedido', on_delete=models.PROTECT,
+        related_name='venta_caja', null=True, blank=True
     )
     cliente = models.ForeignKey(
-        'administrador.Cliente',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True
+        'administrador.Cliente', on_delete=models.SET_NULL, null=True, blank=True
     )
+    cuenta = models.OneToOneField(
+        'Cuenta', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='venta'
+    )
+    # ✅ Campo de texto para el nombre, sin FK obligatoria al cobrar por mesa
+    cliente_nombre = models.CharField(max_length=200, blank=True, default='')
     fecha = models.DateTimeField(default=timezone.now)
     total = models.BigIntegerField(help_text="Total en guaraníes")
     monto_recibido = models.BigIntegerField(help_text="Efectivo recibido")
@@ -121,19 +98,9 @@ class VentaCaja(models.Model):
 
 
 class MovimientoCaja(models.Model):
-    """
-    Egresos manuales (gastos del día) registrados durante el turno.
-    Los ingresos son las VentaCaja.
-    """
-    TIPO_CHOICES = [
-        ('egreso', 'Egreso'),
-    ]
+    TIPO_CHOICES = [('egreso', 'Egreso')]
 
-    caja = models.ForeignKey(
-        Caja,
-        on_delete=models.PROTECT,
-        related_name='movimientos'
-    )
+    caja = models.ForeignKey(Caja, on_delete=models.PROTECT, related_name='movimientos')
     tipo = models.CharField(max_length=10, choices=TIPO_CHOICES, default='egreso')
     descripcion = models.CharField(max_length=200)
     monto = models.BigIntegerField(help_text="Monto en guaraníes")
@@ -147,3 +114,54 @@ class MovimientoCaja(models.Model):
         verbose_name = "Movimiento de Caja"
         verbose_name_plural = "Movimientos de Caja"
         ordering = ['-fecha']
+
+
+class Cuenta(models.Model):
+    ESTADO_CHOICES = [
+        ('abierta',  'Abierta'),
+        ('cobrada',  'Cobrada'),
+        ('anulada',  'Anulada'),
+    ]
+
+    caja           = models.ForeignKey(Caja, on_delete=models.PROTECT, related_name='cuentas')
+    mesa           = models.ForeignKey('administrador.Mesa', on_delete=models.PROTECT, related_name='cuentas')
+    nombre_cliente = models.CharField(max_length=100, blank=True, null=True)
+    fecha_apertura = models.DateTimeField(default=timezone.now)
+    fecha_cierre   = models.DateTimeField(null=True, blank=True)
+    estado         = models.CharField(max_length=10, choices=ESTADO_CHOICES, default='abierta')
+
+    # Datos del cobro (se completan al cerrar)
+    # ✅ Renombrado a monto_cobrado para evitar conflicto con la property `total_cobrado`
+    monto_cobrado  = models.BigIntegerField(default=0)
+    monto_recibido = models.BigIntegerField(default=0)
+    vuelto         = models.BigIntegerField(default=0)
+    usuario_cobro  = models.ForeignKey(
+        User, on_delete=models.PROTECT,
+        null=True, blank=True, related_name='cuentas_cobradas'
+    )
+
+    @property
+    def pedidos_activos(self):
+        return self.pedidos.exclude(estado_entrega='CA')
+
+    @property
+    def total(self):
+        """Total acumulado de todos los pedidos activos."""
+        return sum(p.total for p in self.pedidos_activos)
+
+    # ✅ Un solo alias consistente — sin conflicto con campo de BD
+    @property
+    def total_cobrado(self):
+        return self.total
+
+    @property
+    def cantidad_pedidos(self):
+        return self.pedidos_activos.count()
+
+    def __str__(self):
+        return f"Cuenta Mesa {self.mesa.numero} — {self.fecha_apertura.strftime('%d/%m/%Y %H:%M')}"
+
+    class Meta:
+        ordering = ['-fecha_apertura']
+        verbose_name = 'Cuenta de Mesa'
+        verbose_name_plural = 'Cuentas de Mesa'

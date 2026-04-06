@@ -1,4 +1,5 @@
-{# orden_pedidos/partials/empleado_tabla.html CAMBIO: se agrega columna Mesa y se ajusta el colspan #}
+{# orden_pedidos/partials/empleado_tabla.html #}
+{# Fragmento recargado por htmx cada 5s y al filtrar #}
 
 <div class="emp-table-wrap">
   <table class="emp-table">
@@ -6,12 +7,12 @@
       <tr>
         <th>Orden</th>
         <th>Tiempo</th>
-        <th>Mesa</th>
         <th>Cliente</th>
         <th>Items</th>
         <th>Total</th>
         <th>Cocina</th>
         <th>Entrega</th>
+        <th>Tipo</th>
         <th>Acciones</th>
       </tr>
     </thead>
@@ -20,8 +21,10 @@
         {% for p in pedidos %}
         <tr>
 
+          {# Número #}
           <td><div class="order-num">#{{ p.id }}</div></td>
 
+          {# Tiempo transcurrido #}
           <td>
             <div class="timer
               {% if p.minutos_transcurridos >= 20 %}alert
@@ -32,20 +35,13 @@
             </div>
           </td>
 
-          {# Mesa #}
-          <td>
-            {% if p.mesa %}
-              <span class="badge bg-warning text-dark fw-bold">🪑 {{ p.mesa.numero }}</span>
-            {% else %}
-              <span class="text-muted small">—</span>
-            {% endif %}
-          </td>
-
+          {# Cliente #}
           <td>
             <div class="client-name">{{ p.cliente_nombre }}</div>
             <div class="delivery-sub">{{ p.get_tipo_entrega_display }}</div>
           </td>
 
+          {# Items (resumen) #}
           <td>
             <div class="items-preview">
               {% for d in p.detalle.all %}
@@ -54,8 +50,10 @@
             </div>
           </td>
 
-          <td><div class="order-total">{{ p.total_con_delivery|punto_miles }} Gs.</div></td>
+          {# Total #}
+          <td><div class="order-total">{{ p.total_con_delivery |punto_miles }} Gs.</div></td>
 
+          {# Estado cocina #}
           <td>
             <span class="badge badge-cocina-{{ p.estado_cocina }}">
               {% if p.estado_cocina == 'PE' %}🔔 Pendiente
@@ -65,6 +63,7 @@
             </span>
           </td>
 
+          {# Estado entrega #}
           <td>
             <span class="badge badge-entrega-{{ p.estado_entrega }}">
               {% if p.estado_entrega == 'PE' %}⏳ Pendiente
@@ -75,8 +74,20 @@
             </span>
           </td>
 
+          {# Tipo entrega #}
+          <td>
+            {% if p.tipo_entrega == 'DE' %}
+              <span class="badge badge-tipo-DE">🛵 Delivery</span>
+            {% else %}
+              <span class="badge badge-tipo-RE">🏠 Local</span>
+            {% endif %}
+          </td>
+
+          {# Acciones #}
           <td>
             <div class="actions-cell">
+
+              {# Ver detalle — carga modal con htmx #}
               <button class="btn btn-ghost"
                       hx-get="{% url 'pedidos:empleado_modal' p.id %}"
                       hx-target="#modal-body"
@@ -86,6 +97,7 @@
                 🔍 Ver
               </button>
 
+              {# Avanzar estado — solo si hay siguiente y cocina terminó #}
               {% if p.siguiente_estado_entrega %}
                 <button class="btn btn-amber"
                         hx-post="{% url 'pedidos:empleado_avanzar' p.id %}"
@@ -98,6 +110,7 @@
               {% elif p.estado_entrega == 'PE' and p.estado_cocina != 'LI' %}
                 <span class="waiting">Esperando cocina…</span>
               {% endif %}
+
             </div>
           </td>
 

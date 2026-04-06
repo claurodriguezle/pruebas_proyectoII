@@ -41,6 +41,7 @@ class Factura(models.Model):
     nro_fact = models.CharField(max_length=20, unique=True)  # Ej: 001-001-0000162
     cliente = models.ForeignKey('administrador.Cliente', on_delete=models.PROTECT, related_name='facturas')
     pedido = models.OneToOneField('pedidos.Pedido', on_delete=models.SET_NULL, null=True, blank=True, related_name='factura_pedido')
+    venta_caja = models.OneToOneField('caja.VentaCaja', on_delete=models.SET_NULL, null=True, blank=True, related_name='factura')
 
     # Datos legales
     timbrado = models.ForeignKey(
