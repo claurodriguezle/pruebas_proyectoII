@@ -105,8 +105,8 @@
 </head>
 
 <body>
-{% if pedidos %}
-    {% for pedido in pedidos %}
+{% if pedidos_activos %}
+    {% for pedido in pedidos_activos %}
         {% if pedido.estado_cocina == 'PE' and pedido.estado_entrega == 'PE' %}
 
         <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 9999">

@@ -12,6 +12,7 @@ from .services import validar_delivery
 from usuarios.forms import DireccionForm
 from django.views.decorators.http import require_http_methods
 from django.utils import timezone
+from django.db.models import Q
 
 def index(request):
     return render(request, 'pedidos/index.html')
@@ -40,25 +41,34 @@ def lista_productos(request):
     # Verificar Stock por producto
     productos_con_stock = []
     for producto in productos:
-        tiene_stock = True
-        ingredientes = producto.ingredientes.select_related('item')
-        
-        if not ingredientes.exists():
-            tiene_stock = False
-        else:
-            for ingrediente in ingredientes:
-                try:
-                    stock = Stock.objects.get(item=ingrediente.item)
-                    if stock.cant_disponible < ingrediente.cantidad:
-                        tiene_stock = False
-                        break
-                except Stock.DoesNotExist:
-                    tiene_stock = False
-                    break
-
-        producto.tiene_stock = tiene_stock
+        producto.tiene_stock = producto.calcular_tiene_stock()
         productos_con_stock.append(producto)
+
     return render(request, 'pedidos/partials/productos_lista.html', {'productos': productos_con_stock})
+
+def buscar_productos(request):
+    query = request.GET.get('q', '').strip()
+
+    if query:
+        productos = Producto.objects.filter(
+            estado='A'
+        ).filter(
+            Q(nombre__icontains=query) |
+            Q(codigo__icontains=query) |
+            Q(categoria__nombre_categ__icontains=query)
+        ).select_related('categoria')[:20]
+    else:
+        productos = Producto.objects.filter(estado='A').select_related('categoria')
+
+    # Verificar Stock por producto
+    productos_con_stock = []
+    for producto in productos:
+        producto.tiene_stock = producto.calcular_tiene_stock()
+        productos_con_stock.append(producto)
+    
+    return render(request, 'pedidos/partials/productos_lista.html', {
+        'productos': productos_con_stock,
+    })
 
 def modal_personalizacion(request, producto_id):
     producto = get_object_or_404(Producto, pk=producto_id)

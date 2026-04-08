@@ -344,6 +344,19 @@ class Producto(models.Model):
         super().clean()
         if self.precio == 0:
             raise ValidationError({'precio': 'El precio no puede ser cero.'})
+    
+    def calcular_tiene_stock(self):
+        ingredientes = self.ingredientes.select_related('item')
+        if not ingredientes.exists():
+            return False
+        for ingrediente in ingredientes:
+            try:
+                stock = Stock.objects.get(item=ingrediente.item)
+                if stock.cant_disponible < ingrediente.cantidad:
+                    return False
+            except Stock.DoesNotExist:
+                return False
+        return True
 
 #STOCK
 class Stock(models.Model):

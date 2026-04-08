@@ -64,7 +64,7 @@
                         <td class="text-end">{{ stock.cant_minima|floatformat:2 }}</td>
                         <td class="text-end">{{ stock.cant_maxima|floatformat:2 }}</td>
                         <td class="text-end fw-bold">{{ stock.cant_disponible|floatformat:2 }}</td>
-                        <td class="text-end">{{ stock.precio_unitario|floatformat:0|intcomma }} Gs</td>
+                        <td class="text-end">{{ stock.precio_unitario|punto_miles }} Gs</td>
                         <td>{{ stock.fecha_ultima_entrada|date:"d/m/Y"|default:"-" }}</td>
                         <td>{{ stock.fecha_ultima_salida|date:"d/m/Y"|default:"-" }}</td>
                         <td>

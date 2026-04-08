@@ -29,7 +29,23 @@
             </nav>
 
             <div class="contenedor">
-                <input type="text" id="buscar" class="form-control w-50" placeholder="Buscar productos..." />
+                <div class="position-relative w-50">
+                    <input
+                        type="text"
+                        id="buscar"
+                        name="q"
+                        class="form-control"
+                        placeholder="Buscar productos..."
+                        hx-get="{% url 'pedidos:buscar_productos' %}"
+                        hx-trigger="keyup changed delay:300ms"
+                        hx-target="#productos-lista"
+                        hx-indicator="#spinner-busqueda"
+                        autocomplete="off"
+                    />
+                    <span id="spinner-busqueda" class="htmx-indicator position-absolute top-50 end-0 translate-middle-y me-2">
+                        <span class="spinner-border spinner-border-sm text-secondary"></span>
+                    </span>
+                </div>
                 {% block carrito %}
                 <!-- Carrito -->
                     <button id="carrito-btn" class="btn btn-warning ms-3">
@@ -63,6 +79,9 @@
                 
             </div>
         </header>
+
+        <!-- Resultados de búsqueda -->
+        <div id="resultados-busqueda" class="container mt-2"></div>
 
         {% if messages %}
         <div class="position-fixed top-0 end-0 p-3" style="z-index: 9999">
@@ -137,6 +156,21 @@
                         });
                     }
                 });
+            });
+
+            // Barra de busqueda
+            document.addEventListener('click', function(e) {
+                const input = document.getElementById('buscar');
+                const resultados = document.getElementById('productos-lista');
+                
+                if (!input.contains(e.target)) {
+                    // Limpiar el input y disparar búsqueda vacía
+                    input.value = '';
+                    htmx.ajax('GET', "{% url 'pedidos:buscar_productos' %}", {
+                        target: '#productos-lista',
+                        swap: 'innerHTML'
+                    });
+                }
             });
         </script>
     </body>

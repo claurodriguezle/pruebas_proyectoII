@@ -12,6 +12,8 @@ from pedidos.models import Pedido, DetallePedido
 
 import json
 from datetime import date
+from pedidos.views import descontar_stock
+
 
 
 # ─────────────────────────────────────────────
@@ -210,6 +212,7 @@ def agregar_pedido_cuenta(request):
                 cantidad=cantidad,
                 precio_unitario=prod.precio,
             )
+        descontar_stock(pedido)
 
     return JsonResponse({
         'success': True,

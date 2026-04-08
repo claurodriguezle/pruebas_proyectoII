@@ -74,3 +74,8 @@ nav a {
   transition: border-color 0.3s ease;
   text-decoration: none;
 }
+
+/* Barra de busqueda de productos cliente */
+.htmx-indicator { display: none; }
+.htmx-request .htmx-indicator { display: inline-block; }
+.htmx-request.htmx-indicator { display: inline-block; }
