@@ -10,5 +10,7 @@ urlpatterns = [
     path('perfil/', views.perfil_user, name='perfil_user'),
     path('crear_direccion/', views.agregar_direccion, name='crear_direccion'),
     path('direciones/', views.listar_direcciones, name='listar_direc'),
+    path('direcciones/<int:pk>/editar/', views.editar_direccion, name='editar_direccion'),
+    path('direcciones/<int:pk>/eliminar/', views.eliminar_direccion, name='eliminar_direccion'),
     path('exit/', views.exit, name='exit'),
 ]

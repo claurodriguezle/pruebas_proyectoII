@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect, HttpResponse
+from django.shortcuts import render, redirect, HttpResponse, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
@@ -127,6 +127,47 @@ def listar_direcciones(request):
         "cliente": cliente,
         "direcciones": direcciones
     })
+
+@login_required
+def editar_direccion(request, pk):
+    cliente = request.user.cliente
+    direccion = get_object_or_404(Direccion, pk=pk, cliente=cliente)
+
+    if request.method == 'POST':
+        form = DireccionForm(request.POST, instance=direccion)
+
+        if form.is_valid():
+            direccion = form.save(commit=False)  # Toma los datos nuevos del form
+
+            if not direccion.latitud or not direccion.longitud:
+                messages.error(request, "Debes usar el botón de ubicación antes de guardar.")
+                return render(request, 'direcciones/agregar.html', {'form': form, 'editando': True})
+
+            if direccion.es_principal:
+                Direccion.objects.filter(cliente=cliente).exclude(pk=pk).update(es_principal=False)
+
+            direccion.save()
+            messages.success(request, 'Dirección actualizada correctamente.')
+            return redirect("usuarios:listar_direc")
+
+    else:
+        form = DireccionForm(instance=direccion)
+
+    return render(request, "direcciones/agregar.html", {
+        'form': form,
+        'editando': True
+    })
+
+@login_required
+def eliminar_direccion(request, pk):
+    cliente = request.user.cliente
+    direccion = get_object_or_404(Direccion, pk=pk, cliente=cliente)
+
+    if request.method == 'POST':
+        direccion.delete()
+        messages.success(request, "Dirección eliminada.")
+    
+    return redirect("usuarios:listar_direc")
 
 @login_required
 def exit(request):

@@ -53,22 +53,59 @@
             </h4>
 
             {% for d in direcciones %}
-                <div class="card mb-3 shadow-sm border-0">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <strong>{{ d.nombre }}</strong>
-                            {% if d.es_principal %}
-                                <span class="badge bg-success">Principal</span>
-                            {% endif %}
-                        </div>
-                        <p class="mb-0 text-muted">{{ d.direccion_text }}</p>
+            <div class="card mb-3 shadow-sm border-0">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <strong>{{ d.nombre }}</strong>
+                        {% if d.es_principal %}
+                            <span class="badge bg-success">Principal</span>
+                        {% endif %}
+                    </div>
+                    <p class="mb-0 text-muted">{{ d.direccion_text }}</p>
+
+                    <!-- Botones editar / eliminar -->
+                    <div class="d-flex gap-2 mt-3">
+                        <a href="{% url 'usuarios:editar_direccion' d.pk %}"
+                        class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-pencil me-1"></i>Editar
+                        </a>
+                        <button type="button"
+                                class="btn btn-outline-danger btn-sm"
+                                data-bs-toggle="modal"
+                                data-bs-target="#modalEliminar{{ d.pk }}">
+                            <i class="bi bi-trash me-1"></i>Eliminar
+                        </button>
                     </div>
                 </div>
-            {% empty %}
-                <div class="alert alert-warning text-center">
-                    No tenés direcciones guardadas
+            </div>
+
+            <!-- Modal confirmación -->
+            <div class="modal fade" id="modalEliminar{{ d.pk }}" tabindex="-1">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header border-0">
+                            <h5 class="modal-title">Eliminar dirección</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            ¿Seguro que querés eliminar <strong>{{ d.nombre }}</strong>?
+                        </div>
+                        <div class="modal-footer border-0">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <form method="post" action="{% url 'usuarios:eliminar_direccion' d.pk %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger">Sí, eliminar</button>
+                            </form>
+                        </div>
+                    </div>
                 </div>
-            {% endfor %}
+            </div>
+
+        {% empty %}
+            <div class="alert alert-warning text-center">
+                No tenés direcciones guardadas
+            </div>
+        {% endfor %}
 
             <div class="d-grid mt-4">
                 <a class="btn btn-primary" href="{% url 'usuarios:crear_direccion' %}">
