@@ -1,84 +1,141 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="es">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Perfil</title>
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block titulo %}Perfil{% endblock %}</title>
 
-        <!-- Fuente-->
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="{% static 'css/perfil.css' %}">
+</head>
+<body>
 
-        <!-- Iconos -->
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <header class="header bg-dark">
+        <h1>BROTHER'S BURGER</h1>
+        <nav class="nav justify-content-center">
+            <a href="{% url 'pedidos:index' %}">Inicio</a>
+            <a href="{% url 'pedidos:menu_productos' %}">Productos</a>
+            <a href="contacto.html">Contacto</a>
+        </nav>
+    </header>
 
-        <!-- Estilos de Bootstrap-->
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet" />
-        <!-- Estilos -->
-        <link rel="stylesheet" href="{% static 'css/menu_productos.css' %}">
+    {% if messages %}
+    <div class="position-fixed top-0 end-0 p-3" style="z-index: 9999">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
 
-    </head>
-    <body>
-        <header class="header bg-dark">
-            <h1>BROTHER'S BURGER</h1>
-            <nav class="nav justify-content-center">
-                <a href="{% url 'pedidos:index' %}">Inicio</a>
-                <a href="{% url 'pedidos:menu_productos' %}">Productos</a>
-                <a href="contacto.html">Contacto</a>
-            </nav>
-        </header>
+    <div class="container d-flex justify-content-center align-items-center" style="margin-top: 2rem; margin-bottom: 2rem;">
+        <div class="perfil-card">
 
-        <div class="container d-flex justify-content-center align-items-center" style="margin-top: 25px">
-
-            {% if messages %}
-            <div class="position-fixed top-0 end-0 p-3" style="z-index: 9999">
-                {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <div class="perfil-hero">
+                <span class="chip">{% block chip %}{{ tipo }}{% endblock %}</span>
+                <h2>{{ perfil.persona.nombre }} {{ perfil.persona.apellido }}</h2>
+                <p>@{{ user.username }}</p>
+                <div class="perfil-avatar">
+                    <i class="bi bi-person-fill"></i>
                 </div>
-                {% endfor %}
             </div>
-            {% endif %}
 
-            <div class="card shadow p-4" style="max-width: 400px; width: 100%;">
-                
-                <h2 class="text-center mb-3">¡Hola, {{ perfil.persona.nombre }}!</h2>
-                <h3 class="text-center mb-3">Perfil</h3>
-                <div class="text-center">
-                    <i class="bi bi-person-fill fs-2"></i>
-                </div>
-                <h5 class="text-muted text-center mb-4">Información Personal</h5>
+            <div class="perfil-body">
+                <p class="section-label">{% block section_label %}Información personal{% endblock %}</p>
 
-                <ul class="list-group list-group-flush mb-4">
-                    <li class="list-group-item"><strong>Usuario: {{ user.username }}</strong></li>
-                    <li class="list-group-item"><strong>Nombre: {{ perfil.persona.nombre }}</strong></li>
-                    <li class="list-group-item"><strong>Apellido: {{ perfil.persona.apellido}}</strong></li>
-                    <li class="list-group-item"><strong>Correo: {{ user.email }}</strong></li>
-                    <li class="list-group-item"><strong>Ciudad: {{perfil.persona.ciudad}}</strong></li>
-                    <li class="list-group-item"><strong>Teléfono: {{perfil.persona.telefono}}</strong></li>
-                </ul>
-
-                <form method="post" action="{% url 'usuarios:exit' %}">
-                    {% csrf_token %}
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-danger">
-                            Cerrar Sesión
-                        </button>
+                {% block campos %}
+                <div class="fields-grid">
+                    <div class="field-box">
+                        <div class="field-label">Nombre</div>
+                        <div class="field-value">{{ perfil.persona.nombre }}</div>
                     </div>
-                </form>
+                    <div class="field-box">
+                        <div class="field-label">Apellido</div>
+                        <div class="field-value">{{ perfil.persona.apellido }}</div>
+                    </div>
+                    <div class="field-box">
+                        <div class="field-label">Ciudad</div>
+                        <div class="field-value">{{ perfil.persona.ciudad }}</div>
+                    </div>
+                    <div class="field-box">
+                        <div class="field-label">Barrio</div>
+                        <div class="field-value">{{ perfil.persona.barrio }}</div>
+                    </div>
+                    <div class="field-box">
+                        <div class="field-label">Teléfono</div>
+                        <div class="field-value">{{ perfil.persona.telefono }}</div>
+                    </div>
+                    <div class="field-box">
+                        <div class="field-label">RUC</div>
+                        {% if perfil.persona.ruc %}
+                            <div class="field-value">{{ perfil.persona.ruc }}</div>
+                        {% else %}
+                            <div class="field-value empty">--</div>
+                        {% endif %}
+                    </div>
+                    <div class="field-box full">
+                        <div class="field-label">Correo electrónico</div>
+                        <div class="field-value">{{ user.email }}</div>
+                    </div>
+                </div>
+                {% endblock %}
+
+                <div class="perfil-divider"></div>
+
+                {% block acciones %}
+                <div class="actions-grid">
+                    <a href="{% url 'usuarios:editar_perfil' %}" class="btn-perfil btn-perfil-primary">
+                        <i class="bi bi-pencil-fill"></i> Editar perfil
+                    </a>
+                    <form method="post" action="{% url 'usuarios:exit' %}" style="display:contents;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-perfil">
+                            <i class="bi bi-box-arrow-right"></i> Cerrar sesión
+                        </button>
+                    </form>
+                    <button type="button" class="btn-perfil btn-perfil-danger"
+                            data-bs-toggle="modal" data-bs-target="#modalEliminar">
+                        <i class="bi bi-trash-fill"></i> Eliminar cuenta
+                    </button>
+                </div>
+                {% endblock %}
 
             </div>
         </div>
+    </div>
 
+    {% block modal %}
+    <div class="modal fade" id="modalEliminar" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content modal-perfil">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title">¿Eliminar cuenta?</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    Tu cuenta será <strong>eliminada</strong>. Ya no podrás iniciar sesión si realizas esta acción.
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn-perfil" data-bs-dismiss="modal">Cancelar</button>
+                    <form method="post" action="{% url 'usuarios:eliminar_cuenta' %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-perfil btn-perfil-danger">Sí, eliminar</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endblock %}
 
-        <!-- Bootstrap JS -->
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-        <!-- HTMX -->
-        <script src="https://unpkg.com/htmx.org"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/htmx.org"></script>
 
-        
-    </body>
+</body>
 </html>

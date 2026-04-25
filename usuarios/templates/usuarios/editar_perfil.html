@@ -1,0 +1,91 @@
+{% extends 'usuarios/perfil.html' %}
+
+{% block titulo %}Editar Perfil{% endblock %}
+
+{% block chip %}Editando perfil{% endblock %}
+
+{% block section_label %}Modificar información{% endblock %}
+
+{% block campos %}
+<form method="post" action="{% url 'usuarios:editar_perfil' %}">
+    {% csrf_token %}
+    <div class="fields-grid">
+
+        <div class="field-box">
+            <label class="field-label">Nombre</label>
+            <input type="text" name="nombre"
+                   class="form-control form-control-sm border-0 bg-transparent p-0 field-value"
+                   value="{{ perfil.persona.nombre }}">
+        </div>
+
+        <div class="field-box">
+            <label class="field-label">Apellido</label>
+            <input type="text" name="apellido"
+                   class="form-control form-control-sm border-0 bg-transparent p-0 field-value"
+                   value="{{ perfil.persona.apellido }}">
+        </div>
+
+        <div class="field-box">
+            <label class="field-label">Ciudad</label>
+            <select name="ciudad"
+                    class="form-select form-select-sm border-0 bg-transparent p-0 field-value">
+                {% for ciudad in ciudades %}
+                    <option value="{{ ciudad.id }}"
+                        {% if ciudad.id == perfil.persona.ciudad.id %}selected{% endif %}>
+                        {{ ciudad.nombre }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="field-box">
+            <label class="field-label">Barrio</label>
+            <select name="barrio"
+                    class="form-select form-select-sm border-0 bg-transparent p-0 field-value">
+                {% for barrio in barrios %}
+                    <option value="{{ barrio.id }}"
+                        {% if barrio.id == perfil.persona.barrio.id %}selected{% endif %}>
+                        {{ barrio.nombre }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="field-box">
+            <label class="field-label">Teléfono</label>
+            <input type="text" name="telefono"
+                   class="form-control form-control-sm border-0 bg-transparent p-0 field-value"
+                   value="{{ perfil.persona.telefono }}">
+        </div>
+
+        <div class="field-box">
+            <label class="field-label">RUC <span style="color:#bbb;">(opcional)</span></label>
+            <input type="text" name="ruc"
+                   class="form-control form-control-sm border-0 bg-transparent p-0 field-value"
+                   value="{{ perfil.persona.ruc|default:'' }}">
+        </div>
+
+        <div class="field-box full">
+            <label class="field-label">Correo electrónico</label>
+            <input type="email" name="correo"
+                   class="form-control form-control-sm border-0 bg-transparent p-0 field-value"
+                   value="{{ user.email }}">
+        </div>
+
+    </div>
+    {% block acciones %}{% endblock %}
+    <div class="perfil-divider"></div>
+
+    <div class="actions-grid">
+        <button type="submit" class="btn-perfil btn-perfil-primary">
+            <i class="bi bi-save"></i> Guardar cambios
+        </button>
+        <a href="{% url 'usuarios:perfil_user' %}" class="btn-perfil">
+            Cancelar
+        </a>
+    </div>
+
+</form>
+{% endblock %}
+
+{% block modal %}{% endblock %}

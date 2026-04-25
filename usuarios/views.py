@@ -1,8 +1,8 @@
-from django.shortcuts import render, redirect, HttpResponse, get_object_or_404
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
-from administrador.models import Cliente, Empleado, Direccion
+from administrador.models import Cliente, Empleado, Direccion, Ciudad, Barrio
 from usuarios.forms import RegistroClienteForm, DireccionForm
 from django.contrib import messages
 from django.db import transaction
@@ -84,6 +84,70 @@ def perfil_user(request):
         'perfil': datos_completos,
         'tipo': tipo
     })
+
+# Editar datos guardados del cliente
+@login_required
+def editar_perfil_cliente(request):
+    usuario = request.user
+    try:
+        perfil = usuario.cliente
+    except Cliente.DoesNotExist:
+        messages.error(request, "No se encontró un perfil asociado.")
+        return redirect('usuarios:perfil')
+
+    persona = perfil.persona
+
+    if request.method == 'POST':
+        usuario.email    = request.POST.get('correo', usuario.email)
+        usuario.save()
+
+        persona.nombre   = request.POST.get('nombre', persona.nombre)
+        persona.apellido = request.POST.get('apellido', persona.apellido)
+        persona.telefono = request.POST.get('telefono', persona.telefono)
+        persona.ruc      = request.POST.get('ruc') or None
+
+        ciudad_id = request.POST.get('ciudad')
+        barrio_id = request.POST.get('barrio')
+
+        if ciudad_id:
+            persona.ciudad_id = ciudad_id
+        if barrio_id:
+            persona.barrio_id = barrio_id
+
+        persona.save()
+
+        messages.success(request, "Datos actualizados correctamente.")
+        return redirect('usuarios:perfil_user')
+
+    ciudades = Ciudad.objects.all().order_by('nombre')
+    barrios  = Barrio.objects.all().order_by('nombre')
+
+    return render(request, 'usuarios/editar_perfil.html', {
+        'perfil'  : perfil,
+        'usuario' : usuario,
+        'ciudades': ciudades,
+        'barrios' : barrios,
+    })
+
+@login_required
+def eliminar_cuenta(request):
+    if request.method == 'POST':
+        usuario = User.objects.get(pk=request.user.pk)
+
+        # Desactiva usuario y persona
+        usuario.is_active = False 
+        usuario.save()
+
+        try:
+            usuario.cliente.persona.estado = False
+            usuario.cliente.persona.save()
+        except Cliente.DoesNotExist:
+            pass
+
+        logout(request)
+        messages.success(request, "Tu cuenta ha sido eliminada.")
+        return redirect('usuarios:sesion')
+    return redirect('usuario:perfil_user')
 
 @login_required
 def agregar_direccion(request):

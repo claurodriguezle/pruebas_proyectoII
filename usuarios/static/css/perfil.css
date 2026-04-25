@@ -1,0 +1,211 @@
+/* ── GENERAL ── */
+body {
+    font-family: 'Poppins', sans-serif;
+    background-color: #f5f5f5;
+}
+
+
+/* ── CARD PRINCIPAL ── */
+.perfil-card {
+    max-width: 440px;
+    width: 100%;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid #e0e0e0;
+    background: #ffffff;
+}
+
+/* ── HERO ── */
+.perfil-hero {
+    background-color: #f0f0f0;
+    padding: 2rem 1.5rem 3.5rem;
+    position: relative;
+}
+
+.perfil-hero .chip {
+    display: inline-block;
+    font-size: 11px;
+    padding: 3px 12px;
+    border-radius: 99px;
+    background: #212529;
+    color: #fff;
+    margin-bottom: 0.5rem;
+    letter-spacing: 0.04em;
+}
+
+.perfil-hero h2 {
+    font-size: 24px;
+    font-weight: 500;
+    color: #000;
+    margin: 0;
+}
+
+.perfil-hero p {
+    font-size: 13px;
+    color: #000;
+    margin: 4px 0 0;
+}
+
+.perfil-avatar {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: #f0f0f0;
+    border: 3px solid #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    bottom: -36px;
+    left: 1.5rem;
+}
+
+.perfil-avatar i {
+    font-size: 2rem;
+    color: #888;
+}
+
+/* ── BODY ── */
+.perfil-body {
+    padding: 3.5rem 1.5rem 1.5rem;
+}
+
+.section-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #999;
+    margin-bottom: 12px;
+}
+
+/* ── GRILLA DE CAMPOS ── */
+.fields-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.field-box {
+    background: #f7f7f7;
+    border-radius: 10px;
+    padding: 12px 14px;
+}
+
+.field-box.full {
+    grid-column: span 2;
+}
+
+.field-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #999;
+    margin-bottom: 4px;
+}
+
+.field-value {
+    font-size: 14px;
+    font-weight: 500;
+    color: #111;
+}
+
+.field-value.empty {
+    color: #bbb;
+}
+
+/* ── DIVIDER ── */
+.perfil-divider {
+    height: 1px;
+    background: #ebebeb;
+    margin: 1.25rem 0;
+}
+
+/* ── ACCIONES ── */
+.actions-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.btn-perfil {
+    padding: 10px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-family: 'Poppins', sans-serif;
+    cursor: pointer;
+    border: 1px solid #e0e0e0;
+    background: transparent;
+    color: #111;
+    text-align: center;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: background 0.2s;
+}
+
+.btn-perfil:hover {
+    background: #f5f5f5;
+    color: #111;
+}
+
+.btn-perfil-primary {
+    grid-column: span 2;
+    background: #111;
+    color: #fff;
+    border-color: #111;
+}
+
+.btn-perfil-primary:hover {
+    background: #333;
+    color: #fff;
+}
+
+.btn-perfil-danger {
+    color: #c0392b;
+    border-color: #f5c6c6;
+}
+
+.btn-perfil-danger:hover {
+    background: #fff5f5;
+    color: #c0392b;
+}
+
+/* ── MODAL ── */
+.modal-perfil {
+    border-radius: 14px;
+    border: 1px solid #e0e0e0;
+}
+
+.modal-perfil .modal-title {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 500;
+}
+
+.modal-perfil .modal-body {
+    font-family: 'Poppins', sans-serif;
+    font-size: 14px;
+    color: #555;
+}
+
+.header {
+    color: white;
+    padding: 1rem;
+    text-align: center;
+}
+
+.nav a {
+    margin: 0 1rem;
+    text-decoration: none;
+    color: white;
+    padding-bottom: 2px;
+    border-bottom: 2px solid transparent;
+    transition: border-color 0.3s ease;
+    text-decoration: none;
+}
+
+nav a:hover {
+    border-bottom: 2px solid #f8f9fa;
+}
