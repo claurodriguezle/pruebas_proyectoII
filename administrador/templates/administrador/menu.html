@@ -1,17 +1,44 @@
 {% extends "administrador/layout.html" %}
-
+{% load static %}
 {% block title %}
     Administrador - Brother's Burger
 {% endblock %}
 
-{% block body%}
+{% block body %}
 
-    <div class="card">
-        <h3>Alertas</h3>
-            <p>Stock bajo en 5 productos:</p>
-            <ul>
-            <li>Papas Fritas (2 unidades restantes)</li>
-            <li>Bebida Cola (5 unidades restantes)</li>
+<div class="card">
+    <h3>
+        🔔 Alertas de Stock
+        {% if stocks_criticos %}
+            <span class="badge-alerta">{{ stocks_criticos.count }}</span>
+        {% endif %}
+    </h3>
+
+    {% if stocks_criticos %}
+        <p class="alerta-subtitulo">
+            ⚠️ Stock bajo en <strong>{{ stocks_criticos.count }}</strong> item{{ stocks_criticos.count|pluralize }}:
+        </p>
+        <ul class="lista-alertas">
+            {% for stock in stocks_criticos %}
+            <li class="alerta-item {% if stock.cant_disponible == 0 %}alerta-critica{% else %}alerta-baja{% endif %}">
+                <span class="alerta-nombre">{{ stock.item.nombre }}: </span>
+                <span class="alerta-detalle">
+                    Mínimo {{ stock.cant_minima }} {{ stock.unidad_display }}
+                    | <strong> Restante  {{ stock.cant_disponible }}</strong> {{ stock.unidad_display }}
+                </span>
+                <!-- 
+                {% if stock.proveedor_principal %}
+                <span class="alerta-proveedor">
+                    🏭 {{ stock.proveedor_principal.nombre_empresa }}
+                </span>
+                {% endif %}
+                -->
+            </li>
+            {% endfor %}
         </ul>
-    </div>
+    {% else %}
+        <p class="alerta-ok">✅ Todos los productos tienen stock suficiente.</p>
+    {% endif %}
+</div>
+
 {% endblock %}

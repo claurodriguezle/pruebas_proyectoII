@@ -17,17 +17,25 @@ from django.utils import timezone
 from django.contrib.auth.decorators import login_required
 #Importaciones para Stock
 from .models import Stock
-from django.db.models import Sum
+from django.db.models import Sum, F
 #from . import models {}
 from .forms import ItemForm
 
 from django.core.paginator import Paginator
 
 
-# PERSONAS
 def menu(request):
-    return render(request, 'administrador/menu.html')
+    # Alertas de stock
+    stocks_criticos = Stock.objects.filter(
+        cant_disponible__lte=F('cant_minima'),
+        cant_minima__gt=0
+    ).select_related('item', 'proveedor_principal').order_by('cant_disponible')
 
+    return render(request, 'administrador/menu.html', {
+        'stocks_criticos': stocks_criticos
+    })
+
+# PERSONAS
 def listar_personas(request):
     grupo = request.GET.get('grupo')  # Captura el grupo seleccionado del select
     search = request.GET.get('search')  # Captura el texto de búsqueda ingresado

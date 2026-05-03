@@ -389,6 +389,15 @@ class Stock(models.Model):
         ).order_by('-compra__fecha').first()
 
         return ultima_compra.precio_compra if ultima_compra else 0
+    
+    @property
+    def unidad_display(self):
+        """Devuelve la unidad de medida correcta segun se almacena internamente"""
+        if self.item.tipo == 'MATERIA_PRIMA' and self.item.unidad_medida == 'kg':
+            return 'g.'
+        if self.item.tipo == 'ARTICULO':
+            return 'und.'
+        return self.item.unidad_medida
 
     @property
     def precio_unitario_display(self):
@@ -443,10 +452,10 @@ class Mesa(models.Model):
     estado   = models.CharField(max_length=10, choices=ESTADO_CHOICES, default='libre')
     activa   = models.BooleanField(default=True)
     es_mostrador = models.BooleanField(default=False)
- 
+
     def __str__(self):
         return f'Mesa {self.numero}'
- 
+
     class Meta:
         ordering = ['numero']
         verbose_name = 'Mesa'

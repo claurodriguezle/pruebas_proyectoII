@@ -7,6 +7,16 @@
 {% block section_label %}Modificar información{% endblock %}
 
 {% block campos %}
+{% if messages %}
+    <div class="position-fixed top-0 end-0 p-3" style="z-index: 9999">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
 <form method="post" action="{% url 'usuarios:editar_perfil' %}">
     {% csrf_token %}
     <div class="fields-grid">

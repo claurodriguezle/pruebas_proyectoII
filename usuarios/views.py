@@ -5,7 +5,7 @@ from django.contrib.auth import authenticate, login, logout
 from administrador.models import Cliente, Empleado, Direccion, Ciudad, Barrio
 from usuarios.forms import RegistroClienteForm, DireccionForm
 from django.contrib import messages
-from django.db import transaction
+from django.db import transaction, IntegrityError
 
 # Create your views here.
 def index(request):
@@ -93,31 +93,53 @@ def editar_perfil_cliente(request):
         perfil = usuario.cliente
     except Cliente.DoesNotExist:
         messages.error(request, "No se encontró un perfil asociado.")
-        return redirect('usuarios:perfil')
+        return redirect('usuarios:perfil_user')
 
     persona = perfil.persona
 
     if request.method == 'POST':
-        usuario.email    = request.POST.get('correo', usuario.email)
-        usuario.save()
+        nuevo_correo = request.POST.get('correo', usuario.email)
+        nombre       = request.POST.get('nombre', persona.nombre)
+        apellido     = request.POST.get('apellido', persona.apellido)
+        telefono     = request.POST.get('telefono', persona.telefono)
+        ruc          = request.POST.get('ruc') or None
+        ciudad_id    = request.POST.get('ciudad')
+        barrio_id    = request.POST.get('barrio')
 
-        persona.nombre   = request.POST.get('nombre', persona.nombre)
-        persona.apellido = request.POST.get('apellido', persona.apellido)
-        persona.telefono = request.POST.get('telefono', persona.telefono)
-        persona.ruc      = request.POST.get('ruc') or None
+        # Validar correo duplicado ANTES de asignarlo
+        if User.objects.filter(email=nuevo_correo).exclude(pk=usuario.pk).exists():
+            messages.error(request, "El correo ya se encuentra en uso.")
+            ciudades = Ciudad.objects.all().order_by('nombre')
+            barrios  = Barrio.objects.all().order_by('nombre')
+            return render(request, 'usuarios/editar_perfil.html', {
+                'perfil'  : perfil,
+                'usuario' : usuario,
+                'ciudades': ciudades,
+                'barrios' : barrios,
+            })
 
-        ciudad_id = request.POST.get('ciudad')
-        barrio_id = request.POST.get('barrio')
+        # Asignar valores solo si pasó la validación
+        usuario.email    = nuevo_correo
+        persona.nombre   = nombre
+        persona.apellido = apellido
+        persona.telefono = telefono
+        persona.ruc      = ruc
 
         if ciudad_id:
             persona.ciudad_id = ciudad_id
         if barrio_id:
             persona.barrio_id = barrio_id
 
-        persona.save()
-
-        messages.success(request, "Datos actualizados correctamente.")
-        return redirect('usuarios:perfil_user')
+        try:
+            usuario.save()
+            persona.save()
+            messages.success(request, "Datos actualizados correctamente.")
+            return redirect('usuarios:perfil_user')
+        except IntegrityError as e:
+            if 'ruc' in str(e).lower():
+                messages.error(request, "El RUC ya se encuentra en uso.")
+            else:
+                messages.error(request, "Error al guardar: datos inválidos.")
 
     ciudades = Ciudad.objects.all().order_by('nombre')
     barrios  = Barrio.objects.all().order_by('nombre')
@@ -199,7 +221,7 @@ def editar_direccion(request, pk):
 
     if request.method == 'POST':
         form = DireccionForm(request.POST, instance=direccion)
-
+    
         if form.is_valid():
             direccion = form.save(commit=False)  # Toma los datos nuevos del form
 
