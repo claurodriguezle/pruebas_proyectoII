@@ -6,6 +6,13 @@ Menu
 {% endblock %}
 
 {% block body %}
+  <!-- Advertencia de caja cerrada -->
+  {% if not caja_abierta %}
+  <div class="alert alert-warning" style="background-color: #fff3cd; color: #856404; padding: 10px; margin: 10px 0; border-radius: 5px; border: 1px solid #ffeeba;">
+      ⚠️ <strong>Importante:</strong> La caja está cerrada en este momento. No se pueden realizar pedidos hasta que un empleado abra la caja.
+  </div>
+  {% endif %}
+
   <!-- Menú de categorías -->
   <div class="my-4 bg-dark p-2 rounded" style="width: 60%; margin: 0 auto;">
     <ul class="nav nav-pills justify-content-center" id="menu-categorias">
@@ -80,7 +87,16 @@ Menu
 
             <div class="modal-footer">
               <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-              <button type="submit" class="btn btn-primary">Agregar al carrito</button>
+            <!--<button type="submit" class="btn btn-primary">Agregar al carrito</button>-->
+            {% if caja_abierta %}
+                <button class="agregar-carrito" data-producto-id="{{ producto.id }}">
+                    Agregar al carrito
+                </button>
+            {% else %}
+                <button class="agregar-carrito disabled" disabled style="opacity: 0.5; cursor: not-allowed;">
+                    Caja cerrada
+                </button>
+            {% endif %}
             </div>
           </form>
         </div>

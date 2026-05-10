@@ -58,7 +58,17 @@ def iniciar_sesion(request):
             login(request, user)
             messages.success(request, 'Inicio de sesión exitoso.')
             #return redirect('pedidos:tipo_entrega')
-            return redirect('pedidos:menu_productos')
+            #return redirect('pedidos:menu_productos')
+
+            #Redirigir segun el grupo
+            if user.is_superuser or user.groups.filter(name='Administrador').exists():
+                return redirect('administrador:menu')
+            elif user.groups.filter(name='Empleado').exists():
+                return redirect('caja:apertura_caja')
+            elif user.groups.filter(name='Cocina').exists():
+                return redirect('pedidos:cocina')
+            else:
+                return redirect('pedidos:index')  # clientes
         else:
             messages.error(request, 'Usuario o contraseña incorrectos.')
     
@@ -258,4 +268,5 @@ def eliminar_direccion(request, pk):
 @login_required
 def exit(request):
     logout(request)
-    return redirect('pedidos:menu_productos')
+    #return redirect('pedidos:menu_productos')
+    return redirect('usuarios:sesion')

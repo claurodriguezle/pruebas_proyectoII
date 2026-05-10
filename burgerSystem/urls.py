@@ -20,6 +20,11 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 
+from django.shortcuts import render
+
+def sin_permiso(request):
+    return render(request, 'sin_permiso.html', status=403)
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('',include('administrador.urls')),
@@ -27,6 +32,7 @@ urlpatterns = [
     path('pedidos/', include(('pedidos.urls', 'pedidos'), namespace='pedidos')),
     path('usuarios/', include('usuarios.urls')),
     path('caja/', include('caja.urls')),
+    path('sin-permiso/', sin_permiso, name='sin_permiso'),
 ]
 
 if settings.DEBUG:

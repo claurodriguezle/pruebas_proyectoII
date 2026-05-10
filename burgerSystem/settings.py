@@ -81,6 +81,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'pedidos.context_processors.caja_abierta',
             ],
             'builtins':[
                 'administrador.templatetags.custom_filters', # Puntos para separar miles
@@ -98,11 +99,11 @@ WSGI_APPLICATION = 'burgerSystem.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME':'db_burgerapp',
-        'USER':'ruizj',
-        'PASSWORD':'admin',
+        'NAME':'Db_Burger_App',
+        'USER':'crodriguez',
+        'PASSWORD':'12345',
         'HOST':'localhost',
-        'PORT': '5432',
+        'PORT': '5433',
     }
 }
 

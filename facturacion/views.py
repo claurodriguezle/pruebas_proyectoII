@@ -11,9 +11,12 @@ from .forms import TimbradoForm, FacturaForm
 from caja.models import VentaCaja
 from administrador.models import Cliente, Persona, Ciudad, Barrio  # para la búsqueda
 import json
-
+#importamos el decorador para controlar acceso por grupos
+from usuarios.decorators import grupo_requerido
 # Create your views here.
 # facturacion/views.py
+
+
 class TimbradoListView(ListView):
     model = Timbrado
     template_name = 'timbrado/timbrado_list.html'
@@ -21,6 +24,7 @@ class TimbradoListView(ListView):
     def get_queryset(self):
         # Solo muestra timbrados NO eliminados
         return Timbrado.objects.filter(eliminado=False)
+
 class TimbradoCreateView(CreateView):
     model = Timbrado
     form_class = TimbradoForm
@@ -30,6 +34,7 @@ class TimbradoCreateView(CreateView):
     def form_valid(self, form):
         messages.success(self.request, "✅ Timbrado creado correctamente.")
         return super().form_valid(form)
+
 
 class TimbradoUpdateView(UpdateView):
     model = Timbrado
@@ -41,6 +46,7 @@ class TimbradoUpdateView(UpdateView):
         messages.success(self.request, "✏️ Timbrado actualizado correctamente.")
         return super().form_valid(form)
 
+@grupo_requerido('Administrador')
 def timbrado_toggle_active(request, pk):
     timbrado = get_object_or_404(Timbrado, pk=pk)
     timbrado.activo = not timbrado.activo
@@ -48,6 +54,7 @@ def timbrado_toggle_active(request, pk):
     messages.success(request, f"✅ Timbrado {'activado' if timbrado.activo else 'desactivado'} correctamente.")
     return redirect('facturacion:timbrado_list')
 
+@grupo_requerido('Administrador')
 def timbrado_soft_delete(request, pk):
     timbrado = get_object_or_404(Timbrado, pk=pk)
     timbrado.soft_delete()  # Usamos el método que creamos
@@ -55,6 +62,7 @@ def timbrado_soft_delete(request, pk):
     return redirect('facturacion:timbrado_list')
 
 #Vistas para Factura
+@grupo_requerido('Administrador')
 def factura_view(request):
     # Buscar una factura activa, si existe
     #factura = Factura.objects.get(pk=factura_id)
@@ -67,6 +75,7 @@ def factura_view(request):
     return render(request, 'factura/factura.html', context)
 
 @login_required
+@grupo_requerido('Administrador', 'Empleado')
 def factura_detalle(request, factura_id):
     factura = get_object_or_404(
         Factura.objects.select_related('cliente__persona', 'timbrado')
@@ -77,6 +86,7 @@ def factura_detalle(request, factura_id):
 
 
 @login_required
+@grupo_requerido('Administrador', 'Empleado')
 def facturas_list(request):
     facturas = (
         Factura.objects
@@ -87,6 +97,7 @@ def facturas_list(request):
 
 #Vistas para emitir factura desde Caja
 @login_required
+@grupo_requerido('Administrador', 'Empleado')
 def buscar_cliente_factura(request):
     """
     GET /facturacion/buscar-cliente/?q=<cedula_o_ruc>
@@ -127,6 +138,7 @@ def buscar_cliente_factura(request):
 #Vista para emitir factura desde Caja
 # ── Buscar cliente por cédula/RUC (AJAX) ─────────────────────────────────────
 @login_required
+@grupo_requerido('Administrador', 'Empleado')
 def buscar_cliente_factura(request):
     q = request.GET.get('q', '').strip()
     if not q:
@@ -157,6 +169,7 @@ def buscar_cliente_factura(request):
  
 # ── Crear cliente rápido desde la factura (AJAX) ──────────────────────────────
 @login_required
+@grupo_requerido('Administrador', 'Empleado')
 def crear_cliente_rapido(request):
     """
     POST — recibe nombre, apellido, cedula, ruc, telefono, direccion
@@ -232,7 +245,16 @@ def crear_cliente_rapido(request):
  
 # ── Vista principal ───────────────────────────────────────────────────────────
 @login_required
+@grupo_requerido('Administrador', 'Empleado')
 def emitir_factura(request, venta_id):
+    from caja.models import Caja
+    
+    # 🔒 VALIDACIÓN
+    caja_abierta = Caja.objects.filter(estado='abierta').first()
+    if not caja_abierta:
+        messages.error(request, "⚠️ No hay una caja abierta. No se puede emitir la factura.")
+        return redirect('facturacion:facturas_list')
+    
     venta = get_object_or_404(
         VentaCaja.objects.select_related('cliente__persona', 'cuenta__mesa', 'pedido'),
         pk=venta_id

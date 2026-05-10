@@ -36,7 +36,7 @@ urlpatterns = [
     path('orden/actualizar/<int:pedido_id>/', views.empleado_actualizar, name='empleado_actualizar'),
 
     #  Panel de Cocina
-    path('cocina/', views.cocina_view, name='cocina_view'),
+    path('cocina/', views.cocina_view, name='cocina'),
     path('cocina/cards/', views.cocina_cards, name='cocina_cards'),
     path('cocina/avanzar/<int:pedido_id>/', views.cocina_avanzar, name='cocina_avanzar'),
     #Rutas para la Facturacion
