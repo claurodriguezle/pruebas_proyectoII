@@ -1,0 +1,134 @@
+{% extends 'administrador/layout.html' %}
+{% load humanize %}
+
+{% block title %}Reporte de Ventas por Producto{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block body %}
+
+{# ── Sección exclusiva para impresión (menu.css la hace visible al imprimir) ── #}
+<div id="seccion-impresion">
+  <div class="print-header">
+    <h2>Burger System</h2>
+    <h3>Reporte: Volumen de ventas por producto</h3>
+    <p id="print-filtros"></p>
+    <p>Impreso el: <span id="print-fecha-impresion"></span></p>
+    <hr>
+  </div>
+
+  {# La tabla se copia aquí dinámicamente al hacer clic en imprimir #}
+  <div id="print-contenido-tabla"></div>
+
+  <div class="print-footer">
+    Sistema de gestión — Burger System
+  </div>
+</div>
+
+<div class="container-fluid py-4 px-4" style="max-width: 100%; overflow-x: hidden;">
+
+  {# ── Encabezado pantalla ── #}
+  <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+    <div>
+      <h4 class="mb-0 fw-semibold">Volumen de ventas por producto</h4>
+      <!--<small class="text-muted">Basado en detalles de facturación emitida</small>-->
+    </div>
+  </div>
+
+  {# ── Panel de filtros ── #}
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+      <form id="filtros-form"
+            hx-get="{% url 'reportes:ventas_productos_datos' %}"
+            hx-target="#resultado-reporte"
+            hx-trigger="submit"
+            hx-indicator="#spinner"
+            class="row g-3 align-items-end">
+
+        <div class="col-12 col-md-3">
+          <label for="fecha_inicio" class="form-label fw-medium small">Desde</label>
+          <input type="date"
+                 id="fecha_inicio"
+                 name="fecha_inicio"
+                 class="form-control form-control-sm"
+                 value="{{ fecha_inicio_default }}">
+        </div>
+
+        <div class="col-12 col-md-3">
+          <label for="fecha_fin" class="form-label fw-medium small">Hasta</label>
+          <input type="date"
+                 id="fecha_fin"
+                 name="fecha_fin"
+                 class="form-control form-control-sm"
+                 value="{{ fecha_fin_default }}">
+        </div>
+
+        <div class="col-12 col-md-3">
+          <label for="categoria" class="form-label fw-medium small">Categoría</label>
+          <select id="categoria" name="categoria" class="form-select form-select-sm">
+            <option value="">Todas las categorías</option>
+            {% for cat in categorias %}
+              <option value="{{ cat.pk }}"
+                {% if categoria_default and cat.pk == categoria_default.pk %}selected{% endif %}>
+                {{ cat.nombre_categ }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-12 col-md-3 d-flex gap-2">
+          <button type="submit" class="btn btn-primary btn-sm flex-grow-1">
+            <i class="bi bi-bar-chart-line me-1"></i> Generar reporte
+          </button>
+          <button type="button" class="btn btn-outline-secondary btn-sm"
+                  onclick="limpiarFiltros()">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  {# ── Spinner ── #}
+  <div id="spinner" class="text-center py-3 htmx-indicator">
+    <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+    <span class="ms-2 text-muted small">Cargando datos...</span>
+  </div>
+
+  {# ── Área de resultados ── #}
+  <div id="resultado-reporte">
+    <div class="text-center py-5 text-muted">
+      <i class="bi bi-bar-chart fs-1 d-block mb-2 opacity-25"></i>
+      <p class="small">Seleccioná los filtros y hacé clic en <strong>Generar reporte</strong></p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function limpiarFiltros() {
+    document.getElementById('filtros-form').reset();
+    document.getElementById('resultado-reporte').innerHTML = `
+      <div class="text-center py-5 text-muted">
+        <i class="bi bi-bar-chart fs-1 d-block mb-2 opacity-25"></i>
+        <p class="small">Seleccioná los filtros y hacé clic en <strong>Generar reporte</strong></p>
+      </div>`;
+  }
+
+  function imprimirReporte() {
+    const fechaInicio  = document.getElementById('fecha_inicio').value;
+    const fechaFin     = document.getElementById('fecha_fin').value;
+    const categoriaEl  = document.getElementById('categoria');
+    const categoriaTxt = categoriaEl.options[categoriaEl.selectedIndex].text;
+    const fmt = str => str ? str.split('-').reverse().join('/') : '—';
+
+    imprimirTabla({
+        titulo: 'Reporte: Volumen de ventas por producto',
+        filtrosHTML: `Categoría: <strong>${categoriaTxt}</strong> &nbsp;|&nbsp; Período: <strong>${fmt(fechaInicio)} — ${fmt(fechaFin)}</strong>`
+    });
+  }
+</script>
+{% endblock %}

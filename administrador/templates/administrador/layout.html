@@ -14,6 +14,7 @@
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/font/bootstrap-icons.css">
         <link rel="stylesheet" href="{% static 'css/menu.css' %}">
+
         <title>{% block title %}{% endblock %}</title>
         {% block extra_css %}{% endblock %}
     </head>
@@ -71,9 +72,10 @@
                 <li class="nav-item dropdown">
                     <a  class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Reportes</a>
                     <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="#">Producto</a></li>
-                        <li><a class="dropdown-item" href="#">Entrega</a></li>
-                        <li><a class="dropdown-item" href="#">Clientes</a></li>
+                        <li><a class="dropdown-item" href="{% url 'reportes:ventas_productos' %}">Producto</a></li>
+                        <li><a class="dropdown-item" href="{% url 'reportes:entregas' %}">Entrega</a></li>
+                        <li><a class="dropdown-item" href="{% url 'reportes:top_clientes' %}">Clientes</a></li>
+                        <li><a class="dropdown-item" href="{% url '#' %}">Ventas</a></li>
                         <li><a class="dropdown-item" href="#">Costos</a></li>
                         <li><a class="dropdown-item" href="#">Ganancias</a></li>
                     </ul>
@@ -142,6 +144,6 @@
                 }
             });
         </script>
-        
+        <script src="{% static 'js/reportes.js' %}"></script>
     </body>
 </html>

@@ -214,3 +214,92 @@ main {
     color: #276749;
     font-weight: 500;
 }
+
+/* Alerta de stock */
+/* Botón imprimir — visible solo en pantalla */
+.btn-imprimir {
+    margin-top: 16px;
+    padding: 8px 14px;
+    background: #2d3748;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    width: fit-content;
+}
+.btn-imprimir:hover {
+    background: #1a202c;
+}
+
+/* Sección de impresión — oculta en pantalla */
+#seccion-impresion {
+    display: none;
+}
+
+/* ── Al imprimir ── */
+@media print {
+
+    /* Ocultar TODO excepto la sección de impresión */
+    body * {
+        visibility: hidden;
+    }
+    #seccion-impresion,
+    #seccion-impresion * {
+        visibility: visible;
+    }
+
+    #seccion-impresion {
+        display: block;
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        color: black;
+        background: white;
+        font-family: Arial, sans-serif;
+        font-size: 13px;
+    }
+
+    .print-header h2 {
+        margin: 0;
+        font-size: 20px;
+    }
+    .print-header h3 {
+        margin: 4px 0;
+        font-size: 15px;
+        font-weight: normal;
+    }
+    .print-header p {
+        margin: 2px 0;
+        font-size: 12px;
+    }
+    .print-header hr {
+        margin: 10px 0;
+        border: none;
+        border-top: 1px solid black;
+    }
+
+    .print-tabla {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+    }
+    .print-tabla th,
+    .print-tabla td {
+        border: 1px solid black;
+        padding: 6px 10px;
+        text-align: left;
+    }
+    .print-tabla th {
+        background: white;
+        font-weight: bold;
+    }
+
+    .print-footer {
+        margin-top: 20px;
+        font-size: 11px;
+        text-align: center;
+        color: black;
+    }
+}

@@ -1,0 +1,106 @@
+{% extends 'administrador/layout.html' %}
+{% load humanize %}
+
+{% block title %}Reporte de Tipos de Entrega{% endblock %}
+
+{% block body %}
+
+{# ── Sección exclusiva para impresión ── #}
+<div id="seccion-impresion">
+  <div class="print-header">
+    <h2>Burger System</h2>
+    <h3>Reporte: Delivery vs Retiro en local</h3>
+    <p id="print-filtros"></p>
+    <p>Impreso el: <span id="print-fecha-impresion"></span></p>
+    <hr>
+  </div>
+  <div id="print-contenido-tabla"></div>
+  <div class="print-footer">Sistema de gestión — Burger System</div>
+</div>
+
+<div class="container-fluid py-4 px-4" style="max-width:100%; overflow-x:hidden;">
+
+  {# ── Encabezado ── #}
+  <div class="mb-4">
+    <h4 class="mb-0 fw-semibold">Delivery vs Retiro en local</h4>
+    <small class="text-muted">Basado en pedidos facturados</small>
+  </div>
+
+  {# ── Filtros ── #}
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+      <form id="filtros-form"
+            hx-get="{% url 'reportes:entregas_datos' %}"
+            hx-target="#resultado-reporte"
+            hx-trigger="submit"
+            hx-indicator="#spinner"
+            class="row g-3 align-items-end">
+
+        <div class="col-12 col-md-4">
+          <label for="fecha_inicio" class="form-label fw-medium small">Desde</label>
+          <input type="date" id="fecha_inicio" name="fecha_inicio"
+                 class="form-control form-control-sm" value="{{ fecha_inicio_default }}">
+        </div>
+
+        <div class="col-12 col-md-4">
+          <label for="fecha_fin" class="form-label fw-medium small">Hasta</label>
+          <input type="date" id="fecha_fin" name="fecha_fin"
+                 class="form-control form-control-sm" value="{{ fecha_fin_default }}">
+        </div>
+
+        <div class="col-12 col-md-4 d-flex gap-2">
+          <button type="submit" class="btn btn-primary btn-sm flex-grow-1">
+            <i class="bi bi-bar-chart-line me-1"></i> Generar reporte
+          </button>
+          <button type="button" class="btn btn-outline-secondary btn-sm"
+                  onclick="limpiarFiltros()">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  {# ── Spinner ── #}
+  <div id="spinner" class="text-center py-3 htmx-indicator">
+    <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+    <span class="ms-2 text-muted small">Cargando datos...</span>
+  </div>
+
+  {# ── Resultados ── #}
+  <div id="resultado-reporte">
+    <div class="text-center py-5 text-muted">
+      <i class="bi bi-truck fs-1 d-block mb-2 opacity-25"></i>
+      <p class="small">Seleccioná las fechas y hacé clic en <strong>Generar reporte</strong></p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function limpiarFiltros() {
+    document.getElementById('filtros-form').reset();
+    document.getElementById('resultado-reporte').innerHTML = `
+      <div class="text-center py-5 text-muted">
+        <i class="bi bi-truck fs-1 d-block mb-2 opacity-25"></i>
+        <p class="small">Seleccioná las fechas y hacé clic en <strong>Generar reporte</strong></p>
+      </div>`;
+  }
+
+  function imprimirReporte() {
+    const fechaInicio = document.getElementById('fecha_inicio').value;
+    const fechaFin    = document.getElementById('fecha_fin').value;
+    const fmt = str => str ? str.split('-').reverse().join('/') : '—';
+
+    imprimirTabla({
+      titulo: 'Reporte: Delivery vs Retiro en local',
+      filtrosHTML: `Período: <strong>${fmt(fechaInicio)} — ${fmt(fechaFin)}</strong>`,
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    document.getElementById('filtros-form').dispatchEvent(new Event('submit'));
+  });
+</script>
+{% endblock %}

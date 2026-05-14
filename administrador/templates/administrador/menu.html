@@ -8,15 +8,20 @@
 
 <div class="card">
     <h3>
-        🔔 Alertas de Stock
+        🔔 Alertas de Insumos
         {% if stocks_criticos %}
             <span class="badge-alerta">{{ stocks_criticos.count }}</span>
+            <div class="d-flex justify-content-end mb-3 no-print">
+            <button onclick="window.print()" class="btn btn-outline-dark btn-sm btn-imprimir">
+                <i class="bi bi-printer me-1"></i> Imprimir reporte
+            </button>
+            </div>
         {% endif %}
     </h3>
 
     {% if stocks_criticos %}
         <p class="alerta-subtitulo">
-            ⚠️ Stock bajo en <strong>{{ stocks_criticos.count }}</strong> item{{ stocks_criticos.count|pluralize }}:
+            ⚠️ Stock bajo en <strong>{{ stocks_criticos.count }}</strong> insumo{{ stocks_criticos.count|pluralize }}:
         </p>
         <ul class="lista-alertas">
             {% for stock in stocks_criticos %}
@@ -24,21 +29,48 @@
                 <span class="alerta-nombre">{{ stock.item.nombre }}: </span>
                 <span class="alerta-detalle">
                     Mínimo {{ stock.cant_minima }} {{ stock.unidad_display }}
-                    | <strong> Restante  {{ stock.cant_disponible }}</strong> {{ stock.unidad_display }}
+                    | <strong> Restante {{ stock.cant_disponible }}</strong> {{ stock.unidad_display }}
                 </span>
-                <!-- 
-                {% if stock.proveedor_principal %}
-                <span class="alerta-proveedor">
-                    🏭 {{ stock.proveedor_principal.nombre_empresa }}
-                </span>
-                {% endif %}
-                -->
             </li>
             {% endfor %}
         </ul>
+
     {% else %}
-        <p class="alerta-ok">✅ Todos los productos tienen stock suficiente.</p>
+        <p class="alerta-ok">✅ Todos los insumos tienen stock suficiente.</p>
     {% endif %}
+</div>
+
+{# Sección exclusiva para impresión — invisible en pantalla #}
+<div id="seccion-impresion">
+    <div class="print-header">
+        <h2>Brother's Burger</h2>
+        <h3>Reporte de Insumos con Stock Bajo</h3>
+        <p>Total de insumos críticos: {{ stocks_criticos.count }}</p>
+        <hr>
+    </div>
+
+    <table class="print-tabla">
+        <thead>
+            <tr>
+                <th>Insumo</th>
+                <th>Stock Mínimo</th>
+                <th>Stock Restante</th>
+                <th>Estado</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for stock in stocks_criticos %}
+            <tr>
+                <td>{{ stock.item.nombre }}</td>
+                <td>{{ stock.cant_minima }} {{ stock.unidad_display }}</td>
+                <td>{{ stock.cant_disponible }} {{ stock.unidad_display }}</td>
+                <td>{% if stock.cant_disponible == 0 %}SIN STOCK{% else %}BAJO{% endif %}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <p class="print-footer">Generado por el sistema de Brother's Burger</p>
 </div>
 
 {% endblock %}

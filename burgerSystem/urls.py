@@ -27,6 +27,7 @@ urlpatterns = [
     path('pedidos/', include(('pedidos.urls', 'pedidos'), namespace='pedidos')),
     path('usuarios/', include('usuarios.urls')),
     path('caja/', include('caja.urls')),
+    path('reportes/', include('reportes.urls', namespace='reportes')),
 ]
 
 if settings.DEBUG:

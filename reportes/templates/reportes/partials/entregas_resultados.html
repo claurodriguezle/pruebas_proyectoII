@@ -1,0 +1,117 @@
+{% load humanize %}
+
+{% if sin_resultados %}
+  <div class="text-center py-5 text-muted">
+    <i class="bi bi-inbox fs-1 d-block mb-2 opacity-25"></i>
+    <p class="small">No hay pedidos facturados para el período seleccionado.</p>
+  </div>
+
+{% else %}
+
+{# ── Métricas resumen ── #}
+<div class="row g-3 mb-4">
+
+  <div class="col-6 col-md-3">
+    <div class="card border-0 bg-light h-100">
+      <div class="card-body py-3">
+        <div class="text-muted small mb-1">Total pedidos</div>
+        <div class="fs-4 fw-semibold">{{ total_pedidos|intcomma }}</div>
+        <div class="text-muted" style="font-size:.75rem;">en el período</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-3">
+    <div class="card border-0 bg-light h-100">
+      <div class="card-body py-3">
+        <div class="text-muted small mb-1">Total facturado</div>
+        <div class="fs-4 fw-semibold">{{ total_facturado|intcomma }}</div>
+        <div class="text-muted" style="font-size:.75rem;">Gs.</div>
+      </div>
+    </div>
+  </div>
+
+  {% for d in datos %}
+  <div class="col-6 col-md-3">
+    <div class="card border-0 h-100"
+         style="background-color:{% if d.codigo == 'DE' %}#e3f2fd{% else %}#e8f5e9{% endif %};">
+      <div class="card-body py-3">
+        <div class="small mb-1"
+             style="color:{% if d.codigo == 'DE' %}#1565c0{% else %}#2e7d32{% endif %};">
+          <i class="bi {% if d.codigo == 'DE' %}bi-truck{% else %}bi-shop{% endif %} me-1"></i>
+          {{ d.etiqueta }}
+        </div>
+        <div class="fs-4 fw-semibold">{{ d.total_pedidos|intcomma }}</div>
+        <div style="font-size:.75rem; color:#666;">
+          {{ d.porcentaje }}% del total
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+
+</div>
+
+{# ── Botón imprimir ── #}
+<div class="d-flex justify-content-end mb-3">
+  <button onclick="imprimirReporte()" class="btn btn-outline-dark btn-sm">
+    <i class="bi bi-printer me-1"></i> Imprimir reporte
+  </button>
+</div>
+
+{# ── Tabla ── #}
+<div class="card border-0 shadow-sm">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+      <h6 class="fw-semibold mb-0">Detalle por tipo de entrega</h6>
+      <small class="text-muted">
+        {{ fecha_inicio|date:"d/m/Y" }} — {{ fecha_fin|date:"d/m/Y" }}
+      </small>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover table-sm align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Tipo de entrega</th>
+            <th class="text-end">Pedidos</th>
+            <th class="text-end">Total facturado (Gs.)</th>
+            <th style="width:180px;">Participación</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for d in datos %}
+          <tr>
+            <td class="fw-medium">
+              <i class="bi {% if d.codigo == 'DE' %}bi-truck{% else %}bi-shop{% endif %} me-2"
+                 style="color:{% if d.codigo == 'DE' %}#1565c0{% else %}#2e7d32{% endif %};"></i>
+              {{ d.etiqueta }}
+            </td>
+            <td class="text-end fw-semibold">{{ d.total_pedidos|intcomma }}</td>
+            <td class="text-end">{{ d.total_facturado|intcomma }}</td>
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                <div class="flex-grow-1" style="height:6px;background:#e9ecef;border-radius:3px;overflow:hidden;">
+                  <div style="height:100%;border-radius:3px;width:{{ d.porcentaje }}%;
+                    background:{% if d.codigo == 'DE' %}#1565c0{% else %}#2e7d32{% endif %};">
+                  </div>
+                </div>
+                <span style="font-size:.72rem;color:#6c757d;min-width:36px;">{{ d.porcentaje }}%</span>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot class="table-light">
+          <tr>
+            <td class="fw-semibold small">Total</td>
+            <td class="text-end fw-semibold">{{ total_pedidos|intcomma }}</td>
+            <td class="text-end fw-semibold">{{ total_facturado|intcomma }}</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endif %}
