@@ -36,9 +36,10 @@ class Pedido(models.Model):
 
     ESTADO_ENTREGA_CHOICES = [
         ('PE', 'Pendiente'), #aun no fue entregado al cliente
-        ('EN','Entregado'),  #el empleado lo entrego al cliente
-        ('FA', 'Facturado'), #se genero y envio la factura
+        ('EN','Entregado'),  #el empleado lo entrego al cliente(pendiente facturar)
+        ('FA', 'Facturado'), #se genero y envio la factura desde CAJA
         ('CA','Cancelado'),   #cancelado(cualquier momento)
+        ('PP','Pendiente de pago'), #entregado pero esperando facturacion en caja
     ]
 
     #Origen del pedido
@@ -115,13 +116,15 @@ class Pedido(models.Model):
     def siguiente_estado_entrega(self):
         """
         Devuelve el código del siguiente estado de entrega, o None.
+        Ahora va: PE -> EN -> PP(pendiente de pago)
+        La facturacion se hace desde Caja para pasar de PP a FA. 
         Solo permite avanzar si cocina ya marcó Listo.
         """
         if self.estado_entrega == 'PE' and self.estado_cocina == 'LI':
             return 'EN'
         if self.estado_entrega == 'EN':
-            return 'FA'
-        return None
+            return 'PP' #Pendiente pago(entregado pero sin facturar)
+        return None #PP y FA no avanzan automaticamente, solo desde Caja
     #Validaciones
 
     def clean(self):
