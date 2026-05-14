@@ -14,6 +14,8 @@ import json
 from datetime import date
 from pedidos.views import descontar_stock
 
+#Importamos los decoradores de grupos
+from usuarios.decorators import grupo_requerido
 
 
 # ─────────────────────────────────────────────
@@ -49,6 +51,7 @@ def _get_cliente_ocasional():
 # ─────────────────────────────────────────────
 
 @login_required
+@grupo_requerido('Empleado', 'Administrador')
 def apertura_caja(request):
     if get_caja_abierta(request.user):
         messages.info(request, 'Ya tenés una caja abierta.')
@@ -71,54 +74,12 @@ def apertura_caja(request):
 
     return render(request, 'caja/apertura_caja.html')
 
-
-# ─────────────────────────────────────────────
-#  PUNTO DE VENTA — vista principal con mesas
-# ─────────────────────────────────────────────
-
-@login_required
-def punto_de_venta(request):
-    caja = get_caja_abierta(request.user)
-    if not caja:
-        messages.warning(request, 'Debés abrir la caja antes de operar.')
-        return redirect('caja:apertura_caja')
-
-    mesas_qs = Mesa.objects.filter(activa=True).prefetch_related(
-        'cuentas__pedidos__detalle__producto'
-    )
-
-    # Armar lista de items para el template
-    mesas = []
-    for mesa in mesas_qs:
-        cuenta = mesa.cuentas.filter(estado='abierta', caja=caja).first()
-        num_pedidos = cuenta.cantidad_pedidos if cuenta else 0
-        total = cuenta.total if cuenta else 0
-        mesas.append({
-            'mesa': mesa,
-            'cuenta': cuenta,
-            'num_pedidos': num_pedidos,
-            'total': total,
-        })
-
-    productos = (
-        Producto.objects
-        .filter(estado='A')
-        .select_related('categoria')
-        .order_by('categoria', 'nombre')
-    )
-
-    return render(request, 'caja/punto_de_venta.html', {
-        'caja': caja,
-        'mesas': mesas,
-        'productos': productos,
-    })
-
-
 # ─────────────────────────────────────────────
 #  ABRIR CUENTA EN UNA MESA  (AJAX)
 # ─────────────────────────────────────────────
 
 @login_required
+@grupo_requerido('Empleado', 'Administrador')
 @require_POST
 def abrir_cuenta(request):
     caja = get_caja_abierta(request.user)
@@ -159,6 +120,7 @@ def abrir_cuenta(request):
 # ─────────────────────────────────────────────
 
 @login_required
+@grupo_requerido('Empleado', 'Administrador')
 @require_POST
 def agregar_pedido_cuenta(request):
     caja = get_caja_abierta(request.user)
@@ -227,6 +189,7 @@ def agregar_pedido_cuenta(request):
 # ─────────────────────────────────────────────
 
 @login_required
+@grupo_requerido('Empleado', 'Administrador')
 @require_GET
 def ver_cuenta(request, cuenta_id):
     caja = get_caja_abierta(request.user)
@@ -269,6 +232,7 @@ def ver_cuenta(request, cuenta_id):
 # ─────────────────────────────────────────────
 
 @login_required
+@grupo_requerido('Empleado', 'Administrador')
 @require_POST
 def cobrar_cuenta(request):
     caja = get_caja_abierta(request.user)
@@ -354,6 +318,7 @@ def cobrar_cuenta(request):
 # ─────────────────────────────────────────────
 
 @login_required
+@grupo_requerido('Empleado', 'Administrador')
 @require_GET
 def api_mesa_estado(request, mesa_id):
     caja = get_caja_abierta(request.user)
@@ -377,6 +342,7 @@ def api_mesa_estado(request, mesa_id):
 # ─────────────────────────────────────────────
 
 @login_required
+@grupo_requerido('Empleado', 'Administrador')
 @require_GET
 def api_todas_mesas_estado(request):
     """Usado por el botón Sincronizar del POS."""
@@ -402,47 +368,16 @@ def api_todas_mesas_estado(request):
 
 
 # ─────────────────────────────────────────────
-#  REGISTRAR EGRESO  (AJAX)
-# ─────────────────────────────────────────────
-
-@login_required
-@require_POST
-def registrar_egreso(request):
-    caja = get_caja_abierta(request.user)
-    if not caja:
-        return JsonResponse({'success': False, 'error': 'No hay caja abierta'})
-
-    try:
-        data = json.loads(request.body)
-        descripcion = data.get('descripcion', '').strip()
-        monto = int(data.get('monto', 0))
-    except (json.JSONDecodeError, ValueError):
-        return JsonResponse({'success': False, 'error': 'Datos inválidos'})
-
-    if not descripcion:
-        return JsonResponse({'success': False, 'error': 'La descripción es obligatoria'})
-    if monto <= 0:
-        return JsonResponse({'success': False, 'error': 'El monto debe ser mayor a 0'})
-
-    MovimientoCaja.objects.create(
-        caja=caja, tipo='egreso', descripcion=descripcion,
-        monto=monto, usuario=request.user,
-    )
-    caja.recalcular_monto_esperado()
-
-    return JsonResponse({'success': True, 'mensaje': f'Egreso de ₲{monto:,} registrado.'})
-
-
-# ─────────────────────────────────────────────
 #  CIERRE DE CAJA
 # ─────────────────────────────────────────────
 
 @login_required
+@grupo_requerido('Empleado', 'Administrador')
 def cierre_caja(request):
     caja = get_caja_abierta(request.user)
     if not caja:
         messages.error(request, 'No hay caja abierta para cerrar.')
-        return redirect('caja:reporte_caja')
+        return redirect('caja:apertura_caja')
 
     mesas_abiertas = caja.cuentas.filter(estado='abierta').count()
     caja.recalcular_monto_esperado()
@@ -460,12 +395,16 @@ def cierre_caja(request):
             monto_final_real = 0
 
         with transaction.atomic():
-            caja.monto_final_real = monto_final_real
-            caja.observaciones_cierre = request.POST.get('observaciones', '')
-            caja.fecha_cierre = timezone.now()
-            caja.usuario_cierre = request.user
-            caja.estado = 'cerrada'
-            caja.save()
+            Caja.objects.filter(pk=caja.pk).update(
+                monto_final_real=monto_final_real,
+                observaciones_cierre=request.POST.get('observaciones', ''),
+                fecha_cierre=timezone.now(),
+                usuario_cierre=request.user,
+                estado='cerrada',
+            )
+
+        # Recargar desde BD para tener el objeto actualizado
+        caja.refresh_from_db()
 
         return render(request, 'caja/resumen_cierre.html', {
             'caja': caja,
@@ -482,30 +421,50 @@ def cierre_caja(request):
     })
 
 
-# ─────────────────────────────────────────────
-#  REPORTE DE CAJAS
-# ─────────────────────────────────────────────
+#Ventas recientes en el POS
 
 @login_required
-def reporte_caja(request):
-    fecha_inicio = request.GET.get('fecha_inicio')
-    fecha_fin    = request.GET.get('fecha_fin')
+@grupo_requerido('Empleado', 'Administrador')
+def punto_de_venta(request):
+    caja = get_caja_abierta(request.user)
+    if not caja:
+        messages.warning(request, 'Debés abrir la caja antes de operar.')
+        return redirect('caja:apertura_caja')
 
-    cajas = Caja.objects.prefetch_related('ventas', 'movimientos')
-    if fecha_inicio:
-        cajas = cajas.filter(fecha_apertura__date__gte=fecha_inicio)
-    if fecha_fin:
-        cajas = cajas.filter(fecha_apertura__date__lte=fecha_fin)
+    mesas_qs = Mesa.objects.filter(activa=True).prefetch_related(
+        'cuentas__pedidos__detalle__producto'
+    )
 
-    cajas_data = []
-    for c in cajas:
-        v = c.total_ventas
-        e = c.total_egresos
-        cajas_data.append({'obj': c, 'ventas': v, 'egresos': e, 'ganancia': v - e})
+    mesas = []
+    for mesa in mesas_qs:
+        cuenta = mesa.cuentas.filter(estado='abierta', caja=caja).first()
+        num_pedidos = cuenta.cantidad_pedidos if cuenta else 0
+        total = cuenta.total if cuenta else 0
+        mesas.append({
+            'mesa': mesa,
+            'cuenta': cuenta,
+            'num_pedidos': num_pedidos,
+            'total': total,
+        })
 
-    return render(request, 'caja/reporte_caja.html', {
-        'cajas': cajas_data,
-        'total_ventas':    sum(c['ventas']   for c in cajas_data),
-        'total_egresos':   sum(c['egresos']  for c in cajas_data),
-        'total_ganancias': sum(c['ganancia'] for c in cajas_data),
+    productos = (
+        Producto.objects
+        .filter(estado='A')
+        .select_related('categoria')
+        .order_by('categoria', 'nombre')
+    )
+
+    # ── NUEVO: últimas ventas de la caja actual ──
+    ventas_recientes = (
+        caja.ventas
+        .filter(anulado=False)
+        .select_related('pedido', 'cuenta__mesa')
+        .order_by('-fecha')[:15]
+    )
+
+    return render(request, 'caja/punto_de_venta.html', {
+        'caja': caja,
+        'mesas': mesas,
+        'productos': productos,
+        'ventas_recientes': ventas_recientes,  # ← nuevo
     })

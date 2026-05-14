@@ -5,7 +5,7 @@ from .models import Adicional, Pedido, DetallePedido, DetalleAdicionalPedido, In
 from .forms import RetiroForm
 from django.db import transaction
 from django.contrib import messages
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.template.loader import render_to_string
 from datetime import datetime
 from .services import validar_delivery
@@ -13,9 +13,14 @@ from usuarios.forms import DireccionForm
 from django.views.decorators.http import require_http_methods
 from django.utils import timezone
 from django.db.models import Q
+from caja.models import Caja
+
+#Importamos el decorador para controlar el acceso a las vistas por grupo
+from usuarios.decorators import grupo_requerido
 
 def index(request):
     return render(request, 'pedidos/index.html')
+
 
 def menu_productos(request):
     categorias = CategoriaProducto.objects.all()
@@ -25,11 +30,16 @@ def menu_productos(request):
     # Total de item para el contador del carrito
     cantidad_carrito = sum(item['cantidad'] for item in carrito)
 
+    # Verifica si existe una caja abierta
+    caja_abierta = Caja.objects.filter(estado='abierta').exists()
+
     return render(request, 'pedidos/menu_productos.html', {
         'categorias': categorias,
         'adicionales': adicionales,
-        'cantidad_carrito': cantidad_carrito
+        'cantidad_carrito': cantidad_carrito,
+        'caja_abierta': caja_abierta,
         })
+
 
 def lista_productos(request):
     categoria_nombre = request.GET.get('categoria')
@@ -45,6 +55,7 @@ def lista_productos(request):
         productos_con_stock.append(producto)
 
     return render(request, 'pedidos/partials/productos_lista.html', {'productos': productos_con_stock})
+
 
 def buscar_productos(request):
     query = request.GET.get('q', '').strip()
@@ -70,6 +81,7 @@ def buscar_productos(request):
         'productos': productos_con_stock,
     })
 
+
 def modal_personalizacion(request, producto_id):
     producto = get_object_or_404(Producto, pk=producto_id)
 
@@ -92,6 +104,11 @@ def contador_carrito(request):
     return HttpResponse(html)
 
 def agregar_al_carrito(request):
+    #Validamos que haya una caja abierta
+    caja_abierta = Caja.objects.filter(estado='abierta').exists()
+    #print(f"DEBUG agregar_al_carrito — caja_abierta: {caja_abierta}") 
+    if not caja_abierta:
+        return JsonResponse({'error': 'La caja está cerrada. No se pueden agregar productos al carrito.'}, status=400)
     if request.method == 'POST':
         producto_id = request.POST.get('producto_id')
         adicionales_ids = request.POST.getlist('adicional[]', [])
@@ -212,6 +229,7 @@ def decrementar_cantidad(request, item_index):
 
     return render(request, 'pedidos/partials/contenido_carrito.html', context)
 
+
 def eliminar_item(request, item_index):
     carrito = request.session.get('carrito', [])
     if 0 <= item_index < len(carrito):
@@ -230,11 +248,24 @@ def eliminar_item(request, item_index):
 
 @login_required
 def tipo_entrega(request):
+    #Verificamos que la caja este abierta
+    caja_abierta = Caja.objects.filter(estado='abierta').exists()
+    #print(f"DEBUG agregar_al_carrito — caja_abierta: {caja_abierta}") 
+    if not caja_abierta:
+        messages.error(request, "Lo sentimos, no se puede avanzar porque no hay una caja abierta. Por favor, intentá nuevamente más tarde.")
+        return redirect('pedidos:menu_productos')
+    
+    
     form = RetiroForm()
     return render(request, 'pedidos/tipo_entrega.html', {'form': form})
 
 @login_required
 def seleccionar_direccion_delivery(request):
+    # Verificamos que la caja esté abierta
+    caja_abierta = Caja.objects.filter(estado='abierta').exists()
+    if not caja_abierta:
+        messages.error(request, "Lo sentimos, no se puede avanzar porque no hay una caja abierta. Por favor, intentá nuevamente más tarde.")
+        return redirect('pedidos:menu_productos')
     try:
         cliente = request.user.cliente
     except Cliente.DoesNotExist:
@@ -267,7 +298,7 @@ def seleccionar_direccion_delivery(request):
         request.session['distancia_km'] = resultado['distancia_km']
         return redirect('pedidos:resumen_pedido')
 
-    # 
+    # Opcion 2: Cliente ingresa una nueva direccion
     if request.method == 'POST' and 'nueva_direccion' in request.POST:
         form = DireccionForm(request.POST)
         if form.is_valid():
@@ -294,9 +325,15 @@ def seleccionar_direccion_delivery(request):
         'direcciones': direcciones,
         'form': form,
     })
-    
+
 @login_required
 def retiro_local(request):
+    # Verificamos que la caja esté abierta
+    caja_abierta = Caja.objects.filter(estado='abierta').exists()
+    if not caja_abierta:
+        messages.error(request, "Lo sentimos, no se puede avanzar porque no hay una caja abierta. Por favor, intentá nuevamente más tarde.")
+        return redirect('pedidos:menu_productos')
+
     if request.method == 'POST':
         form = RetiroForm(request.POST)
         if form.is_valid():
@@ -312,6 +349,11 @@ def retiro_local(request):
 
 @login_required
 def resumen_pedido(request):
+    # Verificamos que la caja esté abierta
+    caja_abierta = Caja.objects.filter(estado='abierta').exists()
+    if not caja_abierta:
+        messages.error(request, "Lo sentimos, no se puede avanzar porque no hay una caja abierta. Por favor, intentá nuevamente más tarde.")
+        return redirect('pedidos:menu_productos')
     carrito = request.session.get('carrito', [])
     #Tomamos los datos del cliente para su facturacion
     cliente = request.user.cliente
@@ -362,6 +404,12 @@ def resumen_pedido(request):
 
 @login_required
 def confirmar_pedido(request):
+    #Verificamos que la caja este abierta
+    caja_abierta = Caja.objects.filter(estado='abierta').exists()
+    if not caja_abierta:
+        messages.error(request, "Lo sentimos, no se puede confirmar el pedido porque no hay una caja abierta. Por favor, intentá nuevamente más tarde.")
+        return redirect('pedidos:menu_productos')
+    
     carrito = request.session.get('carrito', [])
     if not carrito:
         messages.error(request, "Tu carrito está vacío")
@@ -659,7 +707,9 @@ def _get_pedidos_empleado(filtros):
         .order_by('fecha')
     )
 
-    if filtros['estado_activo'] != 'all':
+    if filtros['estado_activo'] == 'listo':
+        qs = qs.filter(estado_cocina = 'LI', estado_entrega='PE')
+    elif filtros['estado_activo'] != 'all':
         qs = qs.filter(estado_entrega=filtros['estado_activo'])
 
     if filtros['tipo_entrega']:
@@ -693,7 +743,8 @@ def _chips(filtros):
 
 # Vistas
 
-#@login_required
+@login_required
+@grupo_requerido('Administrador', 'Empleado')
 def panel_empleado(request):
     filtros = _get_filtros(request)
     pedidos = _get_pedidos_empleado(filtros)
@@ -702,7 +753,8 @@ def panel_empleado(request):
     })
 
 
-#@login_required
+@login_required
+@grupo_requerido('Administrador', 'Empleado')
 def empleado_tabla(request):
     filtros = _get_filtros(request)
     pedidos = _get_pedidos_empleado(filtros)
@@ -711,7 +763,8 @@ def empleado_tabla(request):
     })
 
 
-#@login_required
+@login_required
+@grupo_requerido('Administrador', 'Empleado')
 def empleado_modal(request, pedido_id):
     pedido = get_object_or_404(
         Pedido.objects
@@ -723,10 +776,19 @@ def empleado_modal(request, pedido_id):
     return render(request, 'orden_pedidos/partials/empleado_modal.html', {'pedido': pedido})
 
 
+@login_required
+@grupo_requerido('Administrador', 'Empleado')
 @require_http_methods(['POST'])
 def empleado_avanzar(request, pedido_id):
     from facturacion.services import generar_factura_desde_pedido
     from caja.models import Caja, VentaCaja  # ← agregá este import
+
+    # 🔒 VALIDACIÓN CRÍTICA: Verificar que la caja esté abierta
+    caja_abierta = Caja.objects.filter(estado='abierta').first()
+    if not caja_abierta:
+        messages.error(request, "⚠️ No hay una caja abierta. No se puede entregar el pedido ni registrar la venta.")
+        # Redirigir de vuelta al panel de empleado
+        return redirect('pedidos:panel_empleado')
 
     pedido    = get_object_or_404(Pedido, pk=pedido_id)
     siguiente = pedido.siguiente_estado_entrega
@@ -751,7 +813,7 @@ def empleado_avanzar(request, pedido_id):
             # solo pedidos online (sin cuenta de mesa)
             try:
                 caja = Caja.objects.filter(estado='abierta').first()
-                if caja and not hasattr(pedido, 'venta_caja'):
+                if caja and not hasattr(pedido, 'venta_caja') and pedido.fecha >= caja.fecha_apertura:
                     total_con_delivery = pedido.total + (pedido.costo_delivery or 0)
                     VentaCaja.objects.create(
                         caja=caja,
@@ -772,9 +834,15 @@ def empleado_avanzar(request, pedido_id):
         **filtros, **_chips(filtros), 'pedidos': pedidos,
     })
 
-#@login_required
+@login_required
+@grupo_requerido('Administrador', 'Empleado')
 @require_http_methods(['POST'])
 def empleado_actualizar(request, pedido_id):
+     # 🔒 VALIDACIÓN: Verificar que la caja esté abierta
+    caja_abierta = Caja.objects.filter(estado='abierta').first()
+    if not caja_abierta:
+        messages.error(request, "⚠️ No hay una caja abierta. No se puede modificar el pedido.")
+        return redirect('pedidos:panel_empleado')
     pedido        = get_object_or_404(Pedido, pk=pedido_id)
     nuevo_entrega = request.POST.get('estado_entrega', pedido.estado_entrega)
 
@@ -834,7 +902,8 @@ def _get_pedidos_cocina():
 
 # Vistas cocina
 
-#@login_required
+@login_required
+@grupo_requerido('Administrador', 'Cocina')
 def cocina_view(request):
     """Pantalla principal del panel de cocina."""
     pedidos = _get_pedidos_cocina()
@@ -846,7 +915,8 @@ def cocina_view(request):
     })
 
 
-#@login_required
+@login_required
+@grupo_requerido('Administrador', 'Cocina')
 def cocina_cards(request):
     """Fragmento de tarjetas — htmx lo recarga cada 5s."""
     pedidos = _get_pedidos_cocina()
@@ -858,8 +928,9 @@ def cocina_cards(request):
     })
 
 
-#@login_required
+@login_required
 @require_http_methods(['POST'])
+@grupo_requerido('Administrador', 'Cocina')
 def cocina_avanzar(request, pedido_id):
     """Avanza el estado de cocina al siguiente: PE→EP→LI."""
     from .models import Pedido
@@ -890,5 +961,6 @@ def mi_factura(request, pedido_id):
         pedido=pedido
     )
     return render(request, 'pedidos/mi_factura.html', {'factura': factura, 'pedido': pedido})
+
 
 

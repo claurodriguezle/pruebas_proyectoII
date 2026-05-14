@@ -37,7 +37,7 @@
             <hr>
             <ul class="nav flex-column">
                 <li class="nav-item"><a href="{% url 'administrador:menu' %}" class="nav-link">Inicio</a></li>
-                <!-- <li class="nav-item"><a href="{% url 'usuarios:index' %}" class="nav-link">Usuarios</a></li> -->
+                <li class="nav-item"><a href="{% url 'usuarios:index' %}" class="nav-link">Usuarios</a></li>
                 <!-- <li class="nav-item"><a href="#" class="nav-link">Ventas</a></li> -->
                 <li class="nav-item"><a href="{% url 'caja:apertura_caja' %}" class="nav-link">Caja</a></li>
                 <li class="nav-item dropdown">
@@ -54,7 +54,7 @@
                     <ul class="dropdown-menu">
                         <li><a class="dropdown-item" href="{% url 'pedidos:index' %}">Clientes</a></li>
                         <li><a class="dropdown-item" href="{% url 'pedidos:ordenes_view' %}">Orden de Pedidos</a></li>
-                        <li><a class="dropdown-item" href="{%url 'pedidos:cocina_view'%}">Cocina</a></li>
+                        <li><a class="dropdown-item" href="{%url 'pedidos:cocina'%}">Cocina</a></li>
                     </ul>
                 </li>
 

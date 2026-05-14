@@ -20,10 +20,4 @@ urlpatterns = [
     # APIs de estado de mesas — AJAX
     path('api/mesa/<int:mesa_id>/estado/', views.api_mesa_estado,        name='api_mesa_estado'),
     path('api/todas-mesas/estado/',        views.api_todas_mesas_estado, name='api_todas_mesas_estado'),
-
-    # Egresos — AJAX
-    path('egreso/',             views.registrar_egreso,         name='registrar_egreso'),
-
-    # Reportes
-    path('reporte/',            views.reporte_caja,             name='reporte_caja'),
 ]

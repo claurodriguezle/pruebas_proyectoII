@@ -35,10 +35,10 @@
                                             <td>Ventas del Día:</td>
                                             <td class="text-end text-success">+ Gs{{ totales.ventas|floatformat:2 }}</td>
                                         </tr>
-                                        <tr>
+                                        <!--<tr>
                                             <td>Egresos del Día:</td>
                                             <td class="text-end text-danger">- Gs{{ totales.egresos|floatformat:2 }}</td>
-                                        </tr>
+                                        </tr>-->
                                         <tr class="table-primary">
                                             <td><strong>Monto Esperado:</strong></td>
                                             <td class="text-end"><strong>${{ caja.monto_final_esperado|floatformat:2 }}</strong></td>
@@ -76,9 +76,6 @@
                     </div>
                     
                     <div class="d-grid gap-2">
-                        <a href="{% url 'caja:reporte_caja' %}" class="btn btn-primary btn-lg">
-                            <i class="fas fa-chart-bar"></i> Ver Reportes
-                        </a>
                         <a href="{% url 'caja:apertura_caja' %}" class="btn btn-success btn-lg">
                             <i class="fas fa-play"></i> Abrir Nueva Caja
                         </a>

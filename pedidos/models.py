@@ -41,6 +41,13 @@ class Pedido(models.Model):
         ('CA','Cancelado'),   #cancelado(cualquier momento)
     ]
 
+    #Origen del pedido
+    ORIGEN_CHOICES = [
+        ('local', 'Local'),
+        ('online', 'Online'),
+    ]
+    origen = models.CharField(max_length=10, choices=ORIGEN_CHOICES, default='local')
+
     cliente = models.ForeignKey('administrador.Cliente', on_delete=models.CASCADE, related_name='pedidos')
     # CODIGO PEDIENTE PARA REVISION
     fecha = models.DateTimeField(auto_now_add=True)

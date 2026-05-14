@@ -23,7 +23,11 @@ from .forms import ItemForm
 
 from django.core.paginator import Paginator
 
+#Importaciones para permisos
+from usuarios.decorators import grupo_requerido
 
+# PERSONAS
+@grupo_requerido('Administrador')
 def menu(request):
     # Alertas de stock
     stocks_criticos = Stock.objects.filter(
@@ -36,6 +40,7 @@ def menu(request):
     })
 
 # PERSONAS
+@grupo_requerido('Administrador')
 def listar_personas(request):
     grupo = request.GET.get('grupo')  # Captura el grupo seleccionado del select
     search = request.GET.get('search')  # Captura el texto de búsqueda ingresado
@@ -71,6 +76,7 @@ def listar_personas(request):
     # Si es una carga normal, renderizamos toda la página
     return render(request, 'administrador/listar.html', {'personas': personas})
 
+@grupo_requerido('Administrador')
 def crear_persona(request):
     if request.method == 'POST':
         persona_form = PersonaForm(request.POST)
@@ -131,7 +137,7 @@ def crear_persona(request):
         'proveedor_form': proveedor_form,
     })
 
-
+@grupo_requerido('Administrador')
 def editar_persona(request, id):
     persona = get_object_or_404(Persona, id=id)
 
@@ -207,6 +213,7 @@ def editar_persona(request, id):
     })
 
 
+@grupo_requerido('Administrador')
 def eliminar_persona(request, id):
     persona = get_object_or_404(Persona, id=id)
     persona.delete()
@@ -214,20 +221,25 @@ def eliminar_persona(request, id):
 
 # PRODUCTOS
 # PAGINA PRINCIPAL
+
+@grupo_requerido('Administrador')
 def productos(request):
     return render(request, 'productos/productos.html')
 
 # RENDERIZA LA LISTA DE PRODUCTOS ACTIVOS (estado='A') ORDENADOS POR CÓDIGO
+@grupo_requerido('Administrador')
 def listar_partial(request):
     productos = Producto.objects.filter(estado='A').order_by('codigo')
     return render(request, 'productos/listar_partial.html', {'productos': productos})
 
 # RENDERIZA EL FORMULARIO VACÍO PARA CREAR UN NUEVO PRODUCTO
+@grupo_requerido('Administrador')
 def crear_partial(request):
     form = ProductoForm()
     return render(request, 'productos/form_partial.html', {'form': form})
 
 # GUARDA UN NUEVO PRODUCTO DESDE EL FORMULARIO (HTMX POST)
+@grupo_requerido('Administrador')
 def crear_htmx(request):
     form = ProductoForm(request.POST, request.FILES)
     if form.is_valid():
@@ -237,6 +249,7 @@ def crear_htmx(request):
     return render(request, 'productos/form_partial.html', {'form': form})
 
 # RENDERIZA EL FORMULARIO CON LOS DATOS DE UN PRODUCTO EXISTENTE PARA EDITAR
+@grupo_requerido('Administrador')
 def editar_partial(request, pk):
     producto = get_object_or_404(Producto, pk=pk)
     form = ProductoForm(instance=producto)
@@ -246,6 +259,7 @@ def editar_partial(request, pk):
     })
 
 # ACTUALIZA UN PRODUCTO EXISTENTE CON LOS DATOS DEL FORMULARIO (HTMX POST)
+@grupo_requerido('Administrador')
 def editar_htmx(request, pk):
     producto = get_object_or_404(Producto, pk=pk)
     form = ProductoForm(request.POST, request.FILES, instance=producto)
@@ -258,6 +272,7 @@ def editar_htmx(request, pk):
     })
 
 # ELIMINA UN PRODUCTO Y DEVUELVE UNA RESPUESTA VACÍA PARA QUE HTMX ELIMINE LA FILA EN LA VISTA
+@grupo_requerido('Administrador')
 def eliminar_htmx(request, pk):
     producto = get_object_or_404(Producto, pk=pk)
     producto.delete()
@@ -265,6 +280,7 @@ def eliminar_htmx(request, pk):
 
 #COMPRAS
 
+@grupo_requerido('Administrador')
 def lista_compras(request):
     query = request.GET.get('q', '').strip()
     
@@ -283,6 +299,7 @@ def lista_compras(request):
         'query': query
     })
 
+@grupo_requerido('Administrador')
 def crear_compra(request):
     UNIDAD_CHOICES = Item.UNIDAD_CHOICES
     TIPO_CHOICES = Item.TIPO_CHOICES
@@ -390,6 +407,7 @@ def crear_compra(request):
     }
     return render(request, 'compras/crear_compra.html', context)
 
+@grupo_requerido('Administrador')
 def detalle_compra(request, compra_id):
     compra = get_object_or_404(Compra, pk=compra_id)
     detalles = compra.detalles.all().select_related('item')
@@ -401,6 +419,7 @@ def detalle_compra(request, compra_id):
     return render(request,'compras/detalles_compra.html',context)
 
 #Editar Compra
+@grupo_requerido('Administrador')
 @transaction.atomic
 def editar_compra(request, compra_id):
     compra = get_object_or_404(Compra, pk=compra_id)
@@ -521,12 +540,14 @@ def editar_compra(request, compra_id):
     
     return render(request, 'compras/crear_compra.html', context)
 #ELIMINAR COMPRA
+@grupo_requerido('Administrador')
 def eliminar_compra(request, compra_id):
     compra = get_object_or_404(Compra, id=compra_id)
     compra.delete()
     messages.success(request, f'Compra #{compra.numero_factura} eliminada correctamente')
     return redirect('administrador:lista_compras')
 #ANULAR COMPRA
+@grupo_requerido('Administrador')
 def anular_compra(request, compra_id):
     compra = get_object_or_404(Compra, pk=compra_id)
     
@@ -570,6 +591,8 @@ def anular_compra(request, compra_id):
 #STOCK
 
 #LISTA DE STOCK
+
+@grupo_requerido('Administrador')
 def lista_stock(request):
     query = request.GET.get('q', '').strip()
     
@@ -589,6 +612,7 @@ def lista_stock(request):
 
 #CREAR ITEM Y STOCK
 @transaction.atomic
+@grupo_requerido('Administrador')
 def crear_stock(request):
     if request.method == 'POST':
         try:
@@ -696,6 +720,7 @@ def actualizar_stock_desde_compra(compra):
             stock.fecha_ultima_entrada = detalle_compra.compra.fecha
             stock.save()
 
+@grupo_requerido('Administrador')
 def ajustar_stock(request, stock_id):
     stock = get_object_or_404(Stock, id=stock_id)
     
@@ -714,6 +739,7 @@ def ajustar_stock(request, stock_id):
 
 #Editar Stock 
 @transaction.atomic
+@grupo_requerido('Administrador')
 def editar_stock(request, stock_id):
     stock = get_object_or_404(Stock, id=stock_id)
 
@@ -761,6 +787,7 @@ def editar_stock(request, stock_id):
 
 #Eliminar Stock
 @transaction.atomic
+@grupo_requerido('Administrador')
 def eliminar_stock(request, stock_id):
     stock = get_object_or_404(Stock, id=stock_id)
     item_nombre = stock.item.nombre
@@ -771,9 +798,12 @@ def eliminar_stock(request, stock_id):
 
 # CATEGORIAS
 # PAGINA PRINCIPAL
+
+@grupo_requerido('Administrador')
 def categorias(request):
     return render(request, 'categorias/categorias.html')
 
+@grupo_requerido('Administrador')
 def crear_categorias(request):
     if request.method == 'POST':
         form = CategoriaProductoForm(request.POST)
@@ -790,10 +820,12 @@ def crear_categorias(request):
         form = CategoriaProductoForm()
         return render(request, 'categorias/partials/categoria_form_partial.html', {'form': form})
 
+@grupo_requerido('Administrador')
 def listar_categorias_partial(request):
     categorias = CategoriaProducto.objects.all().order_by('nombre_categ')
     return render(request, 'categorias/partials/lista.html', {'categorias': categorias})
 
+@grupo_requerido('Administrador')
 def eliminar_categoria(request, pk):
     if request.method == 'DELETE':
         try:
@@ -804,6 +836,7 @@ def eliminar_categoria(request, pk):
         except CategoriaProducto.DoesNotExist:
             raise Http404('Categoría no encontrada')
 
+@grupo_requerido('Administrador')
 def editar_categoria(request, pk):
     categoria = get_object_or_404(CategoriaProducto, pk=pk)
 
@@ -825,6 +858,7 @@ def editar_categoria(request, pk):
 # INGREDIENTES DE PRODUCTOS
 
 # OBTENEMOS LA PAGINA PRINCIPAL
+@grupo_requerido('Administrador')
 def ingredientes(request, id):
     producto = get_object_or_404(Producto, id=id)
     ingredientes = IngredienteProducto.objects.filter(producto=producto)
@@ -839,6 +873,7 @@ def ingredientes(request, id):
     })
 
 # TRAE LOS ITEM DE LA BD Y LOS MUESTRA EN EL SELECT DEL FORM
+@grupo_requerido('Administrador')
 def cargar_items(request):
     items = Item.objects.all()
 
@@ -847,6 +882,7 @@ def cargar_items(request):
     })
 
 # GUARDA LOS INGREDIENTES
+@grupo_requerido('Administrador')
 def agregar_ingredientes(request, producto_id):
     if request.method == 'POST':
 
@@ -874,6 +910,7 @@ def agregar_ingredientes(request, producto_id):
     return HttpResponseBadRequest("Petición inválida")
 
 # LISTAR TODOS LOS INGREDIENTES
+@grupo_requerido('Administrador')
 def listar_ingredientes(request, producto_id):
     producto = get_object_or_404(Producto, id=producto_id)
     ingredientes = IngredienteProducto.objects.filter(producto=producto)
@@ -882,6 +919,7 @@ def listar_ingredientes(request, producto_id):
     })
 
 # ELIMINAR INGREDIENTE
+@grupo_requerido('Administrador')
 def eliminar_ingrediente(request, pk):
     if request.method == 'DELETE':
         try:
@@ -896,11 +934,13 @@ def eliminar_ingrediente(request, pk):
             raise Http404('El ingrediente no se encontró.')
         
 # VISTA PARA MOSTRAR EL FORM DE EDICION(INLINE)
+@grupo_requerido('Administrador')
 def editar_ingrediente_form(request, pk):
     ingrediente = get_object_or_404(IngredienteProducto, pk=pk)
     return render(request, 'ingredientes/partials/editar_fila_ingrediente.html', {'ingrediente': ingrediente})
 
 # ACTUALIZA CANTIDAD DE INGREDIENTE
+@grupo_requerido('Administrador')
 @require_POST
 def actualizar_ingrediente(request, pk):
     ingrediente = get_object_or_404(IngredienteProducto, pk=pk)
@@ -916,12 +956,14 @@ def actualizar_ingrediente(request, pk):
 
     return render(request, 'ingredientes/partials/fila_ingrediente.html', {'ingrediente': ingrediente})
 
-# Renderiza la fila al cancelar la edicion inline 
+# Renderiza la fila al cancelar la edicion inline
+@grupo_requerido('Administrador') 
 def ver_fila_ingrediente(request, pk):
     ingrediente = get_object_or_404(IngredienteProducto, pk=pk)
     return render(request, 'ingredientes/partials/fila_ingrediente.html', {'ingrediente': ingrediente})
 
 #ITEMS
+@grupo_requerido('Administrador')
 def lista_items(request):
     query = request.GET.get('q', '').strip()
 
@@ -937,6 +979,8 @@ def lista_items(request):
         'query': query
     })
 
+
+@grupo_requerido('Administrador')
 def editar_item(request, pk):
     item = get_object_or_404(Item, pk=pk)
     
@@ -967,6 +1011,7 @@ def editar_item(request, pk):
         'proveedores': Proveedor.objects.all()
     })
 
+@grupo_requerido('Administrador')
 def eliminar_item(request, pk):
     item = get_object_or_404(Item, pk=pk)
     
