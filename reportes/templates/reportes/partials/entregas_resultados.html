@@ -11,26 +11,6 @@
 {# ── Métricas resumen ── #}
 <div class="row g-3 mb-4">
 
-  <div class="col-6 col-md-3">
-    <div class="card border-0 bg-light h-100">
-      <div class="card-body py-3">
-        <div class="text-muted small mb-1">Total pedidos</div>
-        <div class="fs-4 fw-semibold">{{ total_pedidos|intcomma }}</div>
-        <div class="text-muted" style="font-size:.75rem;">en el período</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="col-6 col-md-3">
-    <div class="card border-0 bg-light h-100">
-      <div class="card-body py-3">
-        <div class="text-muted small mb-1">Total facturado</div>
-        <div class="fs-4 fw-semibold">{{ total_facturado|intcomma }}</div>
-        <div class="text-muted" style="font-size:.75rem;">Gs.</div>
-      </div>
-    </div>
-  </div>
-
   {% for d in datos %}
   <div class="col-6 col-md-3">
     <div class="card border-0 h-100"
@@ -41,7 +21,7 @@
           <i class="bi {% if d.codigo == 'DE' %}bi-truck{% else %}bi-shop{% endif %} me-1"></i>
           {{ d.etiqueta }}
         </div>
-        <div class="fs-4 fw-semibold">{{ d.total_pedidos|intcomma }}</div>
+        <div class="fs-4 fw-semibold">{{ d.total_pedidos|punto_miles }}</div>
         <div style="font-size:.75rem; color:#666;">
           {{ d.porcentaje }}% del total
         </div>
@@ -49,6 +29,26 @@
     </div>
   </div>
   {% endfor %}
+
+    <div class="col-6 col-md-3">
+    <div class="card border-0 bg-light h-100">
+      <div class="card-body py-3">
+        <div class="text-muted small mb-1">Total pedidos</div>
+        <div class="fs-4 fw-semibold">{{ total_pedidos|punto_miles}}</div>
+        <div class="text-muted" style="font-size:.75rem;">en el período</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-3">
+    <div class="card border-0 bg-light h-100">
+      <div class="card-body py-3">
+        <div class="text-muted small mb-1">Total facturado</div>
+        <div class="fs-4 fw-semibold">{{ total_facturado|punto_miles }}</div>
+        <div class="text-muted" style="font-size:.75rem;">Gs.</div>
+      </div>
+    </div>
+  </div>
 
 </div>
 
@@ -86,8 +86,8 @@
                  style="color:{% if d.codigo == 'DE' %}#1565c0{% else %}#2e7d32{% endif %};"></i>
               {{ d.etiqueta }}
             </td>
-            <td class="text-end fw-semibold">{{ d.total_pedidos|intcomma }}</td>
-            <td class="text-end">{{ d.total_facturado|intcomma }}</td>
+            <td class="text-end fw-semibold">{{ d.total_pedidos|punto_miles }}</td>
+            <td class="text-end">{{ d.total_facturado|punto_miles }}</td>
             <td>
               <div class="d-flex align-items-center gap-2">
                 <div class="flex-grow-1" style="height:6px;background:#e9ecef;border-radius:3px;overflow:hidden;">
@@ -95,7 +95,7 @@
                     background:{% if d.codigo == 'DE' %}#1565c0{% else %}#2e7d32{% endif %};">
                   </div>
                 </div>
-                <span style="font-size:.72rem;color:#6c757d;min-width:36px;">{{ d.porcentaje }}%</span>
+                  <span style="font-size:.72rem;color:#6c757d;min-width:36px;">{{ d.porcentaje }}%</span>
               </div>
             </td>
           </tr>
@@ -104,8 +104,8 @@
         <tfoot class="table-light">
           <tr>
             <td class="fw-semibold small">Total</td>
-            <td class="text-end fw-semibold">{{ total_pedidos|intcomma }}</td>
-            <td class="text-end fw-semibold">{{ total_facturado|intcomma }}</td>
+            <td class="text-end fw-semibold">{{ total_pedidos|punto_miles }}</td>
+            <td class="text-end fw-semibold">{{ total_facturado|punto_miles }}</td>
             <td></td>
           </tr>
         </tfoot>

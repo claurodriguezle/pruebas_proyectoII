@@ -1,7 +1,7 @@
 {% extends 'administrador/layout.html' %}
 {% load humanize %}
 
-{% block title %}Top 10 Clientes{% endblock %}
+{% block title %}Reporte de Ventas{% endblock %}
 
 {% block body %}
 
@@ -9,7 +9,7 @@
 <div id="seccion-impresion">
   <div class="print-header">
     <h2>Burger System</h2>
-    <h3>Reporte: Top 10 clientes con mayores compras</h3>
+    <h3>Reporte de Ventas</h3>
     <p id="print-filtros"></p>
     <p>Impreso el: <span id="print-fecha-impresion"></span></p>
     <hr>
@@ -22,15 +22,15 @@
 
   {# ── Encabezado ── #}
   <div class="mb-4">
-    <h4 class="mb-0 fw-semibold">Reporte de los clientes con mayores compras</h4>
-    <!-- <small class="text-muted">Ordenado por monto total facturado</small> -->
+    <h4 class="mb-0 fw-semibold">Reporte de Ventas</h4>
+    <small class="text-muted">Total facturado por rango de fechas</small>
   </div>
 
   {# ── Filtros ── #}
   <div class="card border-0 shadow-sm mb-4">
     <div class="card-body">
       <form id="filtros-form"
-            hx-get="{% url 'reportes:top_clientes_datos' %}"
+            hx-get="{% url 'reportes:ventas_datos' %}"
             hx-target="#resultado-reporte"
             hx-trigger="submit"
             hx-indicator="#spinner"
@@ -58,13 +58,6 @@
           </button>
         </div>
 
-        <div class="col-6 d-none" id="error-fechas">
-          <div class="alert alert-danger py-2 mb-0 small">
-              <i class="bi bi-exclamation-triangle me-1"></i>
-              <span id="error-fechas-msg"></span>
-          </div>
-        </div>
-
       </form>
     </div>
   </div>
@@ -78,7 +71,7 @@
   {# ── Resultados ── #}
   <div id="resultado-reporte">
     <div class="text-center py-5 text-muted">
-      <i class="bi bi-people fs-1 d-block mb-2 opacity-25"></i>
+      <i class="bi bi-receipt fs-1 d-block mb-2 opacity-25"></i>
       <p class="small">Seleccioná las fechas y hacé clic en <strong>Generar reporte</strong></p>
     </div>
   </div>
@@ -90,7 +83,7 @@
     document.getElementById('filtros-form').reset();
     document.getElementById('resultado-reporte').innerHTML = `
       <div class="text-center py-5 text-muted">
-        <i class="bi bi-people fs-1 d-block mb-2 opacity-25"></i>
+        <i class="bi bi-receipt fs-1 d-block mb-2 opacity-25"></i>
         <p class="small">Seleccioná las fechas y hacé clic en <strong>Generar reporte</strong></p>
       </div>`;
   }
@@ -101,7 +94,7 @@
     const fmt = str => str ? str.split('-').reverse().join('/') : '—';
 
     imprimirTabla({
-      titulo: 'Reporte: Top 10 clientes con mayores compras',
+      titulo: 'Reporte de Ventas',
       filtrosHTML: `Período: <strong>${fmt(fechaInicio)} — ${fmt(fechaFin)}</strong>`,
     });
   }

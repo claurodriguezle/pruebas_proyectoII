@@ -22,8 +22,8 @@
 
   {# ── Encabezado ── #}
   <div class="mb-4">
-    <h4 class="mb-0 fw-semibold">Delivery vs Retiro en local</h4>
-    <small class="text-muted">Basado en pedidos facturados</small>
+    <h4 class="mb-0 fw-semibold">Reporte - Delivery vs Retiro en local</h4>
+    <!-- <small class="text-muted">Basado en pedidos facturados</small> -->
   </div>
 
   {# ── Filtros ── #}
@@ -56,6 +56,13 @@
                   onclick="limpiarFiltros()">
             <i class="bi bi-x-lg"></i>
           </button>
+        </div>
+
+        <div class="col-6 d-none" id="error-fechas">
+          <div class="alert alert-danger py-2 mb-0 small">
+              <i class="bi bi-exclamation-triangle me-1"></i>
+              <span id="error-fechas-msg"></span>
+          </div>
         </div>
 
       </form>

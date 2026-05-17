@@ -100,11 +100,11 @@ WSGI_APPLICATION = 'burgerSystem.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME':'Db_Burger_App',
-        'USER':'crodriguez',
-        'PASSWORD':'12345',
+        'NAME':'db_burgerapp',
+        'USER':'ruizj',
+        'PASSWORD':'admin',
         'HOST':'localhost',
-        'PORT': '5433',
+        'PORT': '5432',
     }
 }
 
@@ -131,7 +131,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'es'
 
 TIME_ZONE = 'America/Asuncion'
 

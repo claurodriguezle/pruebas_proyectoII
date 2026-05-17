@@ -4,6 +4,9 @@ from django.db.models import Sum
 from django.utils.dateparse import parse_date
 from datetime import date
 from decimal import Decimal
+from django.db.models import Count, Sum
+from django.db.models.functions import TruncDate
+from django.db.models.functions import ExtractWeekDay
 
 from facturacion.models import DetalleFactura, Factura
 from administrador.models import CategoriaProducto
@@ -253,3 +256,78 @@ def reporte_top_clientes_datos(request):
         'sin_resultados': len(datos) == 0,
     }
     return render(request, 'reportes/partials/top_clientes_resultados.html', context)
+
+# REPORTES DE VENTAS
+def reporte_ventas(request):
+    #Vista principal del reporte de ventas
+    hoy = date.today()
+    context = {
+        'fecha_inicio_default': hoy.replace(day=1).strftime('%Y-%m-%d'),
+        'fecha_fin_default': hoy.strftime('%Y-%m-%d'),
+    }
+    return render(request, 'reportes/ventas.html', context)
+ 
+ 
+def reporte_ventas_datos(request):
+    fecha_inicio_str = request.GET.get('fecha_inicio')
+    fecha_fin_str    = request.GET.get('fecha_fin')
+ 
+    hoy = date.today()
+    fecha_inicio = parse_date(fecha_inicio_str) if fecha_inicio_str else hoy.replace(day=1)
+    fecha_fin    = parse_date(fecha_fin_str)    if fecha_fin_str    else hoy
+ 
+    if not fecha_inicio or not fecha_fin:
+        fecha_inicio = hoy.replace(day=1)
+        fecha_fin    = hoy
+ 
+    if fecha_inicio > fecha_fin:
+        fecha_inicio, fecha_fin = fecha_fin, fecha_inicio
+ 
+    qs = list(
+        Factura.objects
+        .filter(fecha_emision__range=(fecha_inicio, fecha_fin))
+        .annotate(dia_semana=ExtractWeekDay('fecha_emision'))
+        .exclude(dia_semana=2)
+        .values('dia_semana')
+        .annotate(
+            cantidad_facturas=Count('cod_fact'),
+            total_facturado=Sum('monto_total'),
+        )
+        .order_by('dia_semana')
+    )
+ 
+    NOMBRES_DIA = {
+        1: 'Domingo', 2: 'Lunes', 3: 'Martes',
+        4: 'Miércoles', 5: 'Jueves', 6: 'Viernes', 7: 'Sábado',
+    }
+ 
+    total_facturado = sum(d['total_facturado'] or 0 for d in qs)
+    total_facturas  = sum(d['cantidad_facturas'] for d in qs)
+    promedio_diario = round(total_facturado / len(qs)) if qs else 0
+ 
+    max_facturado = max((d['total_facturado'] or 0 for d in qs), default=0)
+    min_facturado = min((d['total_facturado'] or 0 for d in qs), default=0)
+ 
+    desglose = []
+    for d in qs:
+        facturado = d['total_facturado'] or 0
+        desglose.append({
+            'nombre_dia': NOMBRES_DIA.get(d['dia_semana'], '—'),
+            'cantidad_facturas': d['cantidad_facturas'],
+            'total_facturado': facturado,
+            'porcentaje': round((facturado / total_facturado) * 100, 1) if total_facturado > 0 else 0,
+            'es_mejor': facturado == max_facturado and facturado > 0,
+            'es_flojo': facturado == min_facturado and len(qs) > 1,
+        })
+ 
+    context = {
+        'desglose': desglose,
+        'total_facturado': total_facturado,
+        'total_facturas': total_facturas,
+        'promedio_diario': promedio_diario,
+        'nombre_dias': desglose,
+        'fecha_inicio': fecha_inicio,
+        'fecha_fin': fecha_fin,
+        'sin_resultados': len(desglose) == 0,
+    }
+    return render(request, 'reportes/partials/ventas_resultados.html', context)

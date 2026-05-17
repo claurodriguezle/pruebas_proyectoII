@@ -9,30 +9,12 @@
 
 {% block body %}
 
-{# ── Sección exclusiva para impresión (menu.css la hace visible al imprimir) ── #}
-<div id="seccion-impresion">
-  <div class="print-header">
-    <h2>Burger System</h2>
-    <h3>Reporte: Volumen de ventas por producto</h3>
-    <p id="print-filtros"></p>
-    <p>Impreso el: <span id="print-fecha-impresion"></span></p>
-    <hr>
-  </div>
-
-  {# La tabla se copia aquí dinámicamente al hacer clic en imprimir #}
-  <div id="print-contenido-tabla"></div>
-
-  <div class="print-footer">
-    Sistema de gestión — Burger System
-  </div>
-</div>
-
 <div class="container-fluid py-4 px-4" style="max-width: 100%; overflow-x: hidden;">
 
   {# ── Encabezado pantalla ── #}
   <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
     <div>
-      <h4 class="mb-0 fw-semibold">Volumen de ventas por producto</h4>
+      <h4 class="mb-0 fw-semibold">Reporte - Volumen de ventas por producto</h4>
       <!--<small class="text-muted">Basado en detalles de facturación emitida</small>-->
     </div>
   </div>
@@ -86,6 +68,13 @@
                   onclick="limpiarFiltros()">
             <i class="bi bi-x-lg"></i>
           </button>
+        </div>
+
+        <div class="col-6 d-none" id="error-fechas">
+          <div class="alert alert-danger py-2 mb-0 small">
+              <i class="bi bi-exclamation-triangle me-1"></i>
+              <span id="error-fechas-msg"></span>
+          </div>
         </div>
 
       </form>

@@ -14,4 +14,8 @@ urlpatterns = [
     # REPORTE TOP 10 CLIENTES
     path('clientes/top/', views.reporte_top_clientes, name='top_clientes'),
     path('clientes/top/datos/', views.reporte_top_clientes_datos, name='top_clientes_datos'),
+
+    # REPORTE DE VENTAS
+    path('ventas/', views.reporte_ventas, name='ventas'),
+    path('ventas/datos/', views.reporte_ventas_datos, name='ventas_datos'),
 ]

@@ -7,6 +7,19 @@ function imprimirTabla({ titulo, filtrosHTML, selectorTabla = '#resultado-report
         ahora.toLocaleTimeString('es-PY', { hour: '2-digit', minute: '2-digit' });
 
     const ventana = window.open('', '_blank', 'width=900,height=700');
+
+    // Clonar la tabla para no modificar la original
+let tablaHTML = tablaOrigen.outerHTML;
+
+    // Eliminar las celdas con barras y dejar solo el porcentaje
+const parser = new DOMParser();
+const doc = parser.parseFromString(tablaHTML, 'text/html');
+doc.querySelectorAll('.d-flex.align-items-center.gap-2').forEach(celda => {
+    const porcentaje = celda.querySelector('span') ? celda.querySelector('span').textContent : '';
+    celda.parentElement.innerHTML = porcentaje;
+});
+tablaHTML = doc.querySelector('table').outerHTML;
+
     ventana.document.write(`
         <!DOCTYPE html>
         <html lang="es">
@@ -27,12 +40,12 @@ function imprimirTabla({ titulo, filtrosHTML, selectorTabla = '#resultado-report
             </style>
         </head>
         <body>
-            <h2>Reportes - Burger System</h2>
+            <h2>Reportes - Brother's Burger System</h2>
             <h3>${titulo}</h3>
             <p>${filtrosHTML}</p>
             <p>Impreso el: ${fechaImpresion}</p>
             <hr>
-            ${tablaOrigen.outerHTML}
+            ${tablaHTML}
             <div class="footer">Sistema de gestión — Burger System</div>
         </body>
         </html>
@@ -41,3 +54,25 @@ function imprimirTabla({ titulo, filtrosHTML, selectorTabla = '#resultado-report
     ventana.focus();
     ventana.print();
 }
+
+document.getElementById('filtros-form').addEventListener('htmx:confirm', function(e) {
+    const fechaInicio = document.getElementById('fecha_inicio').value;
+    const fechaFin    = document.getElementById('fecha_fin').value;
+    const hoy         = new Date().toISOString().split('T')[0];
+
+    let error = '';
+
+    if (fechaInicio && fechaFin && fechaInicio > fechaFin) {
+        error = 'La fecha de inicio no puede ser mayor que la fecha de fin.';
+    } else if (fechaFin && fechaFin > hoy) {
+        error = 'La fecha de fin no puede ser mayor a la fecha de hoy.';
+    }
+
+    if (error) {
+        e.preventDefault();
+        document.getElementById('error-fechas-msg').textContent = error;
+        document.getElementById('error-fechas').classList.remove('d-none');
+    } else {
+        document.getElementById('error-fechas').classList.add('d-none');
+    }
+});

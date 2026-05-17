@@ -1,0 +1,98 @@
+{% load humanize %}
+
+{% if sin_resultados %}
+  <div class="text-center py-5 text-muted">
+    <i class="bi bi-inbox fs-1 d-block mb-2 opacity-25"></i>
+    <p class="small">No hay ventas registradas para el período seleccionado.</p>
+  </div>
+
+{% else %}
+
+{# ── Métricas resumen ── #}
+<div class="row g-3 mb-4">
+
+  <div class="col-6 col-md-4">
+    <div class="card border-0 bg-light h-100">
+      <div class="card-body py-3">
+        <div class="text-muted small mb-1">Total facturado</div>
+        <div class="fs-4 fw-semibold">{{ total_facturado|punto_miles }}</div>
+        <div class="text-muted" style="font-size:.75rem;">Gs. en el período</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-4">
+    <div class="card border-0 bg-light h-100">
+      <div class="card-body py-3">
+        <div class="text-muted small mb-1">Facturas emitidas</div>
+        <div class="fs-4 fw-semibold">{{ total_facturas|punto_miles }}</div>
+        <div class="text-muted" style="font-size:.75rem;">en el período</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-4">
+    <div class="card border-0 bg-light h-100">
+      <div class="card-body py-3">
+        <div class="text-muted small mb-1">Promedio diario</div>
+        <div class="fs-4 fw-semibold">{{ promedio_diario|punto_miles }}</div>
+        <div class="text-muted" style="font-size:.75rem;">Gs. por día</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+{# ── Botón imprimir ── #}
+<div class="d-flex justify-content-end mb-3">
+  <button onclick="imprimirReporte()" class="btn btn-outline-dark btn-sm">
+    <i class="bi bi-printer me-1"></i> Imprimir reporte
+  </button>
+</div>
+
+{# ── Tabla agrupada por día de semana ── #}
+<div class="card border-0 shadow-sm">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+      <div>
+        <h6 class="fw-semibold mb-0">Rendimiento por día de la semana</h6>
+        <small class="text-muted">Suma acumulada del rango seleccionado</small>
+      </div>
+      <small class="text-muted">
+        {{ fecha_inicio|date:"d/m/Y" }} — {{ fecha_fin|date:"d/m/Y" }}
+      </small>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover table-sm align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Día</th>
+            <th class="text-end">Facturas emitidas</th>
+            <th class="text-end">Total facturado (Gs.)</th>
+            <th class="text-end">Participación</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for d in desglose %}
+          <tr>
+            <td class="fw-medium">{{ d.nombre_dia }}</td>
+            <td class="text-end">{{ d.cantidad_facturas }}</td>
+            <td class="text-end fw-semibold">{{ d.total_facturado|punto_miles }}</td>
+            <td class="text-end" style="font-size:.85rem; color:#6c757d;">{{ d.porcentaje }}%</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot class="table-light">
+          <tr>
+            <td class="fw-semibold small">Total</td>
+            <td class="text-end fw-semibold">{{ total_facturas|punto_miles }}</td>
+            <td class="text-end fw-semibold">{{ total_facturado|punto_miles }}</td>
+            <td class="text-end fw-semibold">100%</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endif %}
