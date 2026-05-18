@@ -92,7 +92,7 @@
     <select name="estado_entrega" class="modal-select">
       <option value="PE" {% if pedido.estado_entrega == 'PE' %}selected{% endif %}>⏳ Pendiente</option>
       <option value="EN" {% if pedido.estado_entrega == 'EN' %}selected{% endif %}>📦 Entregado</option>
-      <option value="FA" {% if pedido.estado_entrega == 'FA' %}selected{% endif %}>📄 Facturado</option>
+      <option value="FA" {% if pedido.estado_entrega == 'PP' %}selected{% endif %}>💰 Pendiente Pago</option>
       <option value="CA" {% if pedido.estado_entrega == 'CA' %}selected{% endif %}>✕ Cancelado</option>
     </select>
   </div>

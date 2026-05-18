@@ -67,8 +67,9 @@
 
           <td>
             <span class="badge badge-entrega-{{ p.estado_entrega }}">
-              {% if p.estado_entrega == 'PE' %}⏳ Pendiente
+              {% if p.estado_entrega == 'PE' %}⏳ Pendiente en cocina
               {% elif p.estado_entrega == 'EN' %}📦 Entregado
+              {% elif p.estado_entrega == 'PP' %}💰 Pendiente Pago
               {% elif p.estado_entrega == 'FA' %}📄 Facturado
               {% elif p.estado_entrega == 'CA' %}✕ Cancelado
               {% endif %}
