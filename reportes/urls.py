@@ -18,4 +18,8 @@ urlpatterns = [
     # REPORTE DE VENTAS
     path('ventas/', views.reporte_ventas, name='ventas'),
     path('ventas/datos/', views.reporte_ventas_datos, name='ventas_datos'),
+
+    # REPORTES DE COSTOS
+    path('costos/', views.reporte_costos, name='costos'),
+    path('costos/datos/', views.reporte_costos_datos, name='costos_datos'),
 ]

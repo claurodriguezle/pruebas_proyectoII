@@ -1,0 +1,141 @@
+{% load humanize %}
+
+{% if sin_resultados %}
+  <div class="text-center py-5 text-muted">
+    <i class="bi bi-inbox fs-1 d-block mb-2 opacity-25"></i>
+    <p class="small">No hay ventas registradas en <strong>{{ nombre_mes }} {{ anio }}</strong>.</p>
+  </div>
+
+{% else %}
+
+{# ── Métricas resumen ── #}
+<div class="row g-3 mb-4">
+
+  <div class="col-6 col-md-3">
+    <div class="card border-0 bg-light h-100">
+      <div class="card-body py-3">
+        <div class="text-muted small mb-1">Costo total del período</div>
+        <div class="fs-4 fw-semibold">{{ costo_total_general|punto_miles }}</div>
+        <div class="text-muted" style="font-size:.75rem;">Gs. en producción</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-3">
+    <div class="card border-0 bg-light h-100">
+      <div class="card-body py-3">
+        <div class="text-muted small mb-1">Total vendido</div>
+        <div class="fs-4 fw-semibold">{{ total_vendido_general|punto_miles }}</div>
+        <div class="text-muted" style="font-size:.75rem;">Gs. facturados</div>
+      </div>
+    </div>
+  </div>
+  <!-- 
+  <div class="col-6 col-md-3">
+    <div class="card border-0 bg-light h-100">
+      <div class="card-body py-3">
+        <div class="text-muted small mb-1">Margen del período</div>
+        <div class="fs-4 fw-semibold">{{ margen_pct_general }}%</div>
+        <div class="text-muted" style="font-size:.75rem;">{{ margen_gs_general|punto_miles }} Gs.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-3">
+    <div class="card border-0 h-100 {% if criticos > 0 %}bg-danger bg-opacity-10{% else %}bg-light{% endif %}">
+      <div class="card-body py-3">
+        <div class="text-muted small mb-1">Margen crítico</div>
+        <div class="fs-4 fw-semibold {% if criticos > 0 %}text-danger{% endif %}">{{ criticos }}</div>
+        <div class="text-muted" style="font-size:.75rem;">
+          producto{% if criticos != 1 %}s{% endif %} con margen &lt; {{ margen_critico_umbral }}%
+        </div>
+      </div>
+    </div>
+  </div>
+  -->
+</div>
+
+{# ── Botón imprimir ── #}
+<div class="d-flex justify-content-end mb-3">
+  <button onclick="imprimirReporte()" class="btn btn-outline-dark btn-sm">
+    <i class="bi bi-printer me-1"></i> Imprimir reporte
+  </button>
+</div>
+
+{# ── Tabla principal ── #}
+<div class="card border-0 shadow-sm">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+      <div>
+        <h6 class="fw-semibold mb-0">Costo de producción</h6>
+        <small class="text-muted">CPP acumulado hasta {{ nombre_mes }} {{ anio }}</small>
+      </div>
+      <small class="text-muted">{{ filas|length }} producto{% if filas|length != 1 %}s{% endif %}</small>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-hover table-sm align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Producto</th>
+            <th>Categoría</th>
+            <th class="text-end">Cant. Vendida</th>
+            <th class="text-end">Costo Unit. (Gs.)</th>
+            <th class="text-end">Costo Total (Gs.)</th>
+            <th class="text-end">Total Vendido (Gs.)</th>
+            <th class="text-end">Margen (Gs.)</th>
+            <!-- <th class="text-end">Margen (%)</th> -->
+          </tr>
+        </thead>
+        <tbody>
+          {% for fila in filas %}
+          <!-- <tr {% if fila.margen_critico %}class="table-danger"{% endif %}> -->
+          <tr>
+            <td class="fw-medium">
+              {{ fila.nombre }}
+              <!-- 
+              {% if fila.margen_critico %}
+                <span class="badge bg-danger ms-1" style="font-size:.65rem;">Crítico</span>
+              {% endif %} <tr>
+              -->
+            </td>
+            <td class="text-muted small">{{ fila.categoria }}</td>
+            <td class="text-end">{{ fila.cant_vendida }}</td>
+            <td class="text-end">{{ fila.costo_unit|punto_miles }}</td>
+            <td class="text-end">{{ fila.costo_total|punto_miles }}</td>
+            <td class="text-end">{{ fila.total_vendido|punto_miles }}</td>
+            <td class="text-end fw-semibold {% if fila.margen_gs < 0 %}text-danger{% else %}text-success{% endif %}">
+              {{ fila.margen_gs|punto_miles }}
+            </td>
+            <!-- 
+            <td class="text-end">
+              <span class="badge
+                {% if fila.margen_pct < 30 %}bg-danger
+                {% elif fila.margen_pct < 50 %}bg-warning text-dark
+                {% else %}bg-success{% endif %}">
+                {{ fila.margen_pct }}%
+              </span>
+            </td>
+            -->
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot class="table-light">
+          <tr>
+            <td class="fw-semibold small" colspan="2">Total</td>
+            <td></td>
+            <td></td>
+            <td class="text-end fw-semibold">{{ costo_total_general|punto_miles }}</td>
+            <td class="text-end fw-semibold">{{ total_vendido_general|punto_miles }}</td>
+            <td class="text-end fw-semibold {% if margen_gs_general < 0 %}text-danger{% else %}text-success{% endif %}">
+              {{ margen_gs_general|punto_miles }}
+            </td>
+            <!-- <td class="text-end fw-semibold">{{ margen_pct_general }}%</td> -->
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endif %}
