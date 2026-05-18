@@ -513,3 +513,136 @@ def reporte_costos_datos(request):
         'nombre_mes': NOMBRES_MES.get(mes, ''),
     }
     return render(request, 'reportes/partials/costos_resultados.html', context)
+
+# REPORTE DE GANANCIAS
+
+def reporte_ganancias(request):
+    """Vista principal del reporte de ganancias mensuales."""
+    hoy = date.today()
+    context = {
+        'mes_default': hoy.month,
+        'anio_default': hoy.year,
+        'anios_disponibles': list(range(hoy.year, hoy.year - 5, -1)),
+        'meses': [
+            (1, 'Enero'), (2, 'Febrero'), (3, 'Marzo'), (4, 'Abril'),
+            (5, 'Mayo'), (6, 'Junio'), (7, 'Julio'), (8, 'Agosto'),
+            (9, 'Septiembre'), (10, 'Octubre'), (11, 'Noviembre'), (12, 'Diciembre'),
+        ],
+    }
+    return render(request, 'reportes/ganancias.html', context)
+ 
+ 
+def reporte_ganancias_datos(request):
+    """Partial HTMX con los datos del reporte de ganancias del período."""
+    hoy = date.today()
+ 
+    try:
+        mes = int(request.GET.get('mes', hoy.month))
+        anio = int(request.GET.get('anio', hoy.year))
+    except (ValueError, TypeError):
+        mes = hoy.month
+        anio = hoy.year
+ 
+    if mes < 1 or mes > 12:
+        mes = hoy.month
+    if anio < 2000 or anio > hoy.year:
+        anio = hoy.year
+ 
+    # Rango del mes seleccionado
+    ultimo_dia = calendar.monthrange(anio, mes)[1]
+    fecha_inicio = date(anio, mes, 1)
+    fecha_fin = date(anio, mes, ultimo_dia)
+ 
+    # CPP acumulado hasta el último día del mes
+    cpp_dict = calcular_cpp_por_item(hasta_fecha=fecha_fin)
+ 
+    # Detalles de factura del mes agrupados por producto
+    detalles = (
+        DetalleFactura.objects
+        .filter(factura__fecha_emision__range=(fecha_inicio, fecha_fin))
+        .values('producto')
+        .annotate(
+            cant_vendida=Sum('cantidad'),
+            total_vendido=Sum('total'),
+        )
+        .order_by('producto__categoria__nombre_categ', 'producto__nombre')
+    )
+ 
+    # Precargar todos los productos en una sola query
+    producto_ids = [d['producto'] for d in detalles]
+    productos_map = {
+        p.pk: p for p in Producto.objects.filter(pk__in=producto_ids)
+        .prefetch_related('ingredientes__item')
+        .select_related('categoria')
+    }
+ 
+    filas = []
+    for d in detalles:
+        producto = productos_map.get(d['producto'])
+        if not producto:
+            continue
+ 
+        cant_vendida = d['cant_vendida'] or 0
+        total_vendido = d['total_vendido'] or 0
+ 
+        costo_unit = calcular_costo_producto(producto, cpp_dict)
+        costo_total = int(costo_unit * cant_vendida)
+        ganancia_gs = total_vendido - costo_total
+ 
+        if total_vendido > 0:
+            margen_pct = float(
+                (Decimal(str(ganancia_gs)) / Decimal(str(total_vendido)) * 100)
+                .quantize(Decimal('0.1'), rounding=ROUND_HALF_UP)
+            )
+        else:
+            margen_pct = 0.0
+ 
+        filas.append({
+            'nombre': producto.nombre,
+            'cant_vendida': cant_vendida,
+            'precio_unitario': producto.precio,
+            'total_vendido': total_vendido,
+            'ganancia_gs': ganancia_gs,
+            'margen_pct': margen_pct,
+        })
+ 
+    sin_resultados = len(filas) == 0
+ 
+    if not sin_resultados:
+        total_vendido_general = sum(f['total_vendido'] for f in filas)
+        costo_total_general = sum(
+            int(calcular_costo_producto(productos_map[d['producto']], cpp_dict) * (d['cant_vendida'] or 0))
+            for d in detalles if d['producto'] in productos_map
+        )
+        ganancia_general = total_vendido_general - costo_total_general
+        margen_general = round(
+            (ganancia_general / total_vendido_general * 100), 1
+        ) if total_vendido_general > 0 else 0
+        mejor_producto = max(filas, key=lambda x: x['ganancia_gs'])
+    else:
+        total_vendido_general = 0
+        costo_total_general = 0
+        ganancia_general = 0
+        margen_general = 0
+        mejor_producto = None
+ 
+    NOMBRES_MES = {
+        1: 'Enero', 2: 'Febrero', 3: 'Marzo', 4: 'Abril',
+        5: 'Mayo', 6: 'Junio', 7: 'Julio', 8: 'Agosto',
+        9: 'Septiembre', 10: 'Octubre', 11: 'Noviembre', 12: 'Diciembre',
+    }
+ 
+    context = {
+        'filas': filas,
+        'sin_resultados': sin_resultados,
+        'total_vendido_general': total_vendido_general,
+        'costo_total_general': costo_total_general,
+        'ganancia_general': ganancia_general,
+        'margen_general': margen_general,
+        'mejor_producto': mejor_producto,
+        'mes': mes,
+        'anio': anio,
+        'nombre_mes': NOMBRES_MES.get(mes, ''),
+    }
+    return render(request, 'reportes/partials/ganancias_resultados.html', context)
+ 

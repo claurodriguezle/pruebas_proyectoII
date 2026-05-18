@@ -22,4 +22,8 @@ urlpatterns = [
     # REPORTES DE COSTOS
     path('costos/', views.reporte_costos, name='costos'),
     path('costos/datos/', views.reporte_costos_datos, name='costos_datos'),
+
+    # REPORTES DE GANANCIAS
+    path('ganancias/', views.reporte_ganancias, name='ganancias'),
+    path('ganancias/datos/', views.reporte_ganancias_datos, name='ganancias_datos'),
 ]

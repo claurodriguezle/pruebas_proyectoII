@@ -1,0 +1,118 @@
+{% extends 'administrador/layout.html' %}
+{% load humanize %}
+
+{% block title %}Reporte de Ganancias{% endblock %}
+
+{% block body %}
+
+{# ── Sección de impresión ── #}
+<div id="seccion-impresion">
+  <div class="print-header">
+    <h2>Burger System</h2>
+    <h3>Reporte de Ganancias</h3>
+    <p id="print-filtros"></p>
+    <p>Impreso el: <span id="print-fecha-impresion"></span></p>
+    <hr>
+  </div>
+  <div id="print-contenido-tabla"></div>
+  <div class="print-footer">Sistema de gestión — Burger System</div>
+</div>
+
+<div class="container-fluid py-4 px-4" style="max-width:100%; overflow-x:hidden;">
+
+  {# ── Encabezado ── #}
+  <div class="mb-4">
+    <h4 class="mb-0 fw-semibold">Reporte de Ganancias</h4>
+    <small class="text-muted">Ganancia bruta por producto según ventas del período</small>
+  </div>
+
+  {# ── Filtros ── #}
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+      <form id="filtros-form"
+            hx-get="{% url 'reportes:ganancias_datos' %}"
+            hx-target="#resultado-reporte"
+            hx-trigger="submit"
+            hx-indicator="#spinner"
+            class="row g-3 align-items-end">
+
+        <div class="col-12 col-md-4">
+          <label for="mes" class="form-label fw-medium small">Mes</label>
+          <select id="mes" name="mes" class="form-select form-select-sm">
+            {% for num, nombre in meses %}
+              <option value="{{ num }}" {% if num == mes_default %}selected{% endif %}>
+                {{ nombre }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-12 col-md-4">
+          <label for="anio" class="form-label fw-medium small">Año</label>
+          <select id="anio" name="anio" class="form-select form-select-sm">
+            {% for anio in anios_disponibles %}
+              <option value="{{ anio }}" {% if anio == anio_default %}selected{% endif %}>
+                {{ anio }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-12 col-md-4 d-flex gap-2">
+          <button type="submit" class="btn btn-primary btn-sm flex-grow-1">
+            <i class="bi bi-bar-chart-line me-1"></i> Generar reporte
+          </button>
+          <button type="button" class="btn btn-outline-secondary btn-sm"
+                  onclick="limpiarFiltros()">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  {# ── Spinner ── #}
+  <div id="spinner" class="text-center py-3 htmx-indicator">
+    <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+    <span class="ms-2 text-muted small">Cargando datos...</span>
+  </div>
+
+  {# ── Resultados ── #}
+  <div id="resultado-reporte">
+    <div class="text-center py-5 text-muted">
+      <i class="bi bi-graph-up-arrow fs-1 d-block mb-2 opacity-25"></i>
+      <p class="small">Seleccioná el mes y el año y hacé clic en <strong>Generar reporte</strong></p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function limpiarFiltros() {
+    document.getElementById('filtros-form').reset();
+    document.getElementById('resultado-reporte').innerHTML = `
+      <div class="text-center py-5 text-muted">
+        <i class="bi bi-graph-up-arrow fs-1 d-block mb-2 opacity-25"></i>
+        <p class="small">Seleccioná el mes y el año y hacé clic en <strong>Generar reporte</strong></p>
+      </div>`;
+  }
+
+  function imprimirReporte() {
+    const mes = document.getElementById('mes');
+    const anio = document.getElementById('anio');
+    const nombreMes = mes.options[mes.selectedIndex].text;
+    const valorAnio = anio.value;
+
+    imprimirTabla({
+      titulo: 'Reporte de Ganancias',
+      filtrosHTML: `Período: <strong>${nombreMes} ${valorAnio}</strong>`,
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    document.getElementById('filtros-form').dispatchEvent(new Event('submit'));
+  });
+</script>
+
+{% endblock %}
