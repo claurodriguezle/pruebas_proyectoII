@@ -2,7 +2,6 @@
 facturacion/services.py
 ───────────────────────
 Lógica de negocio para generar facturas desde pedidos.
-Importá esta función desde pedidos/views.py al marcar Entregado.
 """
 
 from django.utils import timezone
@@ -13,7 +12,6 @@ from .models import Factura, DetalleFactura, Timbrado
 def generar_numero_factura(timbrado):
     """
     Genera el próximo número de factura en formato 001-001-XXXXXXX.
-    Busca la última factura del timbrado activo y suma 1.
     """
     ultima = (
         Factura.objects
@@ -23,7 +21,6 @@ def generar_numero_factura(timbrado):
     )
 
     if ultima:
-        # Extraemos el número secuencial de "001-001-0000001"
         try:
             secuencial = int(ultima.nro_fact.split('-')[-1]) + 1
         except (ValueError, IndexError):
@@ -34,19 +31,49 @@ def generar_numero_factura(timbrado):
     return f"001-001-{str(secuencial).zfill(7)}"
 
 
+def obtener_o_crear_producto_delivery(costo_delivery):
+    """
+    Obtiene o crea el producto de delivery.
+    """
+    from administrador.models import Producto, CategoriaProducto
+    
+    # Buscar producto existente
+    producto = Producto.objects.filter(codigo='DELIVERY-001').first()
+    
+    if producto:
+        # Actualizar precio por si cambió
+        if producto.precio != costo_delivery:
+            producto.precio = costo_delivery
+            producto.save(update_fields=['precio'])
+        return producto
+    
+    # Obtener o crear categoría Servicios
+    categoria_servicios, _ = CategoriaProducto.objects.get_or_create(
+        nombre_categ='Servicios',
+        defaults={'descripcion': 'Servicios adicionales (delivery, etc.)'}
+    )
+    
+    # Crear producto - SIN campo 'tipo' porque no existe
+    producto = Producto.objects.create(
+        codigo='DELIVERY-001',
+        nombre='Costo de Delivery',
+        precio=costo_delivery,
+        categoria=categoria_servicios,
+        estado='I',
+        personalizable=False,  # El delivery no se puede personalizar
+    )
+    return producto
+
+
 def generar_factura_desde_pedido(pedido):
     """
     Genera una Factura y sus DetalleFactura a partir de un Pedido.
-    Retorna la factura creada, o None si no hay timbrado activo.
-
-    Uso:
-        from facturacion.services import generar_factura_desde_pedido
-        factura = generar_factura_desde_pedido(pedido)
+    Incluye el costo de delivery como un item separado.
     """
     # ── Verificar timbrado activo ────────────────────────────────────────────
     timbrado = Timbrado.objects.filter(activo=True, eliminado=False).first()
     if not timbrado:
-        return None  # Sin timbrado activo no se puede facturar
+        return None
 
     # ── Datos del cliente ────────────────────────────────────────────────────
     persona = pedido.cliente.persona
@@ -54,7 +81,7 @@ def generar_factura_desde_pedido(pedido):
     direccion = (
         f"{persona.barrio.nombre}, {persona.ciudad.nombre}"
         if persona.barrio and persona.ciudad
-        else ""
+        else pedido.direccion_snapshot or ""
     )
 
     # ── Crear la factura ─────────────────────────────────────────────────────
@@ -62,7 +89,7 @@ def generar_factura_desde_pedido(pedido):
 
     factura = Factura.objects.create(
         nro_fact         = nro_fact,
-        pedido = pedido,
+        pedido           = pedido,
         cliente          = pedido.cliente,
         timbrado         = timbrado,
         nombre_cliente   = f"{persona.nombre} {persona.apellido}",
@@ -74,7 +101,7 @@ def generar_factura_desde_pedido(pedido):
         fecha_emision    = timezone.now().date(),
     )
 
-    # ── Crear los detalles ───────────────────────────────────────────────────
+    # ── Crear los detalles de productos ──────────────────────────────────────
     for detalle in pedido.detalle.select_related('producto').all():
         precio_unit = detalle.precio_unitario
         cantidad    = detalle.cantidad
@@ -89,6 +116,20 @@ def generar_factura_desde_pedido(pedido):
             precio_unitario  = precio_unit,
             descuento        = 0,
             total            = total_item,
+        )
+
+    # ── 🔥 NUEVO: Agregar costo de delivery como item separado ───────────────
+    if pedido.costo_delivery and pedido.costo_delivery > 0:
+        producto_delivery = obtener_o_crear_producto_delivery(pedido.costo_delivery)
+        
+        DetalleFactura.objects.create(
+            factura          = factura,
+            producto         = producto_delivery,
+            descripcion      = "Servicio de Delivery",
+            codigo_producto  = producto_delivery.codigo,
+            cantidad         = 1,
+            precio_unitario  = pedido.costo_delivery,
+            total            = pedido.costo_delivery,
         )
 
     # ── Calcular totales con IVA ─────────────────────────────────────────────
