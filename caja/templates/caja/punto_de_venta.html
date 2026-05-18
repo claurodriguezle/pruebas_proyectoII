@@ -30,6 +30,19 @@
   </div>
 
   <div class="row g-3">
+  <div class="row mb-3">
+    <div class="col-12">
+        <div class="card border-warning">
+            <div class="card-header bg-warning text-dark">
+                <i class="fas fa-clock me-1"></i> Pedidos pendientes de facturación
+                <span class="badge bg-dark ms-2" id="pendientes-count">0</span>
+            </div>
+            <div class="card-body p-0" id="pendientes-list" style="max-height:200px; overflow-y:auto;">
+                <p class="text-muted text-center small py-3 mb-0">No hay pedidos pendientes</p>
+            </div>
+        </div>
+    </div>
+  </div>
 
     {# ════════ COLUMNA IZQUIERDA — mapa de mesas ════════ #}
     <div class="col-lg-5 col-xl-4">
@@ -89,7 +102,7 @@
                     {% if item.num_pedidos > 0 %}
                       <div class="badge bg-secondary" style="font-size:.6rem;">{{ item.num_pedidos }}p</div>
                     {% endif %}
-                    <div class="mesa-total">₲{{ item.total|floatformat:0 }}</div>
+                    <div class="mesa-total">₲{{ item.total|punto_miles }}</div>
                   {% else %}
                     <div class="mesa-libre-label">Libre</div>
                   {% endif %}
@@ -105,52 +118,6 @@
             </div>
             {% endif %}
           </div>
-        </div>
-      </div>
-    </div>
-
-    {# ════════ VENTAS RECIENTES ════════ #}
-    <div class="col-lg-5 col-xl-4 mt-0">
-      <div class="card shadow-sm">
-        <div class="card-header bg-secondary text-white py-2">
-          <i class="fas fa-receipt me-1"></i> Ventas de hoy
-        </div>
-        <div class="card-body p-0" style="max-height:300px; overflow-y:auto;">
-          {% if ventas_recientes %}
-            {% for v in ventas_recientes %}
-            <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
-              <div>
-                {% if v.pedido %}
-                  {# Venta online #}
-                  <span class="badge bg-info text-dark me-1">
-                    <i class="fas fa-globe"></i> Online
-                  </span>
-                  <small class="fw-semibold">Pedido #{{ v.pedido.id }}</small>
-                  <div class="text-muted" style="font-size:.72rem;">
-                    {{ v.pedido.cliente.persona.nombre }} · {{ v.fecha|date:"H:i" }}
-                  </div>
-                {% elif v.cuenta %}
-                  {# Venta de mesa #}
-                  <span class="badge bg-dark me-1">
-                    <i class="fas fa-utensils"></i> Mesa {{ v.cuenta.mesa.numero }}
-                  </span>
-                  <small class="fw-semibold">{{ v.cliente_nombre|default:"—" }}</small>
-                  <div class="text-muted" style="font-size:.72rem;">
-                    {{ v.fecha|date:"H:i" }}
-                  </div>
-                {% else %}
-                  <span class="badge bg-secondary me-1">Venta</span>
-                  <small>{{ v.fecha|date:"H:i" }}</small>
-                {% endif %}
-              </div>
-              <span class="fw-bold text-success">₲{{ v.total|floatformat:0 }}</span>
-            </div>
-            {% endfor %}
-          {% else %}
-            <p class="text-muted text-center small py-3 mb-0">
-              No hay ventas registradas aún.
-            </p>
-          {% endif %}
         </div>
       </div>
     </div>
@@ -235,7 +202,7 @@
                   <div class="prod-icon">🍔</div>
                   {% endif %}
                   <div class="prod-nombre">{{ p.nombre|truncatechars:18 }}</div>
-                  <div class="prod-precio">₲{{ p.precio|floatformat:0 }}</div>
+                  <div class="prod-precio">₲{{ p.precio|punto_miles }}</div>
                 </div>
               </div>
               {% endfor %}
@@ -560,22 +527,167 @@ function confirmarAbrirCuenta() {
 
 // ── Productos ─────────────────────────────────────────────
 function agregarProducto(el) {
-    const id     = el.dataset.id;
-    const nombre = el.dataset.nombre;
-    const precio = parseInt(el.dataset.precio);
-    const ex = ordenItems.find(p => p.id === id);
-    if (ex) {
-        ex.cantidad++;
-        ex.subtotal = ex.precio * ex.cantidad;
-    } else {
-        ordenItems.push({ id, nombre, precio, cantidad: 1, subtotal: precio });
+    const productoId = el.dataset.id;
+    const productoNombre = el.dataset.nombre;
+    const productoPrecio = parseInt(el.dataset.precio);
+    
+    // Cargar el modal de personalización desde el servidor
+    fetch(`/pedidos/modal-personalizacion/${productoId}/`)
+        .then(response => response.text())
+        .then(html => {
+            // Crear un div temporal para parsear el HTML
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html;
+            
+            // Extraer el contenido del modal (asumiendo que viene sin estructura de página completa)
+            let modalHtml = tempDiv.innerHTML;
+            
+            // Si el HTML no tiene estructura de modal, la envolvemos
+            if (!modalHtml.includes('modal-dialog')) {
+                modalHtml = `
+                    <div class="modal fade" id="modalPersonalizacionPOS" tabindex="-1" data-bs-backdrop="static">
+                        <div class="modal-dialog modal-lg">
+                            <div class="modal-content">
+                                <div class="modal-header bg-danger text-white">
+                                    <h5 class="modal-title">
+                                        <i class="fas fa-hamburger me-1"></i> 
+                                        Personalizar ${productoNombre}
+                                    </h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    ${modalHtml}
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                        <i class="fas fa-times me-1"></i> Cancelar
+                                    </button>
+                                    <button type="button" class="btn btn-danger" id="btn-agregar-personalizado-pos">
+                                        <i class="fas fa-cart-plus me-1"></i> Agregar al Pedido
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Insertar el modal en el contenedor
+            document.getElementById('modal-personalizacion-container').innerHTML = modalHtml;
+            
+            // Almacenar datos del producto en el modal
+            const modalElement = document.getElementById('modalPersonalizacionPOS');
+            modalElement.dataset.productoId = productoId;
+            modalElement.dataset.productoNombre = productoNombre;
+            modalElement.dataset.productoPrecio = productoPrecio;
+            
+            // Configurar evento del botón agregar
+            const btnAgregar = document.getElementById('btn-agregar-personalizado-pos');
+            if (btnAgregar) {
+                // Remover evento anterior si existe
+                const newBtn = btnAgregar.cloneNode(true);
+                btnAgregar.parentNode.replaceChild(newBtn, btnAgregar);
+                newBtn.addEventListener('click', function() {
+                    agregarProductoPersonalizado(modalElement);
+                });
+            }
+            
+            // Mostrar modal
+            const modal = new bootstrap.Modal(modalElement);
+            modal.show();
+            
+            // Limpiar al cerrar
+            modalElement.addEventListener('hidden.bs.modal', function() {
+                document.getElementById('modal-personalizacion-container').innerHTML = '';
+            });
+        })
+        .catch(err => {
+            console.error('Error cargando personalización:', err);
+            // Si falla, agregar sin personalización
+            agregarItemAlCarrito(productoId, productoNombre, productoPrecio, [], [], '');
+        });
+}
+
+function agregarProductoPersonalizado(modalElement) {
+    const productoId = parseInt(modalElement.dataset.productoId);
+    const productoNombre = modalElement.dataset.productoNombre;
+    const productoPrecio = parseInt(modalElement.dataset.productoPrecio);
+    
+    // Obtener adicionales seleccionados
+    const adicionalesSeleccionados = [];
+    const adicionalChecks = modalElement.querySelectorAll('input[name="adicional[]"]:checked');
+    adicionalChecks.forEach(checkbox => {
+        const adicionalId = parseInt(checkbox.value);
+        // Buscar el texto del adicional
+        const label = checkbox.closest('.form-check')?.querySelector('.form-check-label');
+        let adicionalNombre = '';
+        let adicionalPrecio = 0;
+        if (label) {
+            const texto = label.textContent;
+            const match = texto.match(/Extra (.+?) \+Gs(\d+)/);
+            if (match) {
+                adicionalNombre = match[1];
+                adicionalPrecio = parseInt(match[2]);
+            }
+        }
+        adicionalesSeleccionados.push({
+            id: adicionalId,
+            nombre: adicionalNombre,
+            precio: adicionalPrecio
+        });
+    });
+    
+    // Obtener ingredientes a eliminar
+    const sinIngredientes = [];
+    const sinChecks = modalElement.querySelectorAll('input[name="sin[]"]:checked');
+    sinChecks.forEach(checkbox => {
+        sinIngredientes.push(checkbox.value);
+    });
+    
+    // Calcular total
+    const totalAdicionales = adicionalesSeleccionados.reduce((sum, ad) => sum + ad.precio, 0);
+    const precioTotal = productoPrecio + totalAdicionales;
+    
+    // Verificar si ya existe un item igual en el carrito
+    let encontrado = false;
+    for (let i = 0; i < ordenItems.length; i++) {
+        const item = ordenItems[i];
+        if (item.id === productoId && 
+            JSON.stringify(item.adicionales.map(a => a.id)) === JSON.stringify(adicionalesSeleccionados.map(a => a.id)) &&
+            JSON.stringify(item.sin) === JSON.stringify(sinIngredientes)) {
+            item.cantidad++;
+            item.subtotal = precioTotal * item.cantidad;
+            encontrado = true;
+            break;
+        }
     }
+    
+    if (!encontrado) {
+        ordenItems.push({
+            id: productoId,
+            nombre: productoNombre,
+            precio: productoPrecio,
+            cantidad: 1,
+            subtotal: precioTotal,
+            adicionales: adicionalesSeleccionados,
+            sin: sinIngredientes,
+            comentario: ''  // Si quieres agregar campo de comentario, se puede añadir
+        });
+    }
+    
     renderOrden();
+    
+    // Cerrar modal
+    const modal = bootstrap.Modal.getInstance(modalElement);
+    if (modal) modal.hide();
 }
 
 function cambiarCantidad(idx, delta) {
-    ordenItems[idx].cantidad = Math.max(1, ordenItems[idx].cantidad + delta);
-    ordenItems[idx].subtotal = ordenItems[idx].precio * ordenItems[idx].cantidad;
+    const item = ordenItems[idx];
+    item.cantidad = Math.max(1, item.cantidad + delta);
+    //Recalcular incluyendo adicionales
+    const precioConAdicionales = item.precio + (item.adicionales || []).reduce((s, a) => s + a.precio, 0);
+    item.subtotal = precioConAdicionales * item.cantidad;
     renderOrden();
 }
 
@@ -585,7 +697,7 @@ function quitarItem(idx) {
 }
 
 function renderOrden() {
-    const cont     = document.getElementById('orden-actual');
+    const cont      = document.getElementById('orden-actual');
     const btnEnviar = document.getElementById('btn-enviar-pedido');
     if (!cont) return;
 
@@ -596,20 +708,44 @@ function renderOrden() {
         return;
     }
 
-    cont.innerHTML = ordenItems.map((item, i) => `
-        <div class="orden-item">
+    cont.innerHTML = ordenItems.map((item, i) => {
+        // Recalcular subtotal incluyendo adicionales
+        const precioConAdicionales = item.precio + (item.adicionales || []).reduce((s, a) => s + a.precio, 0);
+        item.subtotal = precioConAdicionales * item.cantidad;
+
+        // Línea de adicionales (verde)
+        const adicionalesHtml = (item.adicionales && item.adicionales.length)
+            ? `<div class="ps-1" style="font-size:.7rem;color:#16a34a;">
+                 <i class="fas fa-plus-circle" style="font-size:.6rem;"></i>
+                 ${item.adicionales.map(a => a.nombre).join(', ')}
+               </div>`
+            : '';
+
+        // Línea de ingredientes eliminados (rojo)
+        const sinHtml = (item.sin && item.sin.length)
+            ? `<div class="ps-1" style="font-size:.7rem;color:#dc2626;">
+                 <i class="fas fa-minus-circle" style="font-size:.6rem;"></i>
+                 Sin: ${item.sin.join(', ')}
+               </div>`
+            : '';
+
+        return `
+        <div class="orden-item flex-column align-items-start pb-1" style="gap:1px;">
+          <div class="d-flex justify-content-between align-items-center w-100">
             <span class="fw-semibold" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${item.nombre}</span>
             <div class="oi-controles ms-2">
-                <button class="btn btn-sm btn-outline-secondary py-0 px-1 lh-1" onclick="cambiarCantidad(${i},-1)">−</button>
-                <span class="px-1 fw-bold">${item.cantidad}</span>
-                <button class="btn btn-sm btn-outline-secondary py-0 px-1 lh-1" onclick="cambiarCantidad(${i},1)">+</button>
-                <span class="text-danger small ms-1" style="min-width:72px;text-align:right">${gs(item.subtotal)}</span>
-                <button class="btn btn-sm btn-danger py-0 px-1 ms-1 lh-1" onclick="quitarItem(${i})" title="Quitar">
-                    <i class="fas fa-times"></i>
-                </button>
+              <button class="btn btn-sm btn-outline-secondary py-0 px-1 lh-1" onclick="cambiarCantidad(${i},-1)">−</button>
+              <span class="px-1 fw-bold">${item.cantidad}</span>
+              <button class="btn btn-sm btn-outline-secondary py-0 px-1 lh-1" onclick="cambiarCantidad(${i},1)">+</button>
+              <span class="text-danger small ms-1" style="min-width:72px;text-align:right">${gs(item.subtotal)}</span>
+              <button class="btn btn-sm btn-danger py-0 px-1 ms-1 lh-1" onclick="quitarItem(${i})" title="Quitar">
+                <i class="fas fa-times"></i>
+              </button>
             </div>
-        </div>
-    `).join('');
+          </div>
+          ${adicionalesHtml}${sinHtml}
+        </div>`;
+    }).join('');
 
     const total = ordenItems.reduce((s, p) => s + p.subtotal, 0);
     document.getElementById('total-pedido').textContent = gs(total);
@@ -633,35 +769,46 @@ function enviarPedido() {
         headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
         body: JSON.stringify({
             cuenta_id: mesaActual.cuentaId,
-            productos: ordenItems.map(p => ({ producto_id: p.id, cantidad: p.cantidad })),
-        }),
+            productos: ordenItems.map(item => ({
+                producto_id: item.id,
+                cantidad: item.cantidad,
+                adicionales: (item.adicionales || []).map(a => ({ id: a.id, cantidad: 1 })),
+                sin: item.sin || [],
+                comentario: item.comentario || ''
+            }))
+        })
     })
     .then(r => r.json())
     .then(data => {
         if (data.success) {
+            // Limpiar orden local
             ordenItems = [];
             renderOrden();
-            btn.innerHTML = '<i class="fas fa-check me-1 text-white"></i> ¡Enviado a cocina!';
+
+            // Actualizar el total de la mesa en la grilla sin recargar
+            actualizarMesaUI({
+                id: mesaActual.id,
+                cuenta_id: mesaActual.cuentaId,
+                total: data.total_cuenta,
+                num_pedidos: (data.num_pedidos || 1),
+                nombre_cliente: data.nombre_cliente || '',
+            });
+
+            // Feedback visual en el botón
+            btn.innerHTML = '<i class="fas fa-check me-1"></i> ¡Enviado a cocina!';
             btn.classList.replace('btn-danger', 'btn-success');
             setTimeout(() => {
                 btn.innerHTML = '<i class="fas fa-paper-plane me-1"></i> Enviar a Cocina';
                 btn.classList.replace('btn-success', 'btn-danger');
-                btn.disabled = true;
             }, 2500);
-            // Actualizar total en la grilla de mesas
-            const el = document.querySelector(`.mesa-btn[data-mesa-id="${mesaActual.id}"]`);
-            if (el) {
-                const totalEl = el.querySelector('.mesa-total');
-                if (totalEl) totalEl.textContent = gs(data.total_cuenta);
-            }
         } else {
-            alert('Error: ' + data.error);
+            alert('Error: ' + (data.error || 'No se pudo enviar el pedido.'));
             btn.disabled = false;
             btn.innerHTML = '<i class="fas fa-paper-plane me-1"></i> Enviar a Cocina';
         }
     })
     .catch(() => {
-        alert('Error de conexión.');
+        alert('Error de conexión al enviar el pedido.');
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-paper-plane me-1"></i> Enviar a Cocina';
     });
@@ -705,8 +852,18 @@ function cargarCuenta() {
                     <span>${gs(item.subtotal)}</span>
                 </div>`;
             });
-            html += `<div class="text-end small fw-semibold text-danger mt-1">Subtotal: ${gs(p.total)}</div>
-                     </div>`;
+            html += `<div class="d-flex justify-content-between align-items-center mt-1">
+                        <span class="small fw-semibold text-danger">Subtotal: ${gs(p.total)}</span>
+                        ${p.estado_cocina === 'Pendiente'
+                          ? `<button class="btn btn-outline-danger btn-sm py-0 px-2"
+                                      onclick="cancelarPedidoPOS(${p.pedido_id})"
+                                      title="Cancelar pedido">
+                                <i class="fas fa-ban"></i> Cancelar
+                              </button>`
+                          : `<span class="badge bg-warning text-dark" style="font-size:.65rem;">En cocina</span>`
+                        }
+                    </div>
+                    </div>`;
         });
 
         html += `<div class="d-flex justify-content-between align-items-center mt-3 p-2 bg-light rounded">
@@ -724,6 +881,25 @@ function cargarCuenta() {
         if (err.message === 'http_404') return;
         cont.innerHTML = '<p class="text-danger p-2">Error de conexión.</p>';
     });
+}
+
+// ── Cancelar pedido desde la tab Cuenta ──────────────────
+function cancelarPedidoPOS(pedidoId) {
+    if (!confirm(`¿Cancelar el pedido #${pedidoId}? Se devolverá el stock.`)) return;
+
+    fetch(`/caja/pos/cancelar-pedido/${pedidoId}/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            cargarCuenta(); // Recargar la tab cuenta
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(() => alert('Error de conexión.'));
 }
 
 // ── Modal cobro ───────────────────────────────────────────
@@ -869,7 +1045,94 @@ document.querySelectorAll('.btn-filtro').forEach(btn => {
         });
     });
 });
- 
+// ── Cargar pedidos pendientes de facturación ──
+function cargarPendientesFacturacion() {
+    fetch('/caja/api/pedidos-pendientes/', {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(r => r.json())
+    .then(data => {
+        const container = document.getElementById('pendientes-list');
+        const badge = document.getElementById('pendientes-count');
+        
+        if (!data.pedidos || data.pedidos.length === 0) {
+            container.innerHTML = '<p class="text-muted text-center small py-3 mb-0">✅ No hay pedidos pendientes de facturación</p>';
+            if (badge) badge.textContent = '0';
+            return;
+        }
+        
+        if (badge) badge.textContent = data.pedidos.length;
+        
+        let html = '';
+        data.pedidos.forEach(p => {
+            html += `
+                <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom" data-pedido-id="${p.id}">
+                    <div>
+                        <span class="badge bg-info me-1">#${p.id}</span>
+                        <strong>${p.cliente_nombre}</strong>
+                        <div class="text-muted small">
+                            ${p.tipo_entrega_display} · ${p.fecha}
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <div class="fw-bold text-danger">₲ ${p.total}</div>
+                        <button class="btn btn-success btn-sm" onclick="facturarPedidoCaja(${p.id})">
+                            <i class="fas fa-file-invoice"></i> Facturar
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+    })
+    .catch(err => console.error('Error cargando pendientes:', err));
+}
+
+function facturarPedidoCaja(pedidoId) {
+    if (!confirm('¿Generar factura para este pedido?')) return;
+    
+    const btn = event.target.closest('button');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    }
+    
+    fetch(`/caja/facturar-pedido/${pedidoId}/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': CSRF
+        }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            alert(`✅ Factura generada: ${data.nro_factura || 'correctamente'}`);
+            cargarPendientesFacturacion();  // Recargar lista
+            sincronizarMesas();  // Actualizar si es necesario
+        } else {
+            alert('❌ Error: ' + data.error);
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-file-invoice"></i> Facturar';
+            }
+        }
+    })
+    .catch(err => {
+        alert('Error de conexión');
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-file-invoice"></i> Facturar';
+        }
+    });
+}
+
+// Cargar pendientes cada 10 segundos
+setInterval(cargarPendientesFacturacion, 10000);
+cargarPendientesFacturacion();  // Cargar al inicio
 </script>
+
+<!-- Contenedor para el modal de personalización (se carga dinámicamente) -->
+<div id="modal-personalizacion-container"></div>
 
 {% endblock %}

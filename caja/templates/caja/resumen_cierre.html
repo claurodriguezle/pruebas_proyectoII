@@ -29,11 +29,11 @@
                                     <table class="table table-sm">
                                         <tr>
                                             <td>Monto Inicial:</td>
-                                            <td class="text-end">Gs{{ caja.monto_inicial|floatformat:2 }}</td>
+                                            <td class="text-end">Gs{{ caja.monto_inicial|punto_miles }}</td>
                                         </tr>
                                         <tr>
                                             <td>Ventas del Día:</td>
-                                            <td class="text-end text-success">+ Gs{{ totales.ventas|floatformat:2 }}</td>
+                                            <td class="text-end text-success">+ Gs{{ totales.ventas|punto_miles }}</td>
                                         </tr>
                                         <!--<tr>
                                             <td>Egresos del Día:</td>
@@ -41,15 +41,15 @@
                                         </tr>-->
                                         <tr class="table-primary">
                                             <td><strong>Monto Esperado:</strong></td>
-                                            <td class="text-end"><strong>${{ caja.monto_final_esperado|floatformat:2 }}</strong></td>
+                                            <td class="text-end"><strong>${{ caja.monto_final_esperado|punto_miles }}</strong></td>
                                         </tr>
                                         <tr>
                                             <td>Monto Real:</td>
-                                            <td class="text-end">Gs{{ caja.monto_final_real|floatformat:2 }}</td>
+                                            <td class="text-end">Gs{{ caja.monto_final_real|punto_miles }}</td>
                                         </tr>
                                         <tr class="table-success">
                                             <td><strong>Diferencia:</strong></td>
-                                            <td class="text-end"><strong>Gs{{ diferencia|floatformat:2 }}</strong></td>
+                                            <td class="text-end"><strong>Gs{{ diferencia|punto_miles }}</strong></td>
                                         </tr>
                                     </table>
                                 </div>

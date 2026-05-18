@@ -118,7 +118,6 @@ def abrir_cuenta(request):
 # ─────────────────────────────────────────────
 #  AGREGAR PEDIDO A UNA CUENTA  (AJAX)
 # ─────────────────────────────────────────────
-
 @login_required
 @grupo_requerido('Empleado', 'Administrador')
 @require_POST
@@ -139,16 +138,34 @@ def agregar_pedido_cuenta(request):
 
     cuenta = get_object_or_404(Cuenta, id=cuenta_id, estado='abierta', caja=caja)
 
-    ids = [int(p['producto_id']) for p in productos_data]
-    productos_db = {p.id: p for p in Producto.objects.filter(id__in=ids, estado='A')}
-
+    # Importar modelos necesarios
+    from pedidos.models import Adicional, DetalleAdicionalPedido, IngredienteEliminadoPedido, DetallePedido
+    from administrador.models import IngredienteProducto
+    
     total = 0
+    productos_info = []
+    
     for item in productos_data:
-        pid = int(item['producto_id'])
-        if pid not in productos_db:
-            return JsonResponse({'success': False, 'error': f'Producto #{pid} no encontrado'})
-        total += productos_db[pid].precio * int(item['cantidad'])
-
+        producto_id = int(item['producto_id'])
+        cantidad = int(item['cantidad'])
+        adicionales_ids = [int(ad['id']) for ad in item.get('adicionales', [])]
+        sin_nombres = item.get('sin', [])
+        
+        producto = get_object_or_404(Producto, pk=producto_id, estado='A')
+        adicionales = Adicional.objects.filter(id__in=adicionales_ids)
+        
+        precio_unitario = producto.precio + sum(ad.precio for ad in adicionales)
+        total_item = precio_unitario * cantidad
+        total += total_item
+        
+        productos_info.append({
+            'producto': producto,
+            'cantidad': cantidad,
+            'precio_unitario': precio_unitario,
+            'adicionales': adicionales,
+            'sin': sin_nombres,
+        })
+    
     try:
         cliente = _get_cliente_ocasional()
     except ValueError as e:
@@ -163,17 +180,41 @@ def agregar_pedido_cuenta(request):
             estado_entrega='PE',
             mesa=cuenta.mesa,
             cuenta=cuenta,
+            origen='local',
         )
-        for item in productos_data:
-            pid = int(item['producto_id'])
-            cantidad = int(item['cantidad'])
-            prod = productos_db[pid]
-            DetallePedido.objects.create(
+        
+        for info in productos_info:
+            detalle = DetallePedido.objects.create(
                 pedido=pedido,
-                producto=prod,
-                cantidad=cantidad,
-                precio_unitario=prod.precio,
+                producto=info['producto'],
+                cantidad=info['cantidad'],
+                precio_unitario=info['precio_unitario'],
             )
+            
+            # Agregar adicionales
+            for adicional in info['adicionales']:
+                DetalleAdicionalPedido.objects.create(
+                    detalle_pedido=detalle,
+                    adicional=adicional,
+                    cantidad=1
+                )
+            
+            # Agregar ingredientes eliminados
+            for nombre_ing in info['sin']:
+                try:
+                    ingrediente_obj = IngredienteProducto.objects.get(
+                        producto=info['producto'],
+                        item__nombre__iexact=nombre_ing
+                    )
+                    IngredienteEliminadoPedido.objects.create(
+                        detalle_pedido=detalle,
+                        ingrediente=ingrediente_obj
+                    )
+                except IngredienteProducto.DoesNotExist:
+                    pass
+        
+        # Descontar stock
+        from pedidos.views import descontar_stock
         descontar_stock(pedido)
 
     return JsonResponse({
@@ -181,6 +222,8 @@ def agregar_pedido_cuenta(request):
         'pedido_id': pedido.id,
         'total_pedido': total,
         'total_cuenta': cuenta.total,
+        'num_pedidos': cuenta.cantidad_pedidos,
+        'nombre_cliente': cuenta.nombre_cliente or '',
     })
 
 
@@ -368,9 +411,6 @@ def api_todas_mesas_estado(request):
 
 
 # ─────────────────────────────────────────────
-#  CIERRE DE CAJA
-# ─────────────────────────────────────────────
-
 @login_required
 @grupo_requerido('Empleado', 'Administrador')
 def cierre_caja(request):
@@ -386,6 +426,65 @@ def cierre_caja(request):
         'egresos': caja.total_egresos,
         'ganancia': caja.total_ventas - caja.total_egresos,
     }
+    
+    # 🔥 NUEVO: Calcular resumen de ventas por origen (Local vs Online)
+    from django.db.models import Sum, Count, Q, Value, CharField
+    from django.db.models.functions import Coalesce
+    
+    # Obtener todas las ventas de esta caja
+    ventas_caja = caja.ventas.filter(anulado=False)
+    
+    # Ventas locales (pedidos de mesa/mostrador)
+    # Incluye: ventas con pedido origen='local' O ventas sin pedido (mostrador directo)
+    ventas_locales = ventas_caja.filter(
+        Q(pedido__origen='local') | Q(pedido__isnull=True)
+    ).aggregate(
+        total=Coalesce(Sum('total'), 0),
+        cantidad=Coalesce(Count('id'), 0)
+    )
+    
+    # Ventas online
+    ventas_online = ventas_caja.filter(
+        pedido__origen='online'
+    ).aggregate(
+        total=Coalesce(Sum('total'), 0),
+        cantidad=Coalesce(Count('id'), 0)
+    )
+    
+    # Calcular porcentajes
+    total_ventas = totales['ventas']
+    
+    if total_ventas > 0:
+        porcentaje_local = (ventas_locales['total'] or 0) * 100 / total_ventas
+        porcentaje_online = (ventas_online['total'] or 0) * 100 / total_ventas
+    else:
+        porcentaje_local = 0
+        porcentaje_online = 0
+    
+    resumen_ventas = {
+        'local': {
+            'total': ventas_locales['total'] or 0,
+            'cantidad': ventas_locales['cantidad'] or 0,
+            'porcentaje': round(porcentaje_local, 1)
+        },
+        'online': {
+            'total': ventas_online['total'] or 0,
+            'cantidad': ventas_online['cantidad'] or 0,
+            'porcentaje': round(porcentaje_online, 1)
+        }
+    }
+    
+    # Obtener ventas recientes CON origen incluido
+    ventas_recientes = caja.ventas.filter(anulado=False).select_related(
+        'pedido__cliente__persona', 'cliente__persona'
+    ).order_by('-fecha')[:15]
+    
+    # Enriquecer cada venta con su origen
+    for venta in ventas_recientes:
+        if venta.pedido:
+            venta.origen = venta.pedido.origen
+        else:
+            venta.origen = 'local'  # Ventas directas de mostrador
 
     if request.method == 'POST':
         monto_str = request.POST.get('monto_final_real', '0').replace('.', '').replace(',', '')
@@ -409,17 +508,18 @@ def cierre_caja(request):
         return render(request, 'caja/resumen_cierre.html', {
             'caja': caja,
             'totales': totales,
+            'resumen_ventas': resumen_ventas,  # ← pasar también al resumen
             'diferencia': caja.diferencia,
         })
 
     return render(request, 'caja/cierre_caja.html', {
         'caja': caja,
         'totales': totales,
+        'resumen_ventas': resumen_ventas,  # ← nuevo
         'movimientos': caja.movimientos.order_by('-fecha'),
-        'ventas_recientes': caja.ventas.filter(anulado=False).order_by('-fecha')[:10],
+        'ventas_recientes': ventas_recientes,  # ← ahora incluye origen
         'mesas_abiertas': mesas_abiertas,
     })
-
 
 #Ventas recientes en el POS
 
@@ -467,4 +567,141 @@ def punto_de_venta(request):
         'mesas': mesas,
         'productos': productos,
         'ventas_recientes': ventas_recientes,  # ← nuevo
+    })
+
+
+# FACTURAR PEDIDOS PENDIENTES DESDE CAJA
+
+@login_required
+@grupo_requerido('Empleado', 'Administrador')
+def pedidos_para_facturar(request):
+    """Lista los pedidos que están en estado 'PP' (Pendiente Pago) para facturar desde caja"""
+    caja = get_caja_abierta(request.user)
+    if not caja:
+        messages.error(request, 'Debés abrir la caja primero.')
+        return redirect('caja:apertura_caja')
+    
+    # Obtener pedidos con estado 'PP' (Pendiente Pago)
+    pedidos_pendientes = Pedido.objects.filter(
+        estado_entrega='PP'
+    ).select_related(
+        'cliente__persona'
+    ).prefetch_related(
+        'detalle__producto',
+        'detalle__adicionales__adicional'
+    ).order_by('-fecha')
+    
+    return render(request, 'caja/pedidos_para_facturar.html', {
+        'caja': caja,
+        'pedidos': pedidos_pendientes,
+    })
+
+
+@login_required
+@grupo_requerido('Empleado', 'Administrador')
+@require_POST
+def facturar_desde_caja(request, pedido_id):
+    from facturacion.services import generar_factura_desde_pedido
+    
+    caja = get_caja_abierta(request.user)
+    if not caja:
+        return JsonResponse({'success': False, 'error': 'No hay caja abierta'})
+    
+    pedido = get_object_or_404(Pedido, pk=pedido_id)
+    
+    # Permitir facturar solo si está en PP o EN
+    if pedido.estado_entrega not in ['PP', 'EN']:
+        return JsonResponse({'success': False, 'error': f'El pedido está en estado {pedido.get_estado_entrega_display()}, no se puede facturar'})
+    try:
+        with transaction.atomic():
+            factura = generar_factura_desde_pedido(pedido)
+
+            if factura:
+                pedido.estado_entrega = 'FA'
+                pedido.save(update_fields=['estado_entrega'])
+
+                # Registrar venta en caja si no existe
+                if not hasattr(pedido, 'venta_caja'):
+                    total_con_delivery = pedido.total + (pedido.costo_delivery or 0)
+                    VentaCaja.objects.create(
+                        caja=caja,
+                        pedido=pedido,
+                        cliente=pedido.cliente,
+                        total=total_con_delivery,
+                        monto_recibido=total_con_delivery,
+                        vuelto=0,
+                        tipo_entrega=pedido.tipo_entrega,
+                    )
+                    caja.recalcular_monto_esperado()
+
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Factura generada correctamente',
+                    'nro_factura': factura.nro_fact,
+                    'factura_id': factura.cod_fact
+                })
+            else:
+                return JsonResponse({'success': False, 'error': 'No se pudo generar la factura. Verifique timbrado activo.'})
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+@grupo_requerido('Empleado', 'Administrador')
+@require_GET
+def api_pedidos_pendientes(request):
+    """Retorna los pedidos en estado PP (Pendiente Pago) para facturar desde caja"""
+    caja = get_caja_abierta(request.user)
+    if not caja:
+        return JsonResponse({'error': 'No hay caja abierta'}, status=400)
+    
+    pedidos = Pedido.objects.filter(
+        estado_entrega='PP'
+    ).select_related('cliente__persona').order_by('fecha')
+    
+    data = {
+        'pedidos': [
+            {
+                'id': p.id,
+                'cliente_nombre': f"{p.cliente.persona.nombre} {p.cliente.persona.apellido}",
+                'total': f"{p.total:,}".replace(',', '.'),
+                'fecha': p.fecha.strftime('%d/%m %H:%M'),
+                'tipo_entrega_display': p.get_tipo_entrega_display(),
+            }
+            for p in pedidos
+        ]
+    }
+    return JsonResponse(data)
+
+@login_required
+@grupo_requerido('Empleado', 'Administrador')
+@require_POST
+def pos_cancelar_pedido(request, pedido_id):
+    """Cancela un pedido local del POS y devuelve el stock al inventario."""
+    from pedidos.views import devolver_stock
+
+    caja = get_caja_abierta(request.user)
+    if not caja:
+        return JsonResponse({'success': False, 'error': 'No hay caja abierta.'})
+
+    pedido = get_object_or_404(Pedido, pk=pedido_id)
+
+    # Solo se puede cancelar si cocina aún no empezó a prepararlo
+    if pedido.estado_cocina != 'PE':
+        return JsonResponse({
+            'success': False,
+            'error': 'No se puede cancelar: el pedido ya está en preparación.'
+        })
+
+    if pedido.estado_entrega == 'CA':
+        return JsonResponse({'success': False, 'error': 'El pedido ya estaba cancelado.'})
+
+    with transaction.atomic():
+        devolver_stock(pedido)
+        pedido.estado_entrega = 'CA'
+        pedido.save(update_fields=['estado_entrega'])
+
+    return JsonResponse({
+        'success': True,
+        'pedido_id': pedido.id,
+        'mensaje': f'Pedido #{pedido.id} cancelado y stock restaurado.'
     })

@@ -462,6 +462,12 @@ def confirmar_pedido(request):
                 return redirect('pedidos:resumen_pedido')
     try:
         with transaction.atomic():
+            #Determinamos el origen del pedido
+            #Si el usuario esta autenticado y no es un pedido de mesa(via POS), es online
+            origen_pedido = 'online'
+
+            #Si el pedido viene desde el POS(mesa), se setea local
+            #Pero como esta vista es para clientes web, siempre sera online
             pedido = Pedido.objects.create(
                 cliente=cliente,
                 total=total,
@@ -471,6 +477,7 @@ def confirmar_pedido(request):
                 costo_delivery=costo_delivery,
                 estado_cocina='PE',
                 estado_entrega='PE',
+                origen= 'online',
             )
 
             for item in carrito:
@@ -532,16 +539,20 @@ def mis_pedidos(request):
         messages.error(request, "No tenés un perfil de cliente asociado.")
         return redirect('pedidos:menu_productos')
 
+    #Pedidos activos (no facturados ni cancelados)
     pedidos_activos = (
         Pedido.objects
         .filter(cliente=cliente)
         .exclude(estado_entrega__in=['FA', 'CA'])
+        .select_related('factura_pedido')
         .order_by('-id')
     )
 
+    #Historial: pedidos facturados o cancelados
     historial = (
         Pedido.objects
         .filter(cliente=cliente, estado_entrega__in=['FA', 'CA'])
+        .select_related('factura_pedido')
         .order_by('-id')
     )
 
@@ -685,8 +696,18 @@ def _enriquecer(pedido):
     diff  = ahora - pedido.fecha
     pedido.minutos_transcurridos = int(diff.total_seconds() // 60)
 
-    labels = {'PE': 'Marcar entregado', 'EN': 'Facturar'}
-    pedido.btn_label = labels.get(pedido.estado_entrega, '')
+    #Definimos el boton segun origen del pedido
+    if pedido.origen == 'online':
+        #Para pedidos online: mostramos el boton normal
+        labels = {'PE': 'Marcar entregado', 'EN': 'Pasar a caja'}
+        pedido.btn_label = labels.get(pedido.estado_entrega, '')
+    else:
+        #Para pedidos Locales: No mostramos el boton de pasar a caja
+        #Solo mostrar "Marcar Entregado" si esta en PE
+        if pedido.estado_entrega == 'PE' and pedido.estado_cocina == 'LI':
+            pedido.btn_label = 'Marcar entregado'
+        else:
+            pedido.btn_label = ''   #Sin boton
 
     # Nombre del cliente para mostrar en la tabla
     persona = pedido.cliente.persona
@@ -780,54 +801,48 @@ def empleado_modal(request, pedido_id):
 @grupo_requerido('Administrador', 'Empleado')
 @require_http_methods(['POST'])
 def empleado_avanzar(request, pedido_id):
-    from facturacion.services import generar_factura_desde_pedido
-    from caja.models import Caja, VentaCaja  # ← agregá este import
-
-    # 🔒 VALIDACIÓN CRÍTICA: Verificar que la caja esté abierta
+    from caja.models import Caja
+    
+    # Verificar caja abierta
     caja_abierta = Caja.objects.filter(estado='abierta').first()
     if not caja_abierta:
-        messages.error(request, "⚠️ No hay una caja abierta. No se puede entregar el pedido ni registrar la venta.")
-        # Redirigir de vuelta al panel de empleado
+        messages.error(request, "⚠️ No hay una caja abierta.")
         return redirect('pedidos:panel_empleado')
 
-    pedido    = get_object_or_404(Pedido, pk=pedido_id)
+    pedido = get_object_or_404(Pedido, pk=pedido_id)
+
+    #Para pedidos locales solo marcar como entregado y listo
+    if pedido.origen == 'local':
+        if pedido.estado_entrega == 'PE'and pedido.estado_cocina == 'LI':
+            pedido.estado_entrega = 'EN'
+            pedido.save(update_fields=['estado_entrega'])
+            messages.success(request, f"✅ Pedido #{pedido.id} marcado como entregado.")
+        else:
+            messages.warning(request, f"No se puede marcar como entregado el pedido #{pedido.id}.")
+        # Recargar la tabla
+        filtros = _get_filtros(request)
+        pedidos = _get_pedidos_empleado(filtros)
+        return render(request, 'orden_pedidos/partials/empleado_tabla.html', {
+            **filtros, **_chips(filtros), 'pedidos': pedidos,
+        })
+    
+    #Para pedidos online, mantenemos el flujo original
     siguiente = pedido.siguiente_estado_entrega
+    
+    print(f"DEBUG: Pedido {pedido_id} - Estado actual: {pedido.estado_entrega} - Siguiente: {siguiente}")
 
     if siguiente:
         pedido.estado_entrega = siguiente
         pedido.save(update_fields=['estado_entrega'])
-
+        
         if siguiente == 'EN':
-            try:
-                factura = generar_factura_desde_pedido(pedido)
-                if factura:
-                    pedido.estado_entrega = 'FA'
-                    pedido.save(update_fields=['estado_entrega'])
-                else:
-                    print("⚠️ generar_factura_desde_pedido retornó None")
-            except Exception as e:
-                print(f"❌ Error al generar factura: {e}")
+            messages.success(request, f"✅ Pedido #{pedido.id} marcado como entregado.")
+        elif siguiente == 'PP':
+            messages.info(request, f"💰 Pedido #{pedido.id} entregado. Pendiente de facturación en caja.")
+    else:
+        messages.warning(request, f"No se puede avanzar el estado del pedido #{pedido.id}")
 
-        # ── Registrar en caja cuando el pedido queda como Facturado ──
-        if pedido.estado_entrega == 'FA' and not pedido.cuenta_id:
-            # solo pedidos online (sin cuenta de mesa)
-            try:
-                caja = Caja.objects.filter(estado='abierta').first()
-                if caja and not hasattr(pedido, 'venta_caja') and pedido.fecha >= caja.fecha_apertura:
-                    total_con_delivery = pedido.total + (pedido.costo_delivery or 0)
-                    VentaCaja.objects.create(
-                        caja=caja,
-                        pedido=pedido,
-                        cliente=pedido.cliente,
-                        total=total_con_delivery,
-                        monto_recibido=total_con_delivery,  # efectivo contra entrega
-                        vuelto=0,
-                        tipo_entrega=pedido.tipo_entrega,
-                    )
-                    caja.recalcular_monto_esperado()
-            except Exception as e:
-                print(f"❌ Error al registrar venta en caja: {e}")
-
+    # Recargar la tabla
     filtros = _get_filtros(request)
     pedidos = _get_pedidos_empleado(filtros)
     return render(request, 'orden_pedidos/partials/empleado_tabla.html', {
@@ -846,7 +861,7 @@ def empleado_actualizar(request, pedido_id):
     pedido        = get_object_or_404(Pedido, pk=pedido_id)
     nuevo_entrega = request.POST.get('estado_entrega', pedido.estado_entrega)
 
-    if nuevo_entrega in ['PE', 'EN', 'FA', 'CA']:
+    if nuevo_entrega in ['PE', 'EN', 'PP', 'CA']:
 
         # Si el empleado cancela, devolver el stock
         if nuevo_entrega == 'CA' and pedido.estado_entrega != 'CA':
@@ -961,6 +976,3 @@ def mi_factura(request, pedido_id):
         pedido=pedido
     )
     return render(request, 'pedidos/mi_factura.html', {'factura': factura, 'pedido': pedido})
-
-
-
