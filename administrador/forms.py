@@ -2,7 +2,7 @@ from xml.dom import ValidationErr
 from django.core.exceptions import ValidationError
 from django import forms
 from django.utils import timezone
-from .models import Persona, Cliente, Empleado, Proveedor, Producto, CategoriaProducto, IngredienteProducto, Salario, TipoEmpleado # noqa: F401
+from .models import Persona, Cliente, Empleado, Proveedor, Producto, CategoriaProducto, IngredienteProducto, Salario, TipoEmpleado, Mesa  # noqa: F401
 from .models import Compra, DetalleCompra, Item
 from datetime import date
 
@@ -195,3 +195,23 @@ class IngredienteProductoForm(forms.ModelForm):
     class Meta:
         model = IngredienteProducto
         fields = ['item', 'cantidad']
+
+#FORMULARIO DE MESAS
+class MesaForm(forms.ModelForm):
+    class Meta:
+        model = Mesa
+        fields = ['numero', 'capacidad', 'estado', 'activa', 'es_mostrador']
+        widgets = {
+            'numero':       forms.NumberInput(attrs={'class': 'form-control'}),
+            'capacidad':    forms.NumberInput(attrs={'class': 'form-control'}),
+            'estado':       forms.Select(attrs={'class': 'form-select'}),
+            'activa':       forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'es_mostrador': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+        labels = {
+            'numero':       'Número de mesa',
+            'capacidad':    'Capacidad (personas)',
+            'estado':       'Estado',
+            'activa':       'Activa',
+            'es_mostrador': 'Es mostrador',
+        }

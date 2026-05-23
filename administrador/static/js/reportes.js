@@ -55,24 +55,27 @@ tablaHTML = doc.querySelector('table').outerHTML;
     ventana.print();
 }
 
-document.getElementById('filtros-form').addEventListener('htmx:confirm', function(e) {
-    const fechaInicio = document.getElementById('fecha_inicio').value;
-    const fechaFin    = document.getElementById('fecha_fin').value;
-    const hoy         = new Date().toISOString().split('T')[0];
+const filtrosForm = document.getElementById('filtros-form');
+if (filtrosForm) {
+    filtrosForm.addEventListener('htmx:confirm', function(e) {
+        const fechaInicio = document.getElementById('fecha_inicio').value;
+        const fechaFin    = document.getElementById('fecha_fin').value;
+        const hoy         = new Date().toISOString().split('T')[0];
 
-    let error = '';
+        let error = '';
 
-    if (fechaInicio && fechaFin && fechaInicio > fechaFin) {
-        error = 'La fecha de inicio no puede ser mayor que la fecha de fin.';
-    } else if (fechaFin && fechaFin > hoy) {
-        error = 'La fecha de fin no puede ser mayor a la fecha de hoy.';
-    }
+        if (fechaInicio && fechaFin && fechaInicio > fechaFin) {
+            error = 'La fecha de inicio no puede ser mayor que la fecha de fin.';
+        } else if (fechaFin && fechaFin > hoy) {
+            error = 'La fecha de fin no puede ser mayor a la fecha de hoy.';
+        }
 
-    if (error) {
-        e.preventDefault();
-        document.getElementById('error-fechas-msg').textContent = error;
-        document.getElementById('error-fechas').classList.remove('d-none');
-    } else {
-        document.getElementById('error-fechas').classList.add('d-none');
-    }
-});
+        if (error) {
+            e.preventDefault();
+            document.getElementById('error-fechas-msg').textContent = error;
+            document.getElementById('error-fechas').classList.remove('d-none');
+        } else {
+            document.getElementById('error-fechas').classList.add('d-none');
+        }
+    });
+}

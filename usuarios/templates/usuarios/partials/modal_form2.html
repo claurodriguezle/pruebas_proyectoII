@@ -1,0 +1,238 @@
+{% load static %}
+<!-- usuarios/partials/modal_form.html -->
+<!-- Se inyecta dentro de #modal-body via HTMX -->
+
+<style>
+    /* Scroll solo para el cuerpo del modal */
+    .modal-body-scroll {
+        max-height: 60vh;
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+    
+    /* Ajuste para pantallas pequeñas */
+    @media (max-width: 768px) {
+        .modal-body-scroll {
+            max-height: 50vh;
+        }
+    }
+</style>
+
+<div class="modal-header">
+    <h5 class="modal-title" id="modal-titulo">
+        {% if modo == 'crear' %}
+            <i class="bi bi-person-plus-fill me-2 text-primary"></i>Nuevo Usuario
+        {% else %}
+            <i class="bi bi-pencil-fill me-2 text-warning"></i>Editar Usuario — {{ usuario.username }}
+        {% endif %}
+    </h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+</div>
+
+<form method="post"
+      {% if modo == 'crear' %}
+          hx-post="{% url 'usuarios:crear' %}"
+      {% else %}
+          hx-post="{% url 'usuarios:editar' usuario.pk %}"
+      {% endif %}
+      hx-target="#modal-body"
+      hx-swap="innerHTML">
+    {% csrf_token %}
+
+    <div class="modal-body modal-body-scroll">
+
+        <!-- Errores globales -->
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger py-2">
+            {% for error in form.non_field_errors %}
+                <div>{{ error }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- SECCIÓN: Cuenta -->
+        <h6 class="text-uppercase text-muted fw-bold mb-2 mt-1" style="font-size:.75rem; letter-spacing:.08em;">
+            <i class="bi bi-person-badge me-1"></i> Cuenta
+        </h6>
+        <div class="row g-3 mb-3">
+            <div class="col-md-6">
+                <label class="form-label fw-semibold">{{ form.username.label }}</label>
+                {{ form.username }}
+                {% if form.username.errors %}
+                <div class="text-danger small">{{ form.username.errors|join:", " }}</div>
+                {% endif %}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-semibold">{{ form.email.label }}</label>
+                {{ form.email }}
+                {% if form.email.errors %}
+                <div class="text-danger small">{{ form.email.errors|join:", " }}</div>
+                {% endif %}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-semibold">{{ form.password1.label }}</label>
+                {{ form.password1 }}
+                {% if form.password1.errors %}
+                <div class="text-danger small">{{ form.password1.errors|join:", " }}</div>
+                {% endif %}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-semibold">{{ form.password2.label }}</label>
+                {{ form.password2 }}
+                {% if form.password2.errors %}
+                <div class="text-danger small">{{ form.password2.errors|join:", " }}</div>
+                {% endif %}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-semibold">{{ form.grupo.label }}</label>
+                {{ form.grupo }}
+                {% if form.grupo.errors %}
+                <div class="text-danger small">{{ form.grupo.errors|join:", " }}</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <hr>
+
+        <!-- SECCIÓN: Datos personales -->
+        <h6 class="text-uppercase text-muted fw-bold mb-2" style="font-size:.75rem; letter-spacing:.08em;">
+            <i class="bi bi-person-lines-fill me-1"></i> Datos Personales
+        </h6>
+        <div class="row g-3 mb-3">
+            <div class="col-md-6">
+                <label class="form-label fw-semibold">{{ form.nombre.label }}</label>
+                {{ form.nombre }}
+                {% if form.nombre.errors %}
+                <div class="text-danger small">{{ form.nombre.errors|join:", " }}</div>
+                {% endif %}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-semibold">{{ form.apellido.label }}</label>
+                {{ form.apellido }}
+                {% if form.apellido.errors %}
+                <div class="text-danger small">{{ form.apellido.errors|join:", " }}</div>
+                {% endif %}
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-semibold">{{ form.cedula.label }}</label>
+                {{ form.cedula }}
+                {% if form.cedula.errors %}
+                <div class="text-danger small">{{ form.cedula.errors|join:", " }}</div>
+                {% endif %}
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-semibold">{{ form.telefono.label }}</label>
+                {{ form.telefono }}
+                {% if form.telefono.errors %}
+                <div class="text-danger small">{{ form.telefono.errors|join:", " }}</div>
+                {% endif %}
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-semibold">{{ form.fecha_nacimiento.label }}</label>
+                {{ form.fecha_nacimiento }}
+                {% if form.fecha_nacimiento.errors %}
+                <div class="text-danger small">{{ form.fecha_nacimiento.errors|join:", " }}</div>
+                {% endif %}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-semibold">{{ form.nacionalidad.label }}</label>
+                {{ form.nacionalidad }}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-semibold">{{ form.ruc.label }} <span class="text-muted">(opcional)</span></label>
+                {{ form.ruc }}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-semibold">{{ form.ciudad.label }}</label>
+                {{ form.ciudad }}
+                {% if form.ciudad.errors %}
+                <div class="text-danger small">{{ form.ciudad.errors|join:", " }}</div>
+                {% endif %}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-semibold">{{ form.barrio.label }}</label>
+                {{ form.barrio }}
+                {% if form.barrio.errors %}
+                <div class="text-danger small">{{ form.barrio.errors|join:", " }}</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- SECCIÓN: Solo Empleados (se muestra/oculta con JS) -->
+        <div id="seccion-empleado" style="display:none">
+            <hr>
+            <h6 class="text-uppercase text-muted fw-bold mb-2" style="font-size:.75rem; letter-spacing:.08em;">
+                <i class="bi bi-briefcase-fill me-1"></i> Datos de Empleado
+            </h6>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">{{ form.tipo_empleado.label }}</label>
+                    {{ form.tipo_empleado }}
+                    {% if form.tipo_empleado.errors %}
+                    <div class="text-danger small">{{ form.tipo_empleado.errors|join:", " }}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">{{ form.fecha_contratacion.label }}</label>
+                    {{ form.fecha_contratacion }}
+                    {% if form.fecha_contratacion.errors %}
+                    <div class="text-danger small">{{ form.fecha_contratacion.errors|join:", " }}</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+    </div><!-- /modal-body -->
+
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-primary">
+            <i class="bi bi-floppy-fill me-1"></i>
+            {% if modo == 'crear' %}Crear Usuario{% else %}Guardar Cambios{% endif %}
+        </button>
+    </div>
+</form>
+
+<script>
+(function () {
+    const grupoSelect = document.querySelector('[name="grupo"]');
+    const secEmpleado = document.getElementById('seccion-empleado');
+
+    function toggleEmpleado() {
+        const texto = grupoSelect.options[grupoSelect.selectedIndex].text.trim();
+        secEmpleado.style.display = texto === 'Empleado' ? 'block' : 'none';
+    }
+
+    if (grupoSelect) {
+        grupoSelect.addEventListener('change', toggleEmpleado);
+        toggleEmpleado(); // correr al cargar para edición
+    }
+
+    // Filtrar barrios según ciudad seleccionada
+    const ciudadSelect = document.getElementById('id_ciudad_admin');
+    const barrioSelect = document.getElementById('id_barrio_admin');
+
+    if (ciudadSelect && barrioSelect) {
+        // Guardar todas las opciones originales
+        const todasOpciones = Array.from(barrioSelect.options);
+
+        ciudadSelect.addEventListener('change', function () {
+            const ciudadId = this.value;
+            fetch(`/api/barrios/?ciudad=${ciudadId}`)
+                .then(r => r.json())
+                .then(data => {
+                    barrioSelect.innerHTML = '<option value="">---------</option>';
+                    data.forEach(b => {
+                        const opt = document.createElement('option');
+                        opt.value = b.id;
+                        opt.textContent = b.nombre;
+                        barrioSelect.appendChild(opt);
+                    });
+                })
+                .catch(() => {
+                    // Si no hay endpoint AJAX, mantener opciones originales sin filtrar
+                });
+        });
+    }
+})();
+</script>

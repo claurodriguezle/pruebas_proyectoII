@@ -1,0 +1,7 @@
+{% for barrio in barrios %}
+    {% include "localidades/partials/barrio_row.html" with barrio=barrio %}
+{% empty %}
+    <tr>
+        <td colspan="5" class="text-center text-muted">No hay barrios registrados.</td>
+    </tr>
+{% endfor %}

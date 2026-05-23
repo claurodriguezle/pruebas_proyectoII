@@ -1,0 +1,69 @@
+{% load static %}
+<form
+    method="POST"
+    {% if adicional %}
+        hx-post="{% url 'administrador:adicionales_editar_htmx' adicional.id %}"
+        hx-target="#adicional-{{ adicional.id }}"
+        hx-swap="outerHTML"
+    {% else %}
+        hx-post="{% url 'administrador:adicionales_crear_htmx' %}"
+        hx-target="#adicionalesTableBody"
+        hx-swap="beforeend"
+    {% endif %}
+    hx-on::after-request="
+        if(event.detail.successful) {
+            bootstrap.Modal.getInstance(document.getElementById('adicionalModal')).hide();
+        }
+    ">
+    {% csrf_token %}
+    
+    <div class="mb-3">
+        <label for="nombre" class="form-label">Nombre del adicional *</label>
+        <input type="text" class="form-control" id="nombre" name="nombre" 
+               value="{{ adicional.nombre|default:'' }}" required>
+        <small class="text-muted">Ej: Queso extra, Tocineta, Salsa especial</small>
+    </div>
+    
+    <div class="mb-3">
+        <label for="precio" class="form-label">Precio (₲) *</label>
+        <input type="number" class="form-control" id="precio" name="precio" 
+               value="{{ adicional.precio|default:'' }}" required min="1">
+    </div>
+    
+    <div class="mb-3">
+        <label for="item" class="form-label">Item de stock (opcional)</label>
+        <select class="form-select" id="item" name="item">
+            <option value="">-- Ninguno --</option>
+            {% for item in items %}
+                <option value="{{ item.id }}" {% if adicional.item.id == item.id %}selected{% endif %}>
+                    {{ item.nombre }} ({{ item.get_tipo_display }})
+                </option>
+            {% endfor %}
+        </select>
+        <small class="text-muted">Si el adicional consume stock (ej: queso extra), selecciona el item correspondiente.</small>
+    </div>
+    
+    <div class="mb-3">
+        <label for="cantidad" class="form-label">Cantidad (gramos) <span class="text-muted">- opcional</span></label>
+        <input type="number" step="0.01" min="0" class="form-control" id="cantidad" name="cantidad" 
+            value="{{ adicional.cantidad|default:'' }}">
+        <small class="text-muted">Cantidad en gramos que se descuenta del stock si se selecciona un item. Solo números positivos.</small>
+    </div>
+    
+    <div class="d-flex justify-content-end mt-3">
+        <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">
+            Cancelar
+        </button>
+        <button type="submit" class="btn {% if adicional %}btn-primary{% else %}btn-success{% endif %}">
+            {% if adicional %}Actualizar{% else %}Crear{% endif %}
+        </button>
+    </div>
+</form>
+
+<script>
+    // Este script carga los items desde el servidor si es necesario
+    // Se ejecuta cuando el modal se abre
+    document.addEventListener('DOMContentLoaded', function() {
+        // Si el formulario necesita cargar items dinámicamente, se puede agregar aquí
+    });
+</script>

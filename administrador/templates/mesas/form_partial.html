@@ -1,0 +1,50 @@
+<form
+    method="POST"
+    {% if mesa %}
+        hx-post="{% url 'administrador:mesas_editar_htmx' mesa.pk %}"
+        hx-target="#mesa-{{ mesa.pk }}"
+        hx-swap="outerHTML"
+    {% else %}
+        hx-post="{% url 'administrador:mesas_crear_htmx' %}"
+        hx-target="#mesaTableBody"
+        hx-swap="beforeend"
+    {% endif %}
+    hx-on::after-request="
+        if(event.detail.successful) {
+            bootstrap.Modal.getInstance(document.getElementById('mesaModal')).hide();
+        }
+    "
+>
+    {% csrf_token %}
+
+    {% for field in form %}
+    <div class="mb-3">
+        <label class="form-label fw-semibold" for="{{ field.id_for_label }}">
+            {{ field.label }}
+        </label>
+
+        {% if field.field.widget.input_type == 'checkbox' %}
+            <div class="form-check">
+                {{ field }}
+                {% if field.errors %}
+                    <div class="text-danger small mt-1">{{ field.errors }}</div>
+                {% endif %}
+            </div>
+        {% else %}
+            {{ field }}
+            {% if field.errors %}
+                <div class="text-danger small mt-1">{{ field.errors }}</div>
+            {% endif %}
+        {% endif %}
+    </div>
+    {% endfor %}
+
+    <div class="d-flex justify-content-end gap-2 mt-3">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            Cancelar
+        </button>
+        <button type="submit" class="btn {% if mesa %}btn-primary{% else %}btn-success{% endif %}">
+            {% if mesa %}Actualizar{% else %}Crear{% endif %}
+        </button>
+    </div>
+</form>

@@ -1,0 +1,32 @@
+<tr id="barrio-{{ barrio.id }}">
+    <td>{{ barrio.id }}</td>
+    <td>{{ barrio.nombre }}</td>
+    <td>{{ barrio.ciudad.nombre }}</td>
+    <td>
+        {% if barrio.habilitado %}
+            <span class="badge bg-success">Habilitado</span>
+        {% else %}
+            <span class="badge bg-secondary">Deshabilitado</span>
+        {% endif %}
+    </td>
+    <td>
+        <!-- Editar -->
+        <button class="btn btn-outline-primary btn-sm" title="Editar"
+            data-bs-toggle="modal"
+            data-bs-target="#barrioModal"
+            hx-get="{% url 'administrador:barrios_editar_partial' barrio.id %}"
+            hx-target="#barrioFormBody"
+            hx-swap="innerHTML">
+            <i class="bi bi-pencil-square"></i>
+        </button>
+        
+        <!-- Toggle Habilitar/Deshabilitar -->
+        <button class="btn {% if barrio.habilitado %}btn-outline-warning{% else %}btn-outline-success{% endif %} btn-sm"
+            title="{% if barrio.habilitado %}Deshabilitar{% else %}Habilitar{% endif %}"
+            hx-post="{% url 'administrador:barrios_toggle_htmx' barrio.id %}"
+            hx-target="#barrio-{{ barrio.id }}"
+            hx-swap="outerHTML">
+            <i class="bi {% if barrio.habilitado %}bi-toggle-on{% else %}bi-toggle-off{% endif %}"></i>
+        </button>
+    </td>
+</tr>

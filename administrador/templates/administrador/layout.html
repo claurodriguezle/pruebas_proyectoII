@@ -56,6 +56,7 @@
                         <li><a class="dropdown-item" href="{% url 'pedidos:index' %}">Clientes</a></li>
                         <li><a class="dropdown-item" href="{% url 'pedidos:ordenes_view' %}">Orden de Pedidos</a></li>
                         <li><a class="dropdown-item" href="{%url 'pedidos:cocina'%}">Cocina</a></li>
+                        <li><a class="dropdown-item" href="{% url 'administrador:mesas' %}">Mesas</a></li>
                     </ul>
                 </li>
 
@@ -66,6 +67,7 @@
                         <li><a class="dropdown-item" href="{% url 'administrador:productos' %}">Productos</a></li>
                         <li><a class="dropdown-item" href="{% url 'administrador:lista_compras' %}">Compras</a></li>
                         <li><a class="dropdown-item" href="{% url 'administrador:lista_stock' %}">Stock</a></li>
+                        <li><a class="dropdown-item" href="{% url 'administrador:adicionales' %}">Adicionales</a></li>
                     </ul>
                 </li>
 
@@ -88,6 +90,9 @@
                     <ul class="dropdown-menu">
                         <li><a class="dropdown-item" href="{% url 'administrador:crear_persona' %}">Registro</a></li>
                         <li><a class="dropdown-item" href="{% url 'administrador:listar_personas' %}">Listar</a></li>
+                        <li><a class="dropdown-item" href="{% url 'administrador:lista_tipo_empleado' %}">Tipo de Empleado</a></li>
+                        <li><a class="dropdown-item" href="{% url 'administrador:salarios' %}">Salarios</a></li>
+                        <li><a class="dropdown-item" href="{% url 'administrador:localidades' %}">Localidades</a></li>
                     </ul>
                 </li>
             </ul>

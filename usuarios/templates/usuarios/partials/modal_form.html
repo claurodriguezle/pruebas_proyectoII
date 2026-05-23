@@ -1,0 +1,270 @@
+{% load static %}
+<!-- usuarios/partials/modal_form.html -->
+<!-- VERSIÓN ACTUALIZADA — incluye campo Salario en sección Empleado -->
+
+<div class="modal-header">
+    <h5 class="modal-title" id="modal-titulo">
+        {% if modo == 'crear' %}
+            <i class="bi bi-person-plus-fill me-2 text-primary"></i>Nuevo Usuario
+        {% else %}
+            <i class="bi bi-pencil-fill me-2 text-warning"></i>Editar Usuario — {{ usuario.username }}
+        {% endif %}
+    </h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+</div>
+
+<form method="post"
+      {% if modo == 'crear' %}
+          hx-post="{% url 'usuarios:crear' %}"
+      {% else %}
+          hx-post="{% url 'usuarios:editar' usuario.pk %}"
+      {% endif %}
+      hx-target="#modal-body"
+      hx-swap="innerHTML">
+    {% csrf_token %}
+
+    <div class="modal-body">
+
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger py-2">
+            {% for error in form.non_field_errors %}
+                <div>{{ error }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- SECCIÓN: Cuenta -->
+        <h6 class="text-uppercase text-muted fw-bold mb-2 mt-1" style="font-size:.75rem; letter-spacing:.08em;">
+            <i class="bi bi-person-badge me-1"></i> Cuenta
+        </h6>
+        <div class="row g-3 mb-3">
+            <div class="col-md-6">
+                <label class="form-label fw-semibold">{{ form.username.label }}</label>
+                {{ form.username }}
+                {% if form.username.errors %}
+                <div class="text-danger small">{{ form.username.errors|join:", " }}</div>
+                {% endif %}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-semibold">{{ form.email.label }}</label>
+                {{ form.email }}
+                {% if form.email.errors %}
+                <div class="text-danger small">{{ form.email.errors|join:", " }}</div>
+                {% endif %}
+            </div>
+            <!-- Contraseña -->
+            <div class="col-md-6">
+                <label class="form-label fw-semibold">{{ form.password1.label }}</label>
+                <div class="input-group">
+                    {{ form.password1 }}
+                    <button class="btn btn-outline-secondary" type="button"
+                            onclick="togglePass(this)"
+                            data-target="id_password1">
+                        <i class="bi bi-eye-fill"></i>
+                    </button>
+                </div>
+                {% if form.password1.errors %}
+                <div class="text-danger small">{{ form.password1.errors|join:", " }}</div>
+                {% endif %}
+            </div>
+
+            <!-- Confirmar contraseña -->
+            <div class="col-md-6">
+                <label class="form-label fw-semibold">{{ form.password2.label }}</label>
+                <div class="input-group">
+                    {{ form.password2 }}
+                    <button class="btn btn-outline-secondary" type="button"
+                            onclick="togglePass(this)"
+                            data-target="id_password2">
+                        <i class="bi bi-eye-fill"></i>
+                    </button>
+                </div>
+                {% if form.password2.errors %}
+                <div class="text-danger small">{{ form.password2.errors|join:", " }}</div>
+                {% endif %}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-semibold">{{ form.grupo.label }}</label>
+                {{ form.grupo }}
+                {% if form.grupo.errors %}
+                <div class="text-danger small">{{ form.grupo.errors|join:", " }}</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <hr>
+
+        <!-- SECCIÓN: Datos personales -->
+        <h6 class="text-uppercase text-muted fw-bold mb-2" style="font-size:.75rem; letter-spacing:.08em;">
+            <i class="bi bi-person-lines-fill me-1"></i> Datos Personales
+        </h6>
+        <div class="row g-3 mb-3">
+            <div class="col-md-6">
+                <label class="form-label fw-semibold">{{ form.nombre.label }}</label>
+                {{ form.nombre }}
+                {% if form.nombre.errors %}
+                <div class="text-danger small">{{ form.nombre.errors|join:", " }}</div>
+                {% endif %}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-semibold">{{ form.apellido.label }}</label>
+                {{ form.apellido }}
+                {% if form.apellido.errors %}
+                <div class="text-danger small">{{ form.apellido.errors|join:", " }}</div>
+                {% endif %}
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-semibold">{{ form.cedula.label }}</label>
+                {{ form.cedula }}
+                {% if form.cedula.errors %}
+                <div class="text-danger small">{{ form.cedula.errors|join:", " }}</div>
+                {% endif %}
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-semibold">{{ form.telefono.label }}</label>
+                {{ form.telefono }}
+                {% if form.telefono.errors %}
+                <div class="text-danger small">{{ form.telefono.errors|join:", " }}</div>
+                {% endif %}
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-semibold">{{ form.fecha_nacimiento.label }}</label>
+                {{ form.fecha_nacimiento }}
+                {% if form.fecha_nacimiento.errors %}
+                <div class="text-danger small">{{ form.fecha_nacimiento.errors|join:", " }}</div>
+                {% endif %}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-semibold">{{ form.nacionalidad.label }}</label>
+                {{ form.nacionalidad }}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-semibold">
+                    {{ form.ruc.label }} <span class="text-muted">(opcional)</span>
+                </label>
+                {{ form.ruc }}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-semibold">{{ form.ciudad.label }}</label>
+                {{ form.ciudad }}
+                {% if form.ciudad.errors %}
+                <div class="text-danger small">{{ form.ciudad.errors|join:", " }}</div>
+                {% endif %}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-semibold">{{ form.barrio.label }}</label>
+                {{ form.barrio }}
+                {% if form.barrio.errors %}
+                <div class="text-danger small">{{ form.barrio.errors|join:", " }}</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- SECCIÓN: Solo Empleados -->
+        <div id="seccion-empleado" style="display:none">
+            <hr>
+            <h6 class="text-uppercase text-muted fw-bold mb-2" style="font-size:.75rem; letter-spacing:.08em;">
+                <i class="bi bi-briefcase-fill me-1"></i> Datos de Empleado
+            </h6>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">{{ form.tipo_empleado.label }}</label>
+                    {{ form.tipo_empleado }}
+                    {% if form.tipo_empleado.errors %}
+                    <div class="text-danger small">{{ form.tipo_empleado.errors|join:", " }}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">{{ form.fecha_contratacion.label }}</label>
+                    {{ form.fecha_contratacion }}
+                    {% if form.fecha_contratacion.errors %}
+                    <div class="text-danger small">{{ form.fecha_contratacion.errors|join:", " }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- ── CAMPO SALARIO NUEVO ── -->
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">
+                        {{ form.salario.label }}
+                        <a href="{% url 'administrador:salarios' %}"
+                           target="_blank"
+                           class="ms-2 small text-primary"
+                           title="Gestionar salarios">
+                            <i class="bi bi-gear-fill"></i> Gestionar
+                        </a>
+                    </label>
+                    {{ form.salario }}
+                    {% if form.salario.errors %}
+                    <div class="text-danger small">{{ form.salario.errors|join:", " }}</div>
+                    {% endif %}
+                    <div class="form-text text-muted">
+                        Si no existe el monto, crealo en "Gestionar" y volvé aquí.
+                    </div>
+                </div>
+                <!-- ─────────────────────── -->
+            </div>
+        </div>
+
+    </div><!-- /modal-body -->
+
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-primary">
+            <i class="bi bi-floppy-fill me-1"></i>
+            {% if modo == 'crear' %}Crear Usuario{% else %}Guardar Cambios{% endif %}
+        </button>
+    </div>
+</form>
+
+<script>
+(function () {
+    const grupoSelect = document.querySelector('form [name="grupo"]:not([onchange])');
+    const secEmpleado = document.getElementById('seccion-empleado');
+    const GRUPOS_EMPLEADO = ['Administrador', 'Cocina', 'Empleado'];
+    
+    function toggleEmpleado() {
+        const texto = grupoSelect.options[grupoSelect.selectedIndex].text.trim();
+        secEmpleado.style.display = GRUPOS_EMPLEADO.includes(texto) ? 'block' : 'none';
+    }
+
+    if (grupoSelect) {
+        grupoSelect.addEventListener('change', toggleEmpleado);
+        // Esperar a que el DOM esté listo antes de correr
+        setTimeout(toggleEmpleado, 50);
+    }
+
+    // Filtrar barrios según ciudad
+    const ciudadSelect = document.getElementById('id_ciudad_admin');
+    const barrioSelect = document.getElementById('id_barrio_admin');
+
+    if (ciudadSelect && barrioSelect) {
+        ciudadSelect.addEventListener('change', function () {
+            const ciudadId = this.value;
+            fetch(`/api/barrios/?ciudad=${ciudadId}`)
+                .then(r => r.json())
+                .then(data => {
+                    barrioSelect.innerHTML = '<option value="">---------</option>';
+                    data.forEach(b => {
+                        const opt = document.createElement('option');
+                        opt.value = b.id;
+                        opt.textContent = b.nombre;
+                        barrioSelect.appendChild(opt);
+                    });
+                })
+                .catch(() => {});
+        });
+    }
+    function togglePass(btn) {
+        const inputId = btn.getAttribute('data-target');
+        const input = document.getElementById(inputId);
+        const icon = btn.querySelector('i');
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.replace('bi-eye-fill', 'bi-eye-slash-fill');
+        } else {
+            input.type = 'password';
+            icon.classList.replace('bi-eye-slash-fill', 'bi-eye-fill');
+        }
+    }
+})();
+</script>

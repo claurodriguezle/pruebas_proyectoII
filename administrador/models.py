@@ -21,6 +21,7 @@ class Persona(models.Model):
 
 class Ciudad(models.Model):
     nombre = models.CharField(max_length=50)
+    activo = models.BooleanField(default=True)
 
     def __str__(self):
         return self.nombre
@@ -110,6 +111,7 @@ class Salario(models.Model):
 
 class TipoEmpleado(models.Model):
     nombre_tipo = models.CharField(max_length=50)
+    activo = models.BooleanField(default=True)
 
     def __str__(self):
         return self.nombre_tipo
@@ -231,8 +233,13 @@ class Compra(models.Model):
     estado = models.CharField(max_length=10, choices=[('ACTIVA','Activa'),('ANULADA','Anulada')], default='ACTIVA')
     motivo_anulacion = models.TextField(null=True, blank=True)
     fecha_anulacion = models.DateTimeField(null=True, blank=True)
+
     def __str__(self):
-        return f"Factura {self.numero_factura} - {self.proveedor.nombre if self.proveedor else 'Proveedor Eliminado'}(self.fecha)"
+        try:
+            proveedor_nombre = self.proveedor.nombre_empresa if self.proveedor else 'Proveedor Eliminado'
+            return f"Factura {self.numero_factura} - {proveedor_nombre} ({self.fecha})"
+        except:
+            return f"Factura {self.numero_factura}"   
     def calcular_totales(self):
         """
         Calcula los totales(total sin iva, iva 5, iva 10, total iva, monto total, basados en los detalles de compra asociados)

@@ -1,0 +1,64 @@
+<form
+    method="POST"
+    {% if barrio %}
+        hx-post="{% url 'administrador:barrios_editar_htmx' barrio.id %}"
+        hx-target="#barrio-{{ barrio.id }}"
+        hx-swap="outerHTML"
+    {% else %}
+        hx-post="{% url 'administrador:barrios_crear_htmx' %}"
+        hx-target="#barrioTableBody"
+        hx-swap="beforeend"
+    {% endif %}
+    hx-on::after-request="
+        if(event.detail.successful) {
+            bootstrap.Modal.getInstance(document.getElementById('barrioModal')).hide();
+        }
+    "
+>
+    {% csrf_token %}
+
+    <div class="mb-3">
+        <label for="nombreBarrio" class="form-label fw-semibold">Nombre <span class="text-danger">*</span></label>
+        <input
+            type="text"
+            class="form-control"
+            id="nombreBarrio"
+            name="nombre"
+            value="{{ barrio.nombre|default:'' }}"
+            placeholder="Ej: Villa Morra"
+            required
+            autofocus
+        >
+    </div>
+
+    <div class="mb-3">
+        <label for="ciudadBarrio" class="form-label fw-semibold">Ciudad <span class="text-danger">*</span></label>
+        <select class="form-select" id="ciudadBarrio" name="ciudad" required>
+            <option value="">-- Seleccioná una ciudad --</option>
+            {% for c in ciudades %}
+                <option value="{{ c.id }}"
+                    {% if barrio and barrio.ciudad_id == c.id %}selected{% endif %}>
+                    {{ c.nombre }}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="mb-3 form-check">
+        <input
+            type="checkbox"
+            class="form-check-input"
+            id="habilitadoBarrio"
+            name="habilitado"
+            {% if barrio.habilitado %}checked{% endif %}
+        >
+        <label class="form-check-label" for="habilitadoBarrio">Habilitado para delivery</label>
+    </div>
+
+    <div class="d-flex justify-content-end gap-2 mt-3">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn {% if barrio %}btn-primary{% else %}btn-success{% endif %}">
+            {% if barrio %}Actualizar{% else %}Crear{% endif %}
+        </button>
+    </div>
+</form>

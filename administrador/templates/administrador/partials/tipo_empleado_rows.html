@@ -1,0 +1,7 @@
+{% for tipo in tipos %}
+    {% include "administrador/partials/tipo_empleado_row.html" with tipo=tipo %}
+{% empty %}
+    <tr>
+        <td colspan="5" class="text-center text-muted">No hay tipos de empleado registrados.</td>
+    </tr>
+{% endfor %}

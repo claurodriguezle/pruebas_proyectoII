@@ -1,0 +1,58 @@
+<!-- administrador/templates/salarios/partials/modal_form.html -->
+
+<div class="modal-header">
+    <h5 class="modal-title">
+        {% if modo == 'crear' %}
+            <i class="bi bi-plus-circle-fill me-2 text-success"></i>Nuevo Salario
+        {% else %}
+            <i class="bi bi-pencil-fill me-2 text-primary"></i>Editar Salario
+        {% endif %}
+    </h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+</div>
+
+<form method="post"
+      {% if modo == 'crear' %}
+          hx-post="{% url 'administrador:crear_salario' %}"
+      {% else %}
+          hx-post="{% url 'administrador:editar_salario' salario.pk %}"
+      {% endif %}
+      hx-target="#modal-salario-body"
+      hx-swap="innerHTML">
+    {% csrf_token %}
+
+    <div class="modal-body">
+        <label class="form-label fw-semibold">Monto (Gs.)</label>
+        <div class="input-group">
+            <span class="input-group-text">Gs.</span>
+            <input type="number"
+                   name="monto"
+                   class="form-control"
+                   placeholder="Ej: 2500000"
+                   min="1"
+                   step="1"
+                   value="{% if modo == 'editar' %}{{ salario.monto|floatformat:0 }}{% endif %}"
+                   required>
+        </div>
+        <div class="form-text text-muted mt-1">
+            Ingresá el monto mensual en guaraníes.
+        </div>
+
+        {% if modo == 'editar' %}
+        <div class="alert alert-info py-2 mt-3 small">
+            <i class="bi bi-info-circle-fill me-1"></i>
+            Este cambio afectará a todos los empleados que tengan este salario asignado.
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">
+            Cancelar
+        </button>
+        <button type="submit" class="btn btn-success btn-sm">
+            <i class="bi bi-floppy-fill me-1"></i>
+            {% if modo == 'crear' %}Crear{% else %}Guardar{% endif %}
+        </button>
+    </div>
+</form>

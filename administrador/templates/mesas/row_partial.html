@@ -1,0 +1,59 @@
+<tr id="mesa-{{ mesa.pk }}">
+    <td><strong>Mesa {{ mesa.numero }}</strong></td>
+    <td>{{ mesa.capacidad }} personas</td>
+    <td>
+        {% if mesa.estado == 'libre' %}
+            <span class="badge bg-success">Libre</span>
+        {% elif mesa.estado == 'ocupada' %}
+            <span class="badge bg-danger">Ocupada</span>
+        {% else %}
+            <span class="badge bg-warning text-dark">Pagando</span>
+        {% endif %}
+    </td>
+    <td>
+        {% if mesa.activa %}
+            <i class="bi bi-check-circle-fill text-success"></i>
+        {% else %}
+            <i class="bi bi-x-circle-fill text-secondary"></i>
+        {% endif %}
+    </td>
+    <td>
+        {% if mesa.es_mostrador %}
+            <i class="bi bi-check-circle-fill text-success"></i>
+        {% else %}
+            <i class="bi bi-x-circle-fill text-secondary"></i>
+        {% endif %}
+    </td>
+    <td>
+        <!-- Editar -->
+        <button class="btn btn-outline-primary btn-sm" title="Editar"
+            data-bs-toggle="modal"
+            data-bs-target="#mesaModal"
+            hx-get="{% url 'administrador:mesas_editar_partial' mesa.pk %}"
+            hx-target="#mesaFormBody"
+            hx-swap="innerHTML">
+            <i class="bi bi-pencil-square"></i>
+        </button>
+
+        <!-- Activar/Desactivar -->
+        {% if mesa.activa %}
+            <button class="btn btn-outline-danger btn-sm" title="Desactivar"
+                hx-post="{% url 'administrador:mesas_eliminar_htmx' mesa.pk %}"
+                hx-target="#mesa-{{ mesa.pk }}"
+                hx-swap="outerHTML"
+                hx-confirm="¿Desactivar Mesa {{ mesa.numero }}?"
+                hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+                <i class="bi bi-slash-circle"></i>
+            </button>
+        {% else %}
+            <button class="btn btn-outline-success btn-sm" title="Activar"
+                hx-post="{% url 'administrador:mesas_eliminar_htmx' mesa.pk %}"
+                hx-target="#mesa-{{ mesa.pk }}"
+                hx-swap="outerHTML"
+                hx-confirm="¿Reactivar Mesa {{ mesa.numero }}?"
+                hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+                <i class="bi bi-check-circle"></i>
+            </button>
+        {% endif %}
+    </td>
+</tr>

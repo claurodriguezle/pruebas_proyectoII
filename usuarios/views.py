@@ -1,11 +1,12 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
 from django.contrib.auth import authenticate, login, logout
-from administrador.models import Cliente, Empleado, Direccion, Ciudad, Barrio
-from usuarios.forms import RegistroClienteForm, DireccionForm
+from administrador.models import Persona, Cliente, Empleado,TipoEmpleado, Direccion, Ciudad, Barrio
+from usuarios.forms import RegistroClienteForm, DireccionForm, UsuarioAdminForm, CambiarPasswordAdminForm
 from django.contrib import messages
 from django.db import transaction, IntegrityError
+from django.http import HttpResponse
 
 # Create your views here.
 def index(request):
@@ -270,3 +271,250 @@ def exit(request):
     logout(request)
     #return redirect('pedidos:menu_productos')
     return redirect('usuarios:sesion')
+
+
+#Vistas para administrar los usuarios
+def _get_perfil(user):
+    """Devuelve (tipo, objeto_perfil, persona) para un User dado."""
+    try:
+        emp = user.empleado
+        return 'Empleado', emp, emp.persona
+    except Empleado.DoesNotExist:
+        pass
+    try:
+        cli = user.cliente
+        return 'Cliente', cli, cli.persona
+    except Cliente.DoesNotExist:
+        pass
+    return 'Sin perfil', None, None
+ 
+ 
+@login_required
+def index(request):
+    """Lista todos los usuarios con filtros por grupo y búsqueda."""
+    usuarios = User.objects.select_related(
+        'empleado__persona',
+        'cliente__persona',
+    ).prefetch_related('groups').order_by('username')
+ 
+    # Filtro por grupo
+    grupo_filtro = request.GET.get('grupo', '')
+    if grupo_filtro == 'sin_rol':
+        usuarios = [u for u in usuarios if not u.groups.exists()]
+    elif grupo_filtro:
+        usuarios = usuarios.filter(groups__name=grupo_filtro)
+ 
+    # Búsqueda por nombre o cédula
+    search = request.GET.get('search', '').strip()
+    if search:
+        usuarios_filtrados = []
+        for u in usuarios:
+            _, _, persona = _get_perfil(u)
+            if persona:
+                if (search.lower() in persona.nombre.lower() or
+                        search.lower() in persona.apellido.lower() or
+                        search in persona.cedula):
+                    usuarios_filtrados.append(u)
+            else:
+                if search.lower() in u.username.lower():
+                    usuarios_filtrados.append(u)
+        usuarios = usuarios_filtrados
+ 
+    # Armar lista con datos ya procesados para el template
+    tabla = []
+    for u in usuarios:
+        tipo, perfil, persona = _get_perfil(u)
+        grupo = u.groups.first()
+        tabla.append({
+            'user': u,
+            'persona': persona,
+            'tipo': tipo,
+            'grupo': grupo.name if grupo else 'Cliente',
+        })
+ 
+    grupos = Group.objects.all()
+ 
+    return render(request, 'usuarios/index.html', {
+        'tabla': tabla,
+        'grupos': grupos,
+        'grupo_filtro': grupo_filtro,
+        'search': search,
+    })
+ 
+ 
+@login_required
+def crear_usuario_admin(request):
+    if request.method == 'POST':
+        form = UsuarioAdminForm(request.POST)
+        if form.is_valid():
+            cd = form.cleaned_data
+            try:
+                with transaction.atomic():
+                    user = User.objects.create_user(
+                        username=cd['username'],
+                        email=cd['email'],
+                        password=cd['password1'],
+                    )
+                    grupo = cd.get('grupo')
+                    if grupo:
+                        user.groups.set([grupo])
+                    user.save()
+ 
+                    persona = Persona.objects.create(
+                        nombre=cd['nombre'],
+                        apellido=cd['apellido'],
+                        cedula=cd['cedula'],
+                        telefono=cd['telefono'],
+                        fecha_nacimiento=cd['fecha_nacimiento'],
+                        nacionalidad=cd['nacionalidad'],
+                        ruc=cd.get('ruc') or None,
+                        correo=cd['email'],
+                        ciudad=cd['ciudad'],
+                        barrio=cd['barrio'],
+                    )
+
+                    GRUPOS_EMPLEADO = ['Administrador', 'Cocina', 'Empleado']
+ 
+                    if grupo and grupo.name in GRUPOS_EMPLEADO:
+                        Empleado.objects.create(
+                            persona=persona,
+                            user=user,
+                            tipo=cd.get('tipo_empleado'),
+                            fecha_contratacion=cd['fecha_contratacion'],
+                            salario=cd.get('salario'),       # ← CAMPO NUEVO
+                        )
+                    else:
+                        Cliente.objects.create(persona=persona, user=user)
+ 
+                messages.success(request, f'Usuario "{user.username}" creado correctamente.')
+                return HttpResponse(status=204, headers={'HX-Trigger': 'usuarioGuardado'})
+ 
+            except Exception as e:
+                messages.error(request, f'Error al crear el usuario: {str(e)}')
+ 
+        return render(request, 'usuarios/partials/modal_form.html', {
+            'form': form, 'modo': 'crear'
+        })
+ 
+    form = UsuarioAdminForm()
+    return render(request, 'usuarios/partials/modal_form.html', {
+        'form': form, 'modo': 'crear'
+    })
+ 
+ 
+@login_required
+def editar_usuario_admin(request, pk):
+    user = get_object_or_404(User, pk=pk)
+    tipo, perfil, persona = _get_perfil(user)
+ 
+    initial = {
+        'username': user.username,
+        'email': user.email,
+        'grupo': user.groups.first(),
+        'nombre': persona.nombre if persona else '',
+        'apellido': persona.apellido if persona else '',
+        'cedula': persona.cedula if persona else '',
+        'telefono': persona.telefono if persona else '',
+        'fecha_nacimiento': persona.fecha_nacimiento.strftime('%Y-%m-%d') if persona and persona.fecha_nacimiento else '',
+        'nacionalidad': persona.nacionalidad if persona else '',
+        'ruc': persona.ruc if persona else '',
+        'ciudad': persona.ciudad if persona else None,
+        'barrio': persona.barrio if persona else None,
+    }
+ 
+    if tipo in ['Administrador', 'Cocina', 'Empleado'] and perfil:
+        initial['tipo_empleado'] = perfil.tipo
+        initial['fecha_contratacion'] = perfil.fecha_contratacion.strftime('%Y-%m-%d') if perfil.fecha_contratacion else ''
+        initial['salario'] = perfil.salario
+ 
+    if request.method == 'POST':
+        form = UsuarioAdminForm(request.POST, usuario_id=pk)
+        if form.is_valid():
+            cd = form.cleaned_data
+            try:
+                with transaction.atomic():
+                    user.username = cd['username']
+                    user.email = cd['email']
+                    if cd.get('password1'):
+                        user.set_password(cd['password1'])
+                    user.save()
+ 
+                    grupo = cd.get('grupo')
+                    user.groups.clear()
+                    if grupo:
+                        user.groups.add(grupo)
+ 
+                    if persona:
+                        persona.nombre = cd['nombre']
+                        persona.apellido = cd['apellido']
+                        persona.cedula = cd['cedula']
+                        persona.telefono = cd['telefono']
+                        persona.fecha_nacimiento = cd['fecha_nacimiento']
+                        persona.nacionalidad = cd['nacionalidad']
+                        persona.ruc = cd.get('ruc') or None
+                        persona.correo = cd['email']
+                        persona.ciudad = cd['ciudad']
+                        persona.barrio = cd['barrio']
+                        persona.save()
+ 
+                    if tipo in ['Administrador', 'Cocina', 'Empleado'] and perfil:
+                        perfil.tipo = cd.get('tipo_empleado')
+                        perfil.fecha_contratacion = cd.get('fecha_contratacion')
+                        perfil.salario = cd.get('salario')
+                        perfil.save()
+ 
+                messages.success(request, f'Usuario "{user.username}" actualizado.')
+                return HttpResponse(status=204, headers={'HX-Trigger': 'usuarioGuardado'})
+ 
+            except Exception as e:
+                messages.error(request, f'Error al actualizar: {str(e)}')
+ 
+        return render(request, 'usuarios/partials/modal_form.html', {
+            'form': form, 'modo': 'editar', 'usuario': user
+        })
+ 
+    form = UsuarioAdminForm(initial=initial, usuario_id=pk)
+    return render(request, 'usuarios/partials/modal_form.html', {
+        'form': form, 'modo': 'editar', 'usuario': user
+    })
+ 
+@login_required
+def toggle_activo(request, pk):
+    """Activa o desactiva un usuario (no elimina)."""
+    if request.method == 'POST':
+        user = get_object_or_404(User, pk=pk)
+        user.is_active = not user.is_active
+        user.save()
+ 
+        # También actualizar estado de la Persona
+        _, _, persona = _get_perfil(user)
+        if persona:
+            persona.estado = user.is_active
+            persona.save()
+ 
+        estado = 'activado' if user.is_active else 'desactivado'
+        messages.success(request, f'Usuario "{user.username}" {estado}.')
+ 
+    return redirect('usuarios:index')
+ 
+ 
+@login_required
+def cambiar_password_admin(request, pk):
+    """El admin cambia la contraseña de cualquier usuario."""
+    user = get_object_or_404(User, pk=pk)
+ 
+    if request.method == 'POST':
+        form = CambiarPasswordAdminForm(request.POST)
+        if form.is_valid():
+            user.set_password(form.cleaned_data['password1'])
+            user.save()
+            messages.success(request, f'Contraseña de "{user.username}" actualizada.')
+            return HttpResponse(status=204, headers={'HX-Trigger': 'usuarioGuardado'})
+        return render(request, 'usuarios/partials/modal_password.html', {
+            'form': form, 'usuario': user
+        })
+ 
+    form = CambiarPasswordAdminForm()
+    return render(request, 'usuarios/partials/modal_password.html', {
+        'form': form, 'usuario': user
+    })
