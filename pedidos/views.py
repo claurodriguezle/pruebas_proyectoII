@@ -13,7 +13,21 @@ from usuarios.forms import DireccionForm
 from django.views.decorators.http import require_http_methods
 from django.utils import timezone
 from django.db.models import Q
-from caja.models import Caja
+from django.utils import timezone
+
+# ── Horario de atención del local ──────────────────────────────────────────
+HORA_APERTURA = 18   # 18:40
+MIN_APERTURA  = 40
+HORA_CIERRE   = 22   # 22:30
+MIN_CIERRE    = 30
+
+def local_esta_abierto():
+    """Devuelve True si ahora mismo estamos dentro del horario de atención."""
+    ahora = timezone.localtime(timezone.now()).time()
+    from datetime import time
+    apertura = time(HORA_APERTURA, MIN_APERTURA)
+    cierre   = time(HORA_CIERRE,   MIN_CIERRE)
+    return apertura <= ahora <= cierre
 
 #Importamos el decorador para controlar el acceso a las vistas por grupo
 from usuarios.decorators import grupo_requerido
@@ -30,8 +44,8 @@ def menu_productos(request):
     # Total de item para el contador del carrito
     cantidad_carrito = sum(item['cantidad'] for item in carrito)
 
-    # Verifica si existe una caja abierta
-    caja_abierta = Caja.objects.filter(estado='abierta').exists()
+    # Verifica si el local está dentro del horario de atención
+    caja_abierta = local_esta_abierto()
 
     return render(request, 'pedidos/menu_productos.html', {
         'categorias': categorias,
@@ -104,10 +118,8 @@ def contador_carrito(request):
     return HttpResponse(html)
 
 def agregar_al_carrito(request):
-    #Validamos que haya una caja abierta
-    caja_abierta = Caja.objects.filter(estado='abierta').exists()
-    #print(f"DEBUG agregar_al_carrito — caja_abierta: {caja_abierta}") 
-    if not caja_abierta:
+    # Validamos que el local esté dentro del horario de atención
+    if not local_esta_abierto():
         return JsonResponse({'error': 'La caja está cerrada. No se pueden agregar productos al carrito.'}, status=400)
     if request.method == 'POST':
         producto_id = request.POST.get('producto_id')
@@ -249,10 +261,8 @@ def eliminar_item(request, item_index):
 @login_required
 def tipo_entrega(request):
     #Verificamos que la caja este abierta
-    caja_abierta = Caja.objects.filter(estado='abierta').exists()
-    #print(f"DEBUG agregar_al_carrito — caja_abierta: {caja_abierta}") 
-    if not caja_abierta:
-        messages.error(request, "Lo sentimos, no se puede avanzar porque no hay una caja abierta. Por favor, intentá nuevamente más tarde.")
+    if not local_esta_abierto():
+        messages.error(request, "Lo sentimos, estamos cerrados. Nuestro horario de atención es de 18:40 a 22:30.")
         return redirect('pedidos:menu_productos')
     
     
@@ -262,9 +272,8 @@ def tipo_entrega(request):
 @login_required
 def seleccionar_direccion_delivery(request):
     # Verificamos que la caja esté abierta
-    caja_abierta = Caja.objects.filter(estado='abierta').exists()
-    if not caja_abierta:
-        messages.error(request, "Lo sentimos, no se puede avanzar porque no hay una caja abierta. Por favor, intentá nuevamente más tarde.")
+    if not local_esta_abierto():
+        messages.error(request, "Lo sentimos, estamos cerrados. Nuestro horario de atención es de 18:40 a 22:30.")
         return redirect('pedidos:menu_productos')
     try:
         cliente = request.user.cliente
@@ -329,9 +338,8 @@ def seleccionar_direccion_delivery(request):
 @login_required
 def retiro_local(request):
     # Verificamos que la caja esté abierta
-    caja_abierta = Caja.objects.filter(estado='abierta').exists()
-    if not caja_abierta:
-        messages.error(request, "Lo sentimos, no se puede avanzar porque no hay una caja abierta. Por favor, intentá nuevamente más tarde.")
+    if not local_esta_abierto():
+        messages.error(request, "Lo sentimos, estamos cerrados. Nuestro horario de atención es de 18:40 a 22:30.")
         return redirect('pedidos:menu_productos')
 
     if request.method == 'POST':
@@ -350,9 +358,8 @@ def retiro_local(request):
 @login_required
 def resumen_pedido(request):
     # Verificamos que la caja esté abierta
-    caja_abierta = Caja.objects.filter(estado='abierta').exists()
-    if not caja_abierta:
-        messages.error(request, "Lo sentimos, no se puede avanzar porque no hay una caja abierta. Por favor, intentá nuevamente más tarde.")
+    if not local_esta_abierto():
+        messages.error(request, "Lo sentimos, estamos cerrados. Nuestro horario de atención es de 18:40 a 22:30.")
         return redirect('pedidos:menu_productos')
     carrito = request.session.get('carrito', [])
     #Tomamos los datos del cliente para su facturacion
@@ -405,9 +412,8 @@ def resumen_pedido(request):
 @login_required
 def confirmar_pedido(request):
     #Verificamos que la caja este abierta
-    caja_abierta = Caja.objects.filter(estado='abierta').exists()
-    if not caja_abierta:
-        messages.error(request, "Lo sentimos, no se puede confirmar el pedido porque no hay una caja abierta. Por favor, intentá nuevamente más tarde.")
+    if not local_esta_abierto():
+        messages.error(request, "Lo sentimos, estamos cerrados. Nuestro horario de atención es de 18:40 a 22:30.")
         return redirect('pedidos:menu_productos')
     
     carrito = request.session.get('carrito', [])

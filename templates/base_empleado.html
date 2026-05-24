@@ -1,0 +1,199 @@
+{% load static %}
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Iconos -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <!-- Fuente -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <!-- Estilos -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{% static 'css/menu.css' %}">
+
+    <title>{% block title %}Brother's Burger{% endblock %}</title>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <noscript>
+        <div style="position: fixed;top: 0;left: 0;width: 100%;background-color: #ffc107;color: #000;padding: 1em;text-align: center;z-index: 9999;">
+            ⚠ Esta página requiere JavaScript para funcionar correctamente.
+        </div>
+    </noscript>
+
+    <!-- Barra de navegacion lateral -->
+    <nav>
+        <a href="{% url 'usuarios:dashboard_redireccion' %}" style="text-decoration: none; color: inherit;">
+            <h4>🍔 Burger System</h4>
+        </a>
+        <hr>
+        <span><strong>{{ request.user.get_full_name|default:request.user.username }}</strong><br>
+        <small>{{ request.user.groups.first.name|default:'Sin rol' }}</small></span>
+        <hr>
+        
+        <ul class="nav flex-column">
+            <!-- Inicio - visible para todos los empleados -->
+            <li class="nav-item"><a href="{% url 'usuarios:dashboard_redireccion' %}" class="nav-link">Inicio</a></li>
+
+            <!-- Usuarios - solo Administrador -->
+            {% if request.user.groups.first.name == 'Administrador' %}
+            <li class="nav-item"><a href="{% url 'usuarios:index' %}" class="nav-link">Usuarios</a></li>
+            {% endif %}
+
+            <!-- Caja - Administrador y Empleado (Cajero) -->
+            {% if request.user.groups.first.name == 'Administrador' or request.user.groups.first.name == 'Empleado' %}
+            <li class="nav-item"><a href="{% url 'caja:apertura_caja' %}" class="nav-link">Caja</a></li>
+            {% endif %}
+
+            <!-- Facturación - solo Administrador -->
+            {% if request.user.groups.first.name == 'Administrador' %}
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">Facturación</a>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="{% url 'facturacion:timbrado_list' %}">Timbrado</a></li>
+                    <li><a class="dropdown-item" href="{% url 'facturacion:factura_view' %}">Factura</a></li>
+                    <li><a class="dropdown-item" href="{% url 'facturacion:facturas_list' %}">Lista de Facturas</a></li>
+                </ul>
+            </li>
+            {% endif %}
+
+            <!-- Pedidos - visible según rol -->
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">Pedidos</a>
+                <ul class="dropdown-menu">
+                    <!-- Clientes - solo Administrador -->
+                    {% if request.user.groups.first.name == 'Administrador' %}
+                    <li><a class="dropdown-item" href="{% url 'pedidos:index' %}">Clientes</a></li>
+                    {% endif %}
+                    
+                    <!-- Orden de Pedidos - Administrador y Empleado -->
+                    {% if request.user.groups.first.name == 'Administrador' or request.user.groups.first.name == 'Empleado' %}
+                    <li><a class="dropdown-item" href="{% url 'pedidos:ordenes_view' %}">Orden de Pedidos</a></li>
+                    {% endif %}
+                    
+                    <!-- Cocina - Administrador y Cocina -->
+                    {% if request.user.groups.first.name == 'Administrador' or request.user.groups.first.name == 'Cocina' %}
+                    <li><a class="dropdown-item" href="{% url 'pedidos:cocina' %}">Cocina</a></li>
+                    {% endif %}
+                    
+                    <!-- Mesas - solo Administrador -->
+                    {% if request.user.groups.first.name == 'Administrador' %}
+                    <li><a class="dropdown-item" href="{% url 'administrador:mesas' %}">Mesas</a></li>
+                    {% endif %}
+                </ul>
+            </li>
+
+            <!-- Gestión - solo Administrador -->
+            {% if request.user.groups.first.name == 'Administrador' %}
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">Gestión</a>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="{% url 'administrador:productos' %}">Productos</a></li>
+                    <li><a class="dropdown-item" href="{% url 'administrador:lista_compras' %}">Compras</a></li>
+                    <li><a class="dropdown-item" href="{% url 'administrador:lista_stock' %}">Stock</a></li>
+                    <li><a class="dropdown-item" href="{% url 'administrador:adicionales' %}">Adicionales</a></li>
+                </ul>
+            </li>
+            {% endif %}
+
+            <!-- Reportes - solo Administrador -->
+            {% if request.user.groups.first.name == 'Administrador' %}
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">Reportes</a>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="{% url 'reportes:ventas_productos' %}">Producto</a></li>
+                    <li><a class="dropdown-item" href="{% url 'reportes:entregas' %}">Entrega</a></li>
+                    <li><a class="dropdown-item" href="{% url 'reportes:top_clientes' %}">Clientes</a></li>
+                    <li><a class="dropdown-item" href="{% url 'reportes:ventas' %}">Ventas</a></li>
+                    <li><a class="dropdown-item" href="{% url 'reportes:costos' %}">Costos</a></li>
+                    <li><a class="dropdown-item" href="{% url 'reportes:ganancias' %}">Ganancias</a></li>
+                </ul>
+            </li>
+            {% endif %}
+
+            <!-- Personas - solo Administrador -->
+            {% if request.user.groups.first.name == 'Administrador' %}
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">Personas</a>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="{% url 'administrador:crear_persona' %}">Registro</a></li>
+                    <li><a class="dropdown-item" href="{% url 'administrador:listar_personas' %}">Listar</a></li>
+                    <li><a class="dropdown-item" href="{% url 'administrador:lista_tipo_empleado' %}">Tipo de Empleado</a></li>
+                    <li><a class="dropdown-item" href="{% url 'administrador:salarios' %}">Salarios</a></li>
+                    <li><a class="dropdown-item" href="{% url 'administrador:localidades' %}">Localidades</a></li>
+                </ul>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+
+    <!-- Contenido Principal -->
+    <main>
+        <div class="topbar border border-secondary rounded p-3">
+            <span>{% block page_title %}Panel de Control{% endblock %}</span>
+            <div class="dropdown">
+                <button class="btn btn-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    👤 {{ request.user.get_full_name|default:request.user.username }}
+                    <small>({{ request.user.groups.first.name|default:'Sin rol' }})</small>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="{% url 'usuarios:perfil_empleado' %}">
+                        <i class="bi bi-person-circle"></i> Mi Perfil
+                    </a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item text-danger" href="{% url 'usuarios:logout_empleado' %}">
+                        <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
+                    </a></li>
+                </ul>
+            </div>
+        </div>
+
+        {% if messages %}
+        <div class="position-fixed top-0 end-0 p-3" style="z-index: 9999">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% block body %}
+        {% endblock %}
+    </main>
+
+    <!-- Bootstrap JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.5"></script>
+    
+    <form style="display: none;">
+        {% csrf_token %}
+    </form>
+
+    <script>
+        document.body.addEventListener('htmx:configRequest', function(event) {
+            const csrfInput = document.querySelector('input[name="csrfmiddlewaretoken"]');
+            if (csrfInput) {
+                event.detail.headers['X-CSRFToken'] = csrfInput.value;
+            }
+        });
+    </script>   
+    
+    <script>
+        document.addEventListener('htmx:afterOnLoad', function(evt) {
+            if (evt.detail && evt.detail.xhr && evt.detail.xhr.getResponseHeader('HX-Trigger') === 'modalCategoriaCerrado') {
+                const modalEl = document.getElementById('modalCategoria');
+                const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                modal.hide();
+            }
+        });
+    </script>
+    <script src="{% static 'js/reportes.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

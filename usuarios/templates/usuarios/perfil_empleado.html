@@ -1,0 +1,231 @@
+{% extends 'base_empleado.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Mi Perfil - Brother's Burger{% endblock %}
+
+{% block page_title %}Mi Perfil{% endblock %}
+
+{% block extra_css %}
+<style>
+    .perfil-container {
+        background: white;
+        border-radius: 15px;
+        padding: 2rem;
+        margin-top: 1rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    .perfil-header {
+        display: flex;
+        align-items: center;
+        gap: 2rem;
+        margin-bottom: 2rem;
+        padding-bottom: 2rem;
+        border-bottom: 2px solid #f0f0f0;
+    }
+    .avatar {
+        width: 100px;
+        height: 100px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 3rem;
+        color: white;
+    }
+    .info-basica h2 {
+        margin: 0;
+        color: #333;
+    }
+    .info-basica p {
+        margin: 5px 0 0;
+        color: #666;
+    }
+    .badge-rol {
+        display: inline-block;
+        padding: 4px 12px;
+        background: #e0e7ff;
+        color: #4f46e5;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        margin-top: 8px;
+    }
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.5rem;
+        margin-top: 2rem;
+    }
+    .campo {
+        background: #f8f9fa;
+        padding: 1rem;
+        border-radius: 10px;
+    }
+    .campo label {
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        font-weight: 600;
+        color: #888;
+        display: block;
+        margin-bottom: 0.5rem;
+    }
+    .campo .valor {
+        font-size: 1rem;
+        color: #333;
+        font-weight: 500;
+    }
+    .btn-editar {
+        margin-top: 2rem;
+        text-align: right;
+    }
+    .seccion-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #333;
+        margin-top: 2rem;
+        padding-top: 1rem;
+        border-top: 2px solid #f0f0f0;
+    }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="perfil-container">
+    <div class="perfil-header">
+        <div class="avatar">
+            {{ persona.nombre|slice:":1" }}{{ persona.apellido|slice:":1" }}
+        </div>
+        <div class="info-basica">
+            <h2>{{ persona.nombre }} {{ persona.apellido }}</h2>
+            <p>{{ rol }}</p>
+            <span class="badge-rol">Miembro desde {{ usuario.date_joined|date:"F Y" }}</span>
+        </div>
+    </div>
+
+    <!-- Información Personal -->
+    <h4 class="seccion-title">📋 Información Personal</h4>
+    <div class="info-grid">
+        <div class="campo">
+            <label>Nombre</label>
+            <div class="valor">{{ persona.nombre }}</div>
+        </div>
+        <div class="campo">
+            <label>Apellido</label>
+            <div class="valor">{{ persona.apellido }}</div>
+        </div>
+        <div class="campo">
+            <label>Correo Electrónico</label>
+            <div class="valor">{{ usuario.email }}</div>
+        </div>
+        <div class="campo">
+            <label>Teléfono</label>
+            <div class="valor">{{ persona.telefono }}</div>
+        </div>
+        <div class="campo">
+            <label>Dirección</label>
+            <div class="valor">{{ direccion }}</div>
+        </div>
+        <div class="campo">
+            <label>Fecha de Nacimiento</label>
+            <div class="valor">{{ persona.fecha_nacimiento|date:"d/m/Y" }}</div>
+        </div>
+        <div class="campo">
+            <label>Cédula</label>
+            <div class="valor">{{ persona.cedula }}</div>
+        </div>
+        <div class="campo">
+            <label>Nacionalidad</label>
+            <div class="valor">{{ persona.nacionalidad }}</div>
+        </div>
+        {% if persona.ruc %}
+        <div class="campo">
+            <label>RUC</label>
+            <div class="valor">{{ persona.ruc }}</div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Información de Empleado -->
+    <h4 class="seccion-title">💼 Información Laboral</h4>
+    <div class="info-grid">
+        <div class="campo">
+            <label>Tipo de Empleado</label>
+            <div class="valor">{{ empleado.tipo.nombre_tipo|default:"No especificado" }}</div>
+        </div>
+        <div class="campo">
+            <label>Fecha de Contratación</label>
+            <div class="valor">{{ empleado.fecha_contratacion|date:"d/m/Y" }}</div>
+        </div>
+        {% if empleado.salario and es_admin %}
+        <div class="campo">
+            <label>Salario</label>
+            <div class="valor">Gs. {{ empleado.salario.monto|floatformat:2|intcomma }}</div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Botón Editar (solo visible para Administrador) -->
+    {% if es_admin %}
+    <div class="btn-editar">
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalEditarPerfil">
+            <i class="bi bi-pencil-square"></i> Editar Perfil
+        </button>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal Editar Perfil -->
+{% if es_admin %}
+<div class="modal fade" id="modalEditarPerfil" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Editar Perfil - {{ persona.nombre }} {{ persona.apellido }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'usuarios:editar_perfil_empleado' usuario.id %}">
+                <div class="modal-body">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Nombre</label>
+                            <input type="text" name="nombre" class="form-control" value="{{ persona.nombre }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Apellido</label>
+                            <input type="text" name="apellido" class="form-control" value="{{ persona.apellido }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Correo Electrónico</label>
+                            <input type="email" name="email" class="form-control" value="{{ usuario.email }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Teléfono</label>
+                            <input type="text" name="telefono" class="form-control" value="{{ persona.telefono }}">
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">Dirección</label>
+                            <input type="text" name="direccion" class="form-control" value="{{ direccion }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Fecha de Nacimiento</label>
+                            <input type="date" name="fecha_nacimiento" class="form-control" value="{{ persona.fecha_nacimiento|date:'Y-m-d' }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Nacionalidad</label>
+                            <input type="text" name="nacionalidad" class="form-control" value="{{ persona.nacionalidad }}">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

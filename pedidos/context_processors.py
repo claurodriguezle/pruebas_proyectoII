@@ -1,10 +1,9 @@
-# pedidos/context_processors.py
-from caja.models import Caja
-
+from pedidos.views import local_esta_abierto
+ 
 def caja_abierta(request):
-    """Context processor para saber si la caja está abierta desde cualquier template"""
-    caja = Caja.objects.filter(estado='abierta').first()
+    """Context processor: indica si el local está dentro del horario de atención."""
+    abierto = local_esta_abierto()
     return {
-        'caja_abierta': caja is not None,
-        'caja_actual': caja,
+        'caja_abierta': abierto,
+        'caja_actual': None,  # ya no se usa la caja para el flujo online
     }

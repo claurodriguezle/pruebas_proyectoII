@@ -49,7 +49,7 @@ def registro_cliente(request):
 
     return render(request, 'usuarios/registro_cliente.html', {'form': form})
 
-def iniciar_sesion(request):
+'''def iniciar_sesion(request):
     if request.method == 'POST':
         username = request.POST.get('txtUsuario')
         password = request.POST.get('txtContrasena')
@@ -58,7 +58,7 @@ def iniciar_sesion(request):
         if user is not None:
             login(request, user)
             messages.success(request, 'Inicio de sesión exitoso.')
-            #return redirect('pedidos:tipo_entrega')
+            return redirect('pedidos:tipo_entrega')
             #return redirect('pedidos:menu_productos')
 
             #Redirigir segun el grupo
@@ -73,8 +73,30 @@ def iniciar_sesion(request):
         else:
             messages.error(request, 'Usuario o contraseña incorrectos.')
     
-    return render(request, 'usuarios/sesion.html')
+    return render(request, 'usuarios/sesion.html')'''
+def iniciar_sesion(request):
+    if request.method == 'POST':
+        username = request.POST.get('txtUsuario')
+        password = request.POST.get('txtContrasena')
 
+        user = authenticate(request, username=username, password=password)
+        if user is not None:
+            # 🔒 VERIFICAR que NO sea empleado
+            grupos_empleados = ['Administrador', 'Empleado', 'Cocina']
+            es_empleado = user.groups.filter(name__in=grupos_empleados).exists() or user.is_superuser
+            
+            if es_empleado:
+                messages.error(request, '⚠️ Este portal es solo para clientes. Los empleados deben usar su portal exclusivo.')
+                return render(request, 'usuarios/sesion.html')
+            
+            # Si llega aquí, es un cliente normal
+            login(request, user)
+            messages.success(request, 'Inicio de sesión exitoso.')
+            return redirect('pedidos:index')  # Clientes van al menú de pedidos
+        else:
+            messages.error(request, 'Usuario o contraseña incorrectos.')
+    
+    return render(request, 'usuarios/sesion.html')
 @login_required
 def perfil_user(request):
     usuario_logueado = request.user
@@ -518,3 +540,116 @@ def cambiar_password_admin(request, pk):
     return render(request, 'usuarios/partials/modal_password.html', {
         'form': form, 'usuario': user
     })
+
+# ==================== NUEVAS VISTAS PARA EMPLEADOS ====================
+
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth import logout
+from django.shortcuts import redirect
+from administrador.models import Empleado
+from django.db import transaction
+
+def login_empleado(request):
+    if request.user.is_authenticated:
+        return redirect('usuarios:dashboard_redireccion')
+    
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        
+        user = authenticate(request, username=username, password=password)
+        
+        if user is not None:
+            grupos_empleados = ['Administrador', 'Empleado', 'Cocina']
+            user_groups = list(user.groups.values_list('name', flat=True))
+            
+            if any(grupo in grupos_empleados for grupo in user_groups):
+                login(request, user)
+                messages.success(request, f'Bienvenido {user.get_full_name() or user.username}')
+                return redirect('usuarios:dashboard_redireccion')
+            else:
+                messages.error(request, 'No tienes permisos de empleado. Usa el portal de clientes.')
+        else:
+            messages.error(request, 'Usuario o contraseña incorrectos.')
+    
+    return render(request, 'usuarios/login.html')
+
+def logout_empleado(request):
+    logout(request)
+    messages.info(request, 'Sesión cerrada correctamente.')
+    return redirect('usuarios:login_empleado')
+
+@login_required
+def perfil_empleado(request):
+    usuario = request.user
+    
+    try:
+        empleado = usuario.empleado
+        persona = empleado.persona
+    except Empleado.DoesNotExist:
+        messages.error(request, 'No se encontró información de empleado asociada.')
+        return redirect('usuarios:dashboard_redireccion')
+    
+    # Construir dirección completa
+    direccion = f"{persona.barrio.nombre if persona.barrio else ''}, {persona.ciudad.nombre if persona.ciudad else ''}"
+    
+    # Verificar si es administrador
+    es_admin = request.user.groups.filter(name='Administrador').exists()
+    
+    contexto = {
+        'usuario': usuario,
+        'persona': persona,
+        'empleado': empleado,
+        'direccion': direccion,
+        'rol': request.user.groups.first().name if request.user.groups.first() else 'Empleado',
+        'es_admin': es_admin,
+    }
+    
+    return render(request, 'usuarios/perfil_empleado.html', contexto)
+
+@login_required
+@user_passes_test(lambda u: u.groups.filter(name='Administrador').exists())
+def editar_perfil_empleado(request, pk):
+    from django.contrib.auth.models import User
+    usuario = get_object_or_404(User, pk=pk)
+    
+    try:
+        empleado = usuario.empleado
+        persona = empleado.persona
+    except Empleado.DoesNotExist:
+        messages.error(request, 'El usuario no es un empleado.')
+        return redirect('usuarios:index')
+    
+    if request.method == 'POST':
+        with transaction.atomic():
+            usuario.email = request.POST.get('email', usuario.email)
+            usuario.save()
+            
+            persona.nombre = request.POST.get('nombre', persona.nombre)
+            persona.apellido = request.POST.get('apellido', persona.apellido)
+            persona.telefono = request.POST.get('telefono', persona.telefono)
+            persona.fecha_nacimiento = request.POST.get('fecha_nacimiento', persona.fecha_nacimiento)
+            persona.nacionalidad = request.POST.get('nacionalidad', persona.nacionalidad)
+            
+            persona.save()
+        
+        messages.success(request, f'Perfil de {persona.nombre} {persona.apellido} actualizado correctamente.')
+        return redirect('usuarios:perfil_empleado')
+    
+    return redirect('usuarios:perfil_empleado')
+
+@login_required
+def dashboard_redireccion(request):
+    grupo = request.user.groups.first()
+    
+    if not grupo:
+        return redirect('pedidos:index')
+    
+    if grupo.name == 'Administrador':
+        return redirect('administrador:menu')
+    elif grupo.name == 'Empleado':
+        return redirect('caja:apertura_caja')
+    elif grupo.name == 'Cocina':
+        return redirect('pedidos:cocina')
+    else:
+        return redirect('pedidos:index')

@@ -27,4 +27,11 @@ urlpatterns = [
     path('usuarios/<int:pk>/editar/',            views.editar_usuario_admin,   name='editar'),
     path('usuarios/<int:pk>/toggle/',            views.toggle_activo,          name='toggle'),
     path('usuarios/<int:pk>/password/',          views.cambiar_password_admin, name='cambiar_password'),
+
+     # ── NUEVAS RUTAS PARA EMPLEADOS ──────────────────────────────────────
+    path('empleados/login/', views.login_empleado, name='login_empleado'),
+    path('empleados/logout/', views.logout_empleado, name='logout_empleado'),
+    path('empleados/perfil/', views.perfil_empleado, name='perfil_empleado'),
+    path('empleados/perfil/editar/<int:pk>/', views.editar_perfil_empleado, name='editar_perfil_empleado'),
+    path('dashboard/', views.dashboard_redireccion, name='dashboard_redireccion'),
 ]
