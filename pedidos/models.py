@@ -32,6 +32,7 @@ class Adicional(models.Model):
 
     def __str__(self):
         return f"{self.nombre} (₲{self.precio})"
+    
 class Pedido(models.Model):
     #Tipo de entrega
     TIPO_ENTREGA_CHOICES = [

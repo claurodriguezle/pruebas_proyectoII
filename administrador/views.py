@@ -229,12 +229,24 @@ def eliminar_persona(request, id):
 
 @grupo_requerido('Administrador')
 def productos(request):
-    return render(request, 'productos/productos.html')
+    categorias = CategoriaProducto.objects.all().order_by('nombre_categ')
+    return render(request, 'productos/productos.html', {'categorias': categorias})
 
 # RENDERIZA LA LISTA DE PRODUCTOS ACTIVOS (estado='A') ORDENADOS POR CÓDIGO
 @grupo_requerido('Administrador')
 def listar_partial(request):
     productos = Producto.objects.filter(estado='A').order_by('codigo')
+    
+    search = request.GET.get('search', '').strip()
+    categoria_id = request.GET.get('categoria', '').strip()
+
+    if search:
+        productos = productos.filter(
+            Q(nombre__icontains=search) | Q(codigo__icontains=search)
+        )
+    if categoria_id:
+        productos = productos.filter(categoria__id=categoria_id)
+
     return render(request, 'productos/listar_partial.html', {'productos': productos})
 
 # RENDERIZA EL FORMULARIO VACÍO PARA CREAR UN NUEVO PRODUCTO
@@ -1420,11 +1432,12 @@ def adicionales_listar_partial(request):
 
 @grupo_requerido('Administrador')
 def adicionales_crear_partial(request):
-    """Devuelve el formulario vacío para crear un adicional."""
     items = Item.objects.filter(tipo='MATERIA_PRIMA').order_by('nombre')
+    productos = Producto.objects.filter(estado='A').order_by('nombre')
     return render(request, 'administrador/adicionales/form_partial.html', {
         'adicional': None,
-        'items': items
+        'items': items,
+        'productos': productos,
     })
 
 @grupo_requerido('Administrador')
@@ -1470,6 +1483,9 @@ def adicionales_crear_htmx(request):
             cantidad=cantidad_decimal,
             activo=True
         )
+        # Guardar productos asociados (M2M)
+        productos_ids = request.POST.getlist('productos')
+        adicional.producto_set.set(productos_ids)  # limpia y reasigna
         
         return render(request, 'administrador/adicionales/row_partial.html', {'adicional': adicional})
     
@@ -1478,12 +1494,13 @@ def adicionales_crear_htmx(request):
 
 @grupo_requerido('Administrador')
 def adicionales_editar_partial(request, pk):
-    """Devuelve el formulario pre-cargado con los datos del adicional a editar."""
     adicional = get_object_or_404(Adicional, pk=pk)
     items = Item.objects.filter(tipo='MATERIA_PRIMA').order_by('nombre')
+    productos = Producto.objects.filter(estado='A').order_by('nombre')
     return render(request, 'administrador/adicionales/form_partial.html', {
         'adicional': adicional,
-        'items': items
+        'items': items,
+        'productos': productos,
     })
 
 @grupo_requerido('Administrador')
@@ -1529,7 +1546,11 @@ def adicionales_editar_htmx(request, pk):
         adicional.item_id = item_id if item_id else None
         adicional.cantidad = cantidad_decimal
         adicional.save()
-        
+
+        # Guardar productos asociados (M2M)
+        productos_ids = request.POST.getlist('productos')
+        adicional.producto_set.set(productos_ids)  # limpia y reasigna
+
         return render(request, 'administrador/adicionales/row_partial.html', {'adicional': adicional})
     
     return HttpResponse(status=405)

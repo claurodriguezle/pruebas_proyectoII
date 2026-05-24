@@ -39,12 +39,17 @@
         <div class="d-flex align-items-center gap-2 mb-2 w-75">
             <select 
                 class="form-select w-auto" 
-                style="min-width: 150px" 
-                name="categoria">
-                <option value="">Categorías</option>
-                <option value="Clientes">Hamburguesas</option>
-                <option value="Empleados">Papas Fritas</option>
-                <option value="Proveedores">Bebidas</option>
+                style="min-width: 200px" 
+                name="categoria"
+                hx-get="{% url 'administrador:listar_partial' %}"
+                hx-target="#productTableBody"
+                hx-swap="innerHTML"
+                hx-include="#searchInput"
+                hx-trigger="change">
+                <option value="">Todas las categorías</option>
+                {% for cat in categorias %}
+                    <option value="{{ cat.id }}">{{ cat.nombre_categ }}</option>
+                {% endfor %}
             </select>
 
             <input 
@@ -52,7 +57,12 @@
                 placeholder="Buscar por nombre o código..." 
                 class="form-control w-100" 
                 id="searchInput" 
-                name="search">
+                name="search"
+                hx-get="{% url 'administrador:listar_partial' %}"
+                hx-target="#productTableBody"
+                hx-swap="innerHTML"
+                hx-include="[name='categoria']"
+                hx-trigger="input changed delay:300ms, search">
         </div>
     </div>
     

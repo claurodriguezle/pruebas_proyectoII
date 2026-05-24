@@ -31,7 +31,7 @@
     </div>
     
     <div class="mb-3">
-        <label for="item" class="form-label">Item de stock (opcional)</label>
+        <label for="item" class="form-label">Item de stock</label>
         <select class="form-select" id="item" name="item">
             <option value="">-- Ninguno --</option>
             {% for item in items %}
@@ -44,10 +44,38 @@
     </div>
     
     <div class="mb-3">
-        <label for="cantidad" class="form-label">Cantidad (gramos) <span class="text-muted">- opcional</span></label>
+        <label for="cantidad" class="form-label">Cantidad (gramos)</label>
         <input type="number" step="0.01" min="0" class="form-control" id="cantidad" name="cantidad" 
-            value="{{ adicional.cantidad|default:'' }}">
+            value="{{ adicional.cantidad|stringformat:'.2f' }}">
         <small class="text-muted">Cantidad en gramos que se descuenta del stock si se selecciona un item. Solo números positivos.</small>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Productos asociados</label>
+        
+        {% if productos %}
+            <div class="border rounded p-2" style="max-height: 200px; overflow-y: auto;">
+                {% for producto in productos %}
+                    <div class="form-check">
+                        <input 
+                            class="form-check-input" 
+                            type="checkbox" 
+                            name="productos" 
+                            value="{{ producto.id }}"
+                            id="producto_{{ producto.id }}"
+                            {% if adicional and producto in adicional.producto_set.all %}checked{% endif %}
+                        >
+                        <label class="form-check-label" for="producto_{{ producto.id }}">
+                            {{ producto.nombre }}
+                            <small class="text-muted">— {{ producto.precio|punto_miles }} ₲</small>
+                        </label>
+                    </div>
+                {% endfor %}
+            </div>
+            <small class="text-muted">Seleccioná los productos en los que este adicional estará disponible.</small>
+        {% else %}
+            <p class="text-muted small">No hay productos activos registrados.</p>
+        {% endif %}
     </div>
     
     <div class="d-flex justify-content-end mt-3">
