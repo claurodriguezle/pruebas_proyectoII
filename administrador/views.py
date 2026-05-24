@@ -20,6 +20,7 @@ from .models import Stock
 from django.db.models import Sum, F
 #from . import models {}
 from .forms import ItemForm
+from egresos.models import Egreso
 
 from django.core.paginator import Paginator
 
@@ -571,6 +572,15 @@ def anular_compra(request, compra_id):
                         # Restamos la cantidad (en lugar de sumar)
                         stock.cant_disponible = max(0, stock.cant_disponible - detalle.cantidad)
                         stock.save()
+                
+                # Si la compra tiene un egreso asociado, anularlo también
+                if hasattr(compra, 'egreso') and compra.egreso.estado == 'ACTIVO':
+                    egreso = compra.egreso
+                    egreso.estado = 'ANULADO'
+                    egreso.motivo_anulacion = f"Anulado automáticamente por anulación de compra #{compra.numero_factura}"
+                    egreso.save()
+                    if egreso.caja:
+                        egreso.caja.recalcular_monto_esperado()
                 
                 # Marcar como anulada
                 compra.estado = 'ANULADA'

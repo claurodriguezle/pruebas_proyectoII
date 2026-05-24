@@ -1,0 +1,111 @@
+{% extends "administrador/layout.html" %}
+{% load static humanize %}
+
+{% block title %}Registrar Compra como Egreso{% endblock %}
+
+{% block body %}
+<div class="container py-4">
+
+    <!-- ENCABEZADO -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="fw-bold mb-0">🛒 Registrar Compra como Egreso</h4>
+        <a href="{% url 'egresos:lista_egresos' %}" class="btn btn-outline-secondary">
+            ← Volver
+        </a>
+    </div>
+
+    <!-- DETALLE DE LA COMPRA -->
+    <div class="card shadow-sm mb-4 border-0">
+        <div class="card-header fw-semibold bg-light">
+            📄 Detalle de la Compra
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <div class="small text-muted">N° Factura</div>
+                    <div class="fw-semibold">{{ compra.numero_factura }}</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="small text-muted">Proveedor</div>
+                    <div class="fw-semibold">{{ compra.proveedor.nombre_empresa }}</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="small text-muted">Fecha</div>
+                    <div class="fw-semibold">{{ compra.fecha|date:"d/m/Y" }}</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="small text-muted">Monto Total</div>
+                    <div class="fw-semibold text-danger">₲ {{ compra.monto_total|punto_miles }}</div>
+                </div>
+            </div>
+
+            <!-- ITEMS DE LA COMPRA -->
+            <hr>
+            <div class="small fw-semibold text-muted mb-2">Ítems comprados:</div>
+            <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Ítem</th>
+                            <th>Cantidad</th>
+                            <th class="text-end">Precio unitario</th>
+                            <th class="text-end">Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for detalle in compra.detalles.all %}
+                        <tr>
+                            <td>{{ detalle.item.nombre }}</td>
+                            <td>{{ detalle.cantidad }} {{ detalle.item.get_unidad_medida_display }}</td>
+                            <td class="text-end">₲ {{ detalle.precio_compra|punto_miles }}</td>
+                            <td class="text-end">₲ {{ detalle.subtotal|punto_miles }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- FORMULARIO -->
+    <div class="card shadow-sm border-0">
+        <div class="card-header fw-semibold bg-light">
+            💸 ¿Cómo se pagó esta compra?
+        </div>
+        <div class="card-body">
+            <form method="POST">
+                {% csrf_token %}
+
+                <div class="card border-0 bg-light p-3 mb-4">
+                    <div class="form-check form-switch">
+                        {{ form.salio_de_caja }}
+                        <label class="form-check-label fw-semibold ms-2">
+                            {{ form.salio_de_caja.label }}
+                        </label>
+                    </div>
+                    <div class="small text-muted mt-1">
+                        Activá esta opción si el dinero salió físicamente de la caja del día.
+                    </div>
+                    {% if form.salio_de_caja.errors %}
+                        <div class="text-danger small mt-1">
+                            {{ form.salio_de_caja.errors.0 }}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="d-flex justify-content-end gap-2">
+                    <a href="{% url 'egresos:lista_egresos' %}"
+                       class="btn btn-outline-secondary">
+                        Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        Registrar como Egreso
+                    </button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

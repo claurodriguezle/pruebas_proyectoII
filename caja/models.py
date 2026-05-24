@@ -44,8 +44,8 @@ class Caja(models.Model):
 
     @property
     def total_egresos(self):
-        return self.movimientos.filter(
-            tipo='egreso'
+        return self.egresos.filter(
+        estado='ACTIVO'
         ).aggregate(total=models.Sum('monto'))['total'] or 0
 
     def recalcular_monto_esperado(self):

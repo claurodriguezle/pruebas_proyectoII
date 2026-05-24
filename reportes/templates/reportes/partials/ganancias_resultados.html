@@ -95,16 +95,6 @@
             <td class="text-end fw-semibold {% if fila.ganancia_gs < 0 %}text-danger{% else %}text-success{% endif %}">
               {{ fila.ganancia_gs|punto_miles }}
             </td>
-            <!--
-            <td class="text-end">
-              <span class="badge
-                {% if fila.margen_pct < 30 %}bg-danger
-                {% elif fila.margen_pct < 50 %}bg-warning text-dark
-                {% else %}bg-success{% endif %}">
-                {{ fila.margen_pct }}%
-              </span>
-            </td>
-            -->
           </tr>
           {% endfor %}
         </tbody>
@@ -112,12 +102,12 @@
           <tr>
             <td class="fw-semibold small">Total</td>
             <td></td>
+            <td></td>
             <td class="text-end fw-semibold">{{ total_vendido_general|punto_miles }}</td>
             <td class="text-end fw-semibold {% if ganancia_general < 0 %}text-danger{% else %}text-success{% endif %}">
               {{ ganancia_general|punto_miles }}
             </td>
-            <td></td>
-            <!-- <td class="text-end fw-semibold">{{ margen_general }}%</td> -->
+            
           </tr>
         </tfoot>
       </table>

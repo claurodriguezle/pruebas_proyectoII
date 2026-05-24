@@ -34,6 +34,7 @@ urlpatterns = [
     path('caja/', include('caja.urls')),
     path('reportes/', include('reportes.urls', namespace='reportes')),
     path('sin-permiso/', sin_permiso, name='sin_permiso'),
+    path('egresos/', include('egresos.urls')),
 ]
 
 if settings.DEBUG:

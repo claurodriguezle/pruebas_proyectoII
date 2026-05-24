@@ -1,0 +1,63 @@
+{% load humanize %}
+
+<div class="modal-header">
+    <h5 class="modal-title fw-bold">🗑️ Anular Egreso</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+</div>
+
+<div class="modal-body">
+
+    <!-- DETALLE DEL EGRESO -->
+    <div class="alert alert-warning">
+        <div class="row g-2">
+            <div class="col-6">
+                <div class="small text-muted">Descripción</div>
+                <div class="fw-semibold">{{ egreso.descripcion }}</div>
+            </div>
+            <div class="col-6">
+                <div class="small text-muted">Monto</div>
+                <div class="fw-semibold">₲ {{ egreso.monto|intcomma }}</div>
+            </div>
+            <div class="col-6">
+                <div class="small text-muted">Categoría</div>
+                <div>{{ egreso.get_categoria_display }}</div>
+            </div>
+            <div class="col-6">
+                <div class="small text-muted">Fecha</div>
+                <div>{{ egreso.fecha|date:"d/m/Y" }}</div>
+            </div>
+        </div>
+    </div>
+
+    <p class="text-danger small">
+        ⚠️ Esta acción no se puede deshacer. El egreso quedará anulado en el sistema.
+    </p>
+
+    <!-- FORMULARIO -->
+    <form id="form-anulacion"
+          hx-post="{% url 'egresos:anular_egreso' egreso.pk %}"
+          hx-target="#tabla-egresos"
+          hx-swap="innerHTML"
+          hx-on::after-request="bootstrap.Modal.getInstance(document.getElementById('modalAnulacion')).hide()">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label class="form-label fw-semibold">Motivo de anulación</label>
+            {{ form.motivo_anulacion }}
+            {% if form.motivo_anulacion.errors %}
+                <div class="text-danger small mt-1">
+                    {{ form.motivo_anulacion.errors.0 }}
+                </div>
+            {% endif %}
+        </div>
+    </form>
+
+</div>
+
+<div class="modal-footer">
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+        Cancelar
+    </button>
+    <button type="submit" form="form-anulacion" class="btn btn-danger">
+        Confirmar anulación
+    </button>
+</div>

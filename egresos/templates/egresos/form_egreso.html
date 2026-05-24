@@ -1,0 +1,141 @@
+{% extends "administrador/layout.html" %}
+{% load static %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block body %}
+<div class="container py-4">
+
+    <!-- ENCABEZADO -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="fw-bold mb-0">{{ titulo }}</h4>
+        <a href="{% url 'egresos:lista_egresos' %}" class="btn btn-outline-secondary">
+            ← Volver
+        </a>
+    </div>
+
+    <!-- FORMULARIO -->
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <form method="POST" id="form-egreso">
+                {% csrf_token %}
+
+                <div class="row g-3">
+
+                    <!-- FECHA -->
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">
+                            {{ form.fecha.label }}
+                        </label>
+                        {{ form.fecha }}
+                        {% if form.fecha.errors %}
+                            <div class="text-danger small mt-1">
+                                {{ form.fecha.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- MONTO -->
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">
+                            {{ form.monto.label }}
+                        </label>
+                        {{ form.monto }}
+                        {% if form.monto.errors %}
+                            <div class="text-danger small mt-1">
+                                {{ form.monto.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- DESCRIPCIÓN -->
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">
+                            {{ form.descripcion.label }}
+                        </label>
+                        {{ form.descripcion }}
+                        {% if form.descripcion.errors %}
+                            <div class="text-danger small mt-1">
+                                {{ form.descripcion.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- CATEGORÍA -->
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">
+                            {{ form.categoria.label }}
+                        </label>
+                        {{ form.categoria }}
+                        {% if form.categoria.errors %}
+                            <div class="text-danger small mt-1">
+                                {{ form.categoria.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- PROVEEDOR -->
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">
+                            {{ form.proveedor.label }}
+                        </label>
+                        {{ form.proveedor }}
+                        {% if form.proveedor.errors %}
+                            <div class="text-danger small mt-1">
+                                {{ form.proveedor.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- N° COMPROBANTE -->
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">
+                            {{ form.numero_comprobante.label }}
+                        </label>
+                        {{ form.numero_comprobante }}
+                        {% if form.numero_comprobante.errors %}
+                            <div class="text-danger small mt-1">
+                                {{ form.numero_comprobante.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- SALIÓ DE CAJA -->
+                    <div class="col-md-6">
+                        <div class="card border-0 bg-light p-3 h-100 d-flex justify-content-center">
+                            <div class="form-check form-switch">
+                                {{ form.salio_de_caja }}
+                                <label class="form-check-label fw-semibold ms-2">
+                                    {{ form.salio_de_caja.label }}
+                                </label>
+                            </div>
+                            <div class="small text-muted mt-1">
+                                Activá esta opción si el dinero salió físicamente de la caja del día.
+                            </div>
+                            {% if form.salio_de_caja.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.salio_de_caja.errors.0 }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- BOTONES -->
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <a href="{% url 'egresos:lista_egresos' %}"
+                       class="btn btn-outline-secondary">
+                        Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        Guardar
+                    </button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

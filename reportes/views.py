@@ -604,6 +604,7 @@ def reporte_ganancias_datos(request):
             'total_vendido': total_vendido,
             'ganancia_gs': ganancia_gs,
             'margen_pct': margen_pct,
+            #'total_cant': total,
         })
  
     sin_resultados = len(filas) == 0

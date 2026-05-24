@@ -1,0 +1,94 @@
+{% extends "administrador/layout.html" %}
+{% load static %}
+
+{% block title %}Egresos{% endblock %}
+
+{% block body %}
+<div class="container-fluid py-4">
+
+    <!-- ENCABEZADO -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="fw-bold mb-0">📋 Egresos</h4>
+        <a href="{% url 'egresos:crear_egreso' %}"
+           class="btn btn-primary">
+            + Nuevo Egreso
+        </a>
+    </div>
+
+    <!-- FILTROS -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Fecha</label>
+                    <input type="date" name="fecha" class="form-control"
+                           value="{{ fecha_filtro }}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Categoría</label>
+                    <select name="categoria" class="form-select">
+                        <option value="">Todas</option>
+                        {% for value, label in categorias %}
+                            <option value="{{ value }}"
+                                {% if categoria_filtro == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4 d-flex gap-2">
+                    <button type="submit" class="btn btn-secondary w-100">
+                        🔍 Filtrar
+                    </button>
+                    <a href="{% url 'egresos:lista_egresos' %}" class="btn btn-outline-secondary w-100">
+                        Limpiar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- TARJETAS RESUMEN -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm bg-danger text-white">
+                <div class="card-body">
+                    <div class="small opacity-75">Egresos varios</div>
+                    <div class="fs-5 fw-bold">₲ {{ total_egresos|punto_miles }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm bg-warning text-white">
+                <div class="card-body">
+                    <div class="small opacity-75">Compras del día</div>
+                    <div class="fs-5 fw-bold">₲ {{ total_compras|punto_miles }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm bg-dark text-white">
+                <div class="card-body">
+                    <div class="small opacity-75">Total general</div>
+                    <div class="fs-5 fw-bold">₲ {{ total_general|punto_miles }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TABLA -->
+    <div id="tabla-egresos">
+        {% include "egresos/partials/tabla_egresos.html" %}
+    </div>
+
+</div>
+
+<!-- MODAL ANULACIÓN -->
+<div class="modal fade" id="modalAnulacion" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content" id="modal-anulacion-content">
+        </div>
+    </div>
+</div>
+
+{% endblock %}
