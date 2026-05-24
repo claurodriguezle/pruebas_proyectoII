@@ -1,0 +1,7 @@
+{% for ciudad in ciudades %}
+    {% include "localidades/partials/ciudad_row.html" with ciudad=ciudad %}
+{% empty %}
+    <tr>
+        <td colspan="4" class="text-center text-muted">No hay ciudades registradas.</td>
+    </tr>
+{% endfor %}

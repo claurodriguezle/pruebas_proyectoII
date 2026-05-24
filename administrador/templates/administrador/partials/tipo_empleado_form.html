@@ -1,0 +1,38 @@
+<form method="post"
+      {% if tipo %}
+          hx-post="{% url 'administrador:tipo_empleado_editar_htmx' tipo.pk %}"
+          hx-target="#tipo-{{ tipo.pk }}"
+          hx-swap="outerHTML"
+      {% else %}
+          hx-post="{% url 'administrador:tipo_empleado_crear_htmx' %}"
+          hx-target="#tipoTableBody"
+          hx-swap="beforeend"
+      {% endif %}
+      hx-on::after-request="
+          if(event.detail.successful) {
+              bootstrap.Modal.getInstance(document.getElementById('tipoModal')).hide();
+          }
+      ">
+    {% csrf_token %}
+
+    <div class="mb-3">
+        <label class="form-label fw-semibold">Nombre del tipo</label>
+        <input type="text"
+               name="nombre_tipo"
+               class="form-control"
+               placeholder="Ej: Cajero, Mozo, Repartidor..."
+               value="{{ tipo.nombre_tipo|default:'' }}"
+               required
+               autofocus>
+        <div class="error-msg text-danger small mt-1"></div>
+    </div>
+
+    <div class="d-flex justify-content-end gap-2">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">
+            Cancelar
+        </button>
+        <button type="submit" class="btn btn-sm {% if tipo %}btn-primary{% else %}btn-success{% endif %}">
+            {% if tipo %}Actualizar{% else %}Crear{% endif %}
+        </button>
+    </div>
+</form>

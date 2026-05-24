@@ -57,9 +57,61 @@ urlpatterns = [
     path('ingredientes/<int:producto_id>/agregar', views.agregar_ingredientes, name='agregar_ingredientes'),
     path('ingredientes/<int:producto_id>/listar/', views.listar_ingredientes, name='listar_ingredientes'),
     path('ingredientes/eliminar/<int:pk>/', views.eliminar_ingrediente, name='eliminar_ingrediente'),
+
     # INGREDIENTES EDITAR INLINE
     path('ingredientes/<int:pk>/editar-form/', views.editar_ingrediente_form, name='editar_ingrediente_form'),
     path('ingredientes/<int:pk>/actualizar/', views.actualizar_ingrediente, name='actualizar_ingrediente'),
     path('ingredientes/<int:pk>/ver/', views.ver_fila_ingrediente, name='ver_fila_ingrediente'),
 
+    # RUTAS PARA SALARIOS
+    path('salarios/',                  views.lista_salarios,   name='salarios'),
+    path('salarios/crear/',            views.crear_salario,    name='crear_salario'),
+    path('salarios/<int:pk>/editar/',  views.editar_salario,   name='editar_salario'),
+    path('salarios/<int:pk>/eliminar/',views.eliminar_salario, name='eliminar_salario'),
+
+    # RUTAS PARA TIPO DE EMPLEADO
+    path('tipo-empleado/',                          views.lista_tipo_empleado,           name='lista_tipo_empleado'),
+    path('tipo-empleado/rows/',                     views.tipo_empleado_listar_partial,  name='tipo_empleado_rows'),
+    path('tipo-empleado/crear/partial/',            views.tipo_empleado_crear_partial,   name='tipo_empleado_crear_partial'),
+    path('tipo-empleado/<int:pk>/editar/partial/',  views.tipo_empleado_editar_partial,  name='tipo_empleado_editar_partial'),
+    path('tipo-empleado/crear/',                    views.tipo_empleado_crear_htmx,      name='tipo_empleado_crear_htmx'),
+    path('tipo-empleado/<int:pk>/editar/',          views.tipo_empleado_editar_htmx,     name='tipo_empleado_editar_htmx'),
+    path('tipo-empleado/<int:pk>/toggle/',          views.tipo_empleado_toggle_htmx,     name='tipo_empleado_toggle'),
+
+    # MESAS
+    path('mesas/', views.mesas, name='mesas'),
+    path('mesas/partials/listar/', views.mesas_listar_partial, name='mesas_listar_partial'),
+    path('mesas/partials/crear/', views.mesas_crear_partial, name='mesas_crear_partial'),
+    path('mesas/crear/htmx/', views.mesas_crear_htmx, name='mesas_crear_htmx'),
+    path('mesas/partials/editar/<int:pk>/', views.mesas_editar_partial, name='mesas_editar_partial'),
+    path('mesas/editar/<int:pk>/htmx/', views.mesas_editar_htmx, name='mesas_editar_htmx'),
+    path('mesas/eliminar/<int:pk>/', views.mesas_eliminar_htmx, name='mesas_eliminar_htmx'),
+
+    #Localidades
+    path('localidades/',                            views.localidades,                  name='localidades'),
+ 
+    #Ciudades
+    path('localidades/ciudades/listar/',            views.ciudades_listar_partial,      name='ciudades_listar_partial'),
+    path('localidades/ciudades/crear/partial/',     views.ciudades_crear_partial,       name='ciudades_crear_partial'),
+    path('localidades/ciudades/editar/<int:pk>/partial/', views.ciudades_editar_partial, name='ciudades_editar_partial'),
+    path('localidades/ciudades/crear/',             views.ciudades_crear_htmx,          name='ciudades_crear_htmx'),
+    path('localidades/ciudades/editar/<int:pk>/',   views.ciudades_editar_htmx,         name='ciudades_editar_htmx'),
+    path('localidades/ciudades/toggle/<int:pk>/',   views.ciudades_toggle_htmx,         name='ciudades_toggle_htmx'),
+
+    #Barrios
+    path('localidades/barrios/listar/',             views.barrios_listar_partial,       name='barrios_listar_partial'),
+    path('localidades/barrios/crear/partial/',      views.barrios_crear_partial,        name='barrios_crear_partial'),
+    path('localidades/barrios/editar/<int:pk>/partial/', views.barrios_editar_partial,  name='barrios_editar_partial'),
+    path('localidades/barrios/crear/',              views.barrios_crear_htmx,           name='barrios_crear_htmx'),
+    path('localidades/barrios/editar/<int:pk>/',    views.barrios_editar_htmx,          name='barrios_editar_htmx'),
+    path('localidades/barrios/toggle/<int:pk>/',    views.barrios_toggle_htmx,          name='barrios_toggle_htmx'),
+
+    #Adicionales
+    path('adicionales/', views.adicionales, name='adicionales'),
+    path('adicionales/listar/', views.adicionales_listar_partial, name='adicionales_listar_partial'),
+    path('adicionales/crear/partial/', views.adicionales_crear_partial, name='adicionales_crear_partial'),
+    path('adicionales/crear/', views.adicionales_crear_htmx, name='adicionales_crear_htmx'),
+    path('adicionales/editar/<int:pk>/partial/', views.adicionales_editar_partial, name='adicionales_editar_partial'),
+    path('adicionales/editar/<int:pk>/', views.adicionales_editar_htmx, name='adicionales_editar_htmx'),
+    path('adicionales/toggle/<int:pk>/', views.adicionales_toggle_htmx, name='adicionales_toggle_htmx'),
 ]

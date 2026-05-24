@@ -1,0 +1,51 @@
+{% load humanize custom_filters %}
+<tr id="adicional-{{ adicional.id }}" class="{% if not adicional.activo %}table-secondary text-muted{% endif %}">
+    <td>{{ adicional.nombre }}</td>
+    <td>{{ adicional.precio|punto_miles }} ₲</td>
+    <td>
+        {% if adicional.item %}
+            {{ adicional.item.nombre }}
+        {% else %}
+            <span class="text-muted">—</span>
+        {% endif %}
+    </td>
+    <td>
+        {% if adicional.cantidad %}
+            {{ adicional.cantidad }} g
+        {% else %}
+            <span class="text-muted">—</span>
+        {% endif %}
+    </td>
+    <td>
+        {% if adicional.activo %}
+            <span class="badge bg-success">Activo</span>
+        {% else %}
+            <span class="badge bg-secondary">Inactivo</span>
+        {% endif %}
+    </td>
+    <td>
+        <div class="d-flex gap-2">
+            <!-- Botón Editar -->
+            <button class="btn btn-outline-primary" 
+                title="Editar"
+                data-bs-toggle="modal"
+                data-bs-target="#adicionalModal"
+                hx-get="{% url 'administrador:adicionales_editar_partial' adicional.id %}"
+                hx-target="#adicionalFormBody"
+                hx-swap="innerHTML">
+                <i class="bi bi-pencil-square me-1"></i> Editar
+            </button>
+            
+            <!-- Botón Habilitar/Deshabilitar -->
+            <button class="btn {% if adicional.activo %}btn-outline-warning{% else %}btn-outline-success{% endif %}"
+                title="{% if adicional.activo %}Deshabilitar{% else %}Habilitar{% endif %}"
+                hx-post="{% url 'administrador:adicionales_toggle_htmx' adicional.id %}"
+                hx-target="#adicional-{{ adicional.id }}"
+                hx-swap="outerHTML"
+                hx-confirm="{% if adicional.activo %}¿Deshabilitar este adicional? No aparecerá para nuevos pedidos.{% else %}¿Habilitar este adicional? Volverá a estar disponible.{% endif %}">
+                <i class="bi bi-{% if adicional.activo %}ban{% else %}check-circle{% endif %} me-1"></i>
+                {% if adicional.activo %}Deshabilitar{% else %}Habilitar{% endif %}
+            </button>
+        </div>
+    </td>
+</tr>

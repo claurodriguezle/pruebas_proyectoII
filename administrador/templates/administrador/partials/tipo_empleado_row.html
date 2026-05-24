@@ -1,0 +1,42 @@
+<tr id="tipo-{{ tipo.pk }}">
+    <td>{{ tipo.pk }}</td>
+    <td>{{ tipo.nombre_tipo }}</td>
+    <td>
+        {% with total=tipo.empleado_set.count %}
+            {% if total > 0 %}
+                <span class="badge bg-primary rounded-pill">{{ total }}</span>
+            {% else %}
+                <span class="text-muted small">—</span>
+            {% endif %}
+        {% endwith %}
+    </td>
+    <td>
+        {% if tipo.activo %}
+            <span class="badge bg-success">Activo</span>
+        {% else %}
+            <span class="badge bg-secondary">Inactivo</span>
+        {% endif %}
+    </td>
+    <td>
+        <!-- Editar -->
+        <button class="btn btn-outline-primary btn-sm"
+                data-bs-toggle="modal"
+                data-bs-target="#tipoModal"
+                hx-get="{% url 'administrador:tipo_empleado_editar_partial' tipo.pk %}"
+                hx-target="#tipoFormBody"
+                hx-swap="innerHTML"
+                title="Editar">
+            <i class="bi bi-pencil-square"></i>
+        </button>
+
+        <!-- Activar / Desactivar -->
+        <button class="btn btn-sm {% if tipo.activo %}btn-outline-danger{% else %}btn-outline-success{% endif %}"
+                hx-post="{% url 'administrador:tipo_empleado_toggle' tipo.pk %}"
+                hx-target="#tipo-{{ tipo.pk }}"
+                hx-swap="outerHTML"
+                hx-confirm="{% if tipo.activo %}¿Desactivar este tipo?{% else %}¿Activar este tipo?{% endif %}"
+                title="{% if tipo.activo %}Desactivar{% else %}Activar{% endif %}">
+            <i class="bi {% if tipo.activo %}bi-toggle-on{% else %}bi-toggle-off{% endif %}"></i>
+        </button>
+    </td>
+</tr>

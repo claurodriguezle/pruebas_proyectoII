@@ -16,10 +16,22 @@ class Adicional(models.Model):
         null=True, blank=True,
         verbose_name='Cantidad en gramos'
     )
+    activo = models.BooleanField(default=True)
+
+    def clean(self):
+        """Validación a nivel de modelo"""
+        if self.cantidad is not None and self.cantidad < 0:
+            raise ValidationError({'cantidad': 'La cantidad no puede ser negativa.'})
+        if self.precio <= 0:
+            raise ValidationError({'precio': 'El precio debe ser mayor a cero.'})
+
+    def save(self, *args, **kwargs):
+        """Ejecutar validación antes de guardar"""
+        self.full_clean()  # Esto llama a clean() automáticamente
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.nombre} (₲{self.precio})"
-    
 class Pedido(models.Model):
     #Tipo de entrega
     TIPO_ENTREGA_CHOICES = [

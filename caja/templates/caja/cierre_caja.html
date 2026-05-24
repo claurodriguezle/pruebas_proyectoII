@@ -229,7 +229,7 @@
 </div>
 
 <script>
-const montoEsperado = parseFloat("{{ caja.monto_final_esperado|default:0|punto_miles }}") || 0;
+const montoEsperado = parseFloat("{{ caja.monto_final_esperado|punto_miles }}") || 0;
 
 document.getElementById('monto_final_real').addEventListener('input', function () {
     const montoReal = parseInt(this.value) || 0;

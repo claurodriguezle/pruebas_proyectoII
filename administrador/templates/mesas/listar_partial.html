@@ -1,0 +1,7 @@
+{% for mesa in mesas %}
+    {% include "mesas/row_partial.html" with mesa=mesa %}
+{% empty %}
+    <tr>
+        <td colspan="6" class="text-center text-muted">No hay mesas registradas.</td>
+    </tr>
+{% endfor %}

@@ -4,8 +4,8 @@ from django.contrib import messages
 from django.db import transaction, IntegrityError, connection
 from django.db.models import Q, Value, CharField
 from decimal import Decimal, InvalidOperation
-from .models import Persona, Cliente, Empleado, Proveedor, Producto, CategoriaProducto, IngredienteProducto
-from .forms import PersonaForm, ProductoForm, CategoriaProductoForm, IngredienteProductoForm, RolForm, EmpleadoForm, ProveedorForm 
+from .models import Persona, Cliente, Empleado, Proveedor, Producto, CategoriaProducto, IngredienteProducto, Salario, Mesa, TipoEmpleado, Barrio, Ciudad
+from .forms import PersonaForm, ProductoForm, CategoriaProductoForm, IngredienteProductoForm, RolForm, EmpleadoForm, ProveedorForm, MesaForm
 from django.http import Http404, HttpResponse, HttpResponseBadRequest
 from django.template.loader import render_to_string
 from django.views.decorators.http import require_POST
@@ -20,7 +20,11 @@ from .models import Stock
 from django.db.models import Sum, F
 #from . import models {}
 from .forms import ItemForm
+
 from egresos.models import Egreso
+
+
+from pedidos.models import Adicional
 
 from django.core.paginator import Paginator
 
@@ -291,8 +295,8 @@ def lista_compras(request):
         compras = compras.filter(
             Q(numero_factura__icontains=query) |
             Q(proveedor__nombre_empresa__icontains=query) |
-            Q(proveedor__nombre__icontains=query) |
-            Q(proveedor__apellido__icontains=query)
+            Q(proveedor__persona__nombre__icontains=query) |
+            Q(proveedor__persona__apellido__icontains=query)
         )
     
     return render(request, 'compras/lista_compras.html', {
@@ -1033,3 +1037,510 @@ def eliminar_item(request, pk):
     return render(request, 'items/eliminar_item.html', {
         'item': item
     })
+
+
+# ── SALARIOS ────────────────────────────────────────────────
+
+@grupo_requerido('Administrador')
+def lista_salarios(request):
+    """Lista todos los salarios con los empleados asignados a cada uno."""
+    salarios = Salario.objects.prefetch_related('empleado_set').order_by('monto')
+    return render(request, 'salarios/lista.html', {'salarios': salarios})
+
+
+@grupo_requerido('Administrador')
+def crear_salario(request):
+    """Crea un nuevo salario. Devuelve partial para HTMX."""
+    if request.method == 'POST':
+        monto = request.POST.get('monto', '').strip()
+        if not monto:
+            messages.error(request, 'El monto es obligatorio.')
+        else:
+            try:
+                monto_val = float(monto)
+                if monto_val <= 0:
+                    raise ValueError
+                if Salario.objects.filter(monto=monto_val).exists():
+                    messages.error(request, f'Ya existe un salario de Gs. {monto_val:,.0f}.')
+                else:
+                    Salario.objects.create(monto=monto_val)
+                    messages.success(request, f'Salario de Gs. {monto_val:,.0f} creado.')
+                    return HttpResponse(status=204, headers={'HX-Trigger': 'salarioGuardado'})
+            except ValueError:
+                messages.error(request, 'Ingresá un monto válido mayor a cero.')
+
+    return render(request, 'salarios/partials/modal_form.html', {'modo': 'crear'})
+
+
+@grupo_requerido('Administrador')
+def editar_salario(request, pk):
+    """Edita el monto de un salario existente."""
+    salario = get_object_or_404(Salario, pk=pk)
+
+    if request.method == 'POST':
+        monto = request.POST.get('monto', '').strip()
+        if not monto:
+            messages.error(request, 'El monto es obligatorio.')
+        else:
+            try:
+                monto_val = float(monto)
+                if monto_val <= 0:
+                    raise ValueError
+                if Salario.objects.filter(monto=monto_val).exclude(pk=pk).exists():
+                    messages.error(request, f'Ya existe un salario de Gs. {monto_val:,.0f}.')
+                else:
+                    salario.monto = monto_val
+                    salario.save()
+                    messages.success(request, 'Salario actualizado correctamente.')
+                    return HttpResponse(status=204, headers={'HX-Trigger': 'salarioGuardado'})
+            except ValueError:
+                messages.error(request, 'Ingresá un monto válido mayor a cero.')
+
+    return render(request, 'salarios/partials/modal_form.html', {
+        'modo': 'editar',
+        'salario': salario
+    })
+
+
+@grupo_requerido('Administrador')
+def eliminar_salario(request, pk):
+    """Elimina un salario si no tiene empleados asignados."""
+    salario = get_object_or_404(Salario, pk=pk)
+
+    if request.method == 'POST':
+        empleados_asignados = salario.empleado_set.count()
+        if empleados_asignados > 0:
+            messages.error(
+                request,
+                f'No se puede eliminar: {empleados_asignados} empleado(s) tienen este salario asignado.'
+            )
+        else:
+            salario.delete()
+            messages.success(request, 'Salario eliminado correctamente.')
+
+    return redirect('administrador:salarios')
+
+#Vistas para CRUD de mesas
+@grupo_requerido('Administrador')
+def mesas(request):
+    """Página principal de gestión de mesas."""
+    return render(request, 'mesas/mesas.html')
+ 
+ 
+@grupo_requerido('Administrador')
+def mesas_listar_partial(request):
+    """Devuelve la tabla de mesas (carga inicial y refresco)."""
+    lista = Mesa.objects.all()
+    return render(request, 'mesas/listar_partial.html', {'mesas': lista})
+ 
+ 
+@grupo_requerido('Administrador')
+def mesas_crear_partial(request):
+    """Devuelve el formulario vacío para crear una mesa."""
+    form = MesaForm()
+    return render(request, 'mesas/form_partial.html', {'form': form})
+ 
+ 
+@grupo_requerido('Administrador')
+def mesas_crear_htmx(request):
+    """Guarda una nueva mesa y devuelve la fila HTML para insertarla en la tabla."""
+    form = MesaForm(request.POST)
+    if form.is_valid():
+        mesa = form.save()
+        return render(request, 'mesas/row_partial.html', {'mesa': mesa})
+    # Si hay errores vuelve a mostrar el form con los mensajes
+    return render(request, 'mesas/form_partial.html', {'form': form})
+ 
+ 
+@grupo_requerido('Administrador')
+def mesas_editar_partial(request, pk):
+    """Devuelve el formulario pre-cargado con los datos de la mesa a editar."""
+    mesa = get_object_or_404(Mesa, pk=pk)
+    form = MesaForm(instance=mesa)
+    return render(request, 'mesas/form_partial.html', {'form': form, 'mesa': mesa})
+ 
+ 
+@grupo_requerido('Administrador')
+def mesas_editar_htmx(request, pk):
+    """Actualiza la mesa y devuelve la fila actualizada."""
+    mesa = get_object_or_404(Mesa, pk=pk)
+    form = MesaForm(request.POST, instance=mesa)
+    if form.is_valid():
+        mesa = form.save()
+        return render(request, 'mesas/row_partial.html', {'mesa': mesa})
+    return render(request, 'mesas/form_partial.html', {'form': form, 'mesa': mesa})
+ 
+ 
+@grupo_requerido('Administrador')
+@require_POST
+def mesas_eliminar_htmx(request, pk):
+    """Elimina la mesa y devuelve respuesta vacía para que HTMX quite la fila."""
+    mesa = get_object_or_404(Mesa, pk=pk)
+    mesa.activa = not mesa.activa  # Alterna el estado activo/inactivo
+    mesa.save()
+    return render(request, 'mesas/row_partial.html', {'mesa': mesa})
+
+#Vistas para CRUD de tipo de empleado
+@grupo_requerido('Administrador')
+def lista_tipo_empleado(request):
+    tipos = TipoEmpleado.objects.order_by('nombre_tipo')
+    return render(request, 'administrador/tipo_empleado.html', {'tipos': tipos})
+ 
+ 
+@grupo_requerido('Administrador')
+def tipo_empleado_listar_partial(request):
+    tipos = TipoEmpleado.objects.order_by('nombre_tipo')
+    return render(request, 'administrador/partials/tipo_empleado_rows.html', {'tipos': tipos})
+ 
+ 
+@grupo_requerido('Administrador')
+def tipo_empleado_crear_partial(request):
+    return render(request, 'administrador/partials/tipo_empleado_form.html', {'tipo': None})
+ 
+ 
+@grupo_requerido('Administrador')
+def tipo_empleado_editar_partial(request, pk):
+    tipo = get_object_or_404(TipoEmpleado, pk=pk)
+    return render(request, 'administrador/partials/tipo_empleado_form.html', {'tipo': tipo})
+ 
+ 
+@grupo_requerido('Administrador')
+def tipo_empleado_crear_htmx(request):
+    if request.method == 'POST':
+        nombre = request.POST.get('nombre_tipo', '').strip()
+        if not nombre:
+            return HttpResponse('<p class="text-danger">El nombre es obligatorio.</p>', status=400)
+        if TipoEmpleado.objects.filter(nombre_tipo__iexact=nombre).exists():
+            return HttpResponse(f'<p class="text-danger">Ya existe el tipo "{nombre}".</p>', status=400)
+        tipo = TipoEmpleado.objects.create(nombre_tipo=nombre)
+        return render(request, 'administrador/partials/tipo_empleado_row.html', {'tipo': tipo})
+    return HttpResponse(status=405)
+ 
+ 
+@grupo_requerido('Administrador')
+def tipo_empleado_editar_htmx(request, pk):
+    tipo = get_object_or_404(TipoEmpleado, pk=pk)
+    if request.method == 'POST':
+        nombre = request.POST.get('nombre_tipo', '').strip()
+        if not nombre:
+            return HttpResponse('<p class="text-danger">El nombre es obligatorio.</p>', status=400)
+        if TipoEmpleado.objects.filter(nombre_tipo__iexact=nombre).exclude(pk=pk).exists():
+            return HttpResponse(f'<p class="text-danger">Ya existe el tipo "{nombre}".</p>', status=400)
+        tipo.nombre_tipo = nombre
+        tipo.save()
+        return render(request, 'administrador/partials/tipo_empleado_row.html', {'tipo': tipo})
+    return HttpResponse(status=405)
+ 
+ 
+@grupo_requerido('Administrador')
+def tipo_empleado_toggle_htmx(request, pk):
+    """Activa o desactiva en lugar de eliminar."""
+    tipo = get_object_or_404(TipoEmpleado, pk=pk)
+    if request.method == 'POST':
+        tipo.activo = not tipo.activo
+        tipo.save()
+        return render(request, 'administrador/partials/tipo_empleado_row.html', {'tipo': tipo})
+    return HttpResponse(status=405)
+
+#Vistas para Ciudades y Barrios
+@grupo_requerido('Administrador')
+def localidades(request):
+    """Página principal de gestión de ciudades y barrios."""
+    return render(request, 'localidades/localidades.html')
+ 
+ 
+# — Lista —
+@grupo_requerido('Administrador')
+def ciudades_listar_partial(request):
+    ciudades = Ciudad.objects.order_by('nombre')   # muestra todas
+    return render(request, 'localidades/partials/ciudad_rows.html', {'ciudades': ciudades})
+ 
+# — Form vacío para crear —
+@grupo_requerido('Administrador')
+def ciudades_crear_partial(request):
+    return render(request, 'localidades/partials/ciudad_form.html', {'ciudad': None})
+ 
+ 
+# — Form con datos para editar —
+@grupo_requerido('Administrador')
+def ciudades_editar_partial(request, pk):
+    ciudad = get_object_or_404(Ciudad, pk=pk)
+    return render(request, 'localidades/partials/ciudad_form.html', {'ciudad': ciudad})
+ 
+ 
+# — POST: crear —
+@grupo_requerido('Administrador')
+def ciudades_crear_htmx(request):
+    if request.method == 'POST':
+        nombre = request.POST.get('nombre', '').strip()
+        if not nombre:
+            return HttpResponse('<p class="text-danger">El nombre es obligatorio.</p>', status=400)
+        if Ciudad.objects.filter(nombre__iexact=nombre).exists():
+            return HttpResponse(f'<p class="text-danger">Ya existe la ciudad "{nombre}".</p>', status=400)
+        ciudad = Ciudad.objects.create(nombre=nombre)
+        return render(request, 'localidades/partials/ciudad_row.html', {'ciudad': ciudad})
+    return HttpResponse(status=405)
+ 
+ 
+# — POST: editar —
+@grupo_requerido('Administrador')
+def ciudades_editar_htmx(request, pk):
+    ciudad = get_object_or_404(Ciudad, pk=pk)
+    if request.method == 'POST':
+        nombre = request.POST.get('nombre', '').strip()
+        if not nombre:
+            return HttpResponse('<p class="text-danger">El nombre es obligatorio.</p>', status=400)
+        if Ciudad.objects.filter(nombre__iexact=nombre).exclude(pk=pk).exists():
+            return HttpResponse(f'<p class="text-danger">Ya existe la ciudad "{nombre}".</p>', status=400)
+        ciudad.nombre = nombre
+        ciudad.save()
+        return render(request, 'localidades/partials/ciudad_row.html', {'ciudad': ciudad})
+    return HttpResponse(status=405)
+ 
+ 
+# — POST: eliminar —
+@grupo_requerido('Administrador')
+@require_POST
+def ciudades_toggle_htmx(request, pk):
+    """Habilita/deshabilita la ciudad en lugar de eliminar."""
+    ciudad = get_object_or_404(Ciudad, pk=pk)
+    ciudad.activo = not ciudad.activo
+    ciudad.save()
+    return render(request, 'localidades/partials/ciudad_row.html', {'ciudad': ciudad})
+
+#  BARRIOS
+@grupo_requerido('Administrador')
+def barrios_listar_partial(request):
+    barrios = Barrio.objects.select_related('ciudad').order_by('ciudad__nombre', 'nombre')
+    return render(request, 'localidades/partials/barrio_rows.html', {'barrios': barrios})
+ 
+ 
+@grupo_requerido('Administrador')
+def barrios_crear_partial(request):
+    ciudades = Ciudad.objects.filter(activo=True).order_by('nombre')   # solo activas
+    return render(request, 'localidades/partials/barrio_form.html', {
+        'barrio': None,
+        'ciudades': ciudades,
+    })
+ 
+@grupo_requerido('Administrador')
+def barrios_editar_partial(request, pk):
+    barrio = get_object_or_404(Barrio, pk=pk)
+    ciudades = Ciudad.objects.filter(activo=True).order_by('nombre')   # solo activas
+    return render(request, 'localidades/partials/barrio_form.html', {
+        'barrio': barrio,
+        'ciudades': ciudades,
+    })
+ 
+ 
+@grupo_requerido('Administrador')
+def barrios_crear_htmx(request):
+    if request.method == 'POST':
+        nombre   = request.POST.get('nombre', '').strip()
+        ciudad_id = request.POST.get('ciudad', '').strip()
+        habilitado = request.POST.get('habilitado') == 'on'
+ 
+        if not nombre:
+            return HttpResponse('<p class="text-danger">El nombre es obligatorio.</p>', status=400)
+        if not ciudad_id:
+            return HttpResponse('<p class="text-danger">Seleccioná una ciudad.</p>', status=400)
+ 
+        ciudad = get_object_or_404(Ciudad, pk=ciudad_id)
+ 
+        if Barrio.objects.filter(nombre__iexact=nombre, ciudad=ciudad).exists():
+            return HttpResponse(
+                f'<p class="text-danger">Ya existe el barrio "{nombre}" en {ciudad.nombre}.</p>',
+                status=400
+            )
+        barrio = Barrio.objects.create(nombre=nombre, ciudad=ciudad, habilitado=habilitado)
+        return render(request, 'localidades/partials/barrio_row.html', {'barrio': barrio})
+    return HttpResponse(status=405)
+ 
+ 
+@grupo_requerido('Administrador')
+def barrios_editar_htmx(request, pk):
+    barrio = get_object_or_404(Barrio, pk=pk)
+    if request.method == 'POST':
+        nombre    = request.POST.get('nombre', '').strip()
+        ciudad_id = request.POST.get('ciudad', '').strip()
+        habilitado = request.POST.get('habilitado') == 'on'
+ 
+        if not nombre:
+            return HttpResponse('<p class="text-danger">El nombre es obligatorio.</p>', status=400)
+        if not ciudad_id:
+            return HttpResponse('<p class="text-danger">Seleccioná una ciudad.</p>', status=400)
+ 
+        ciudad = get_object_or_404(Ciudad, pk=ciudad_id)
+ 
+        if Barrio.objects.filter(nombre__iexact=nombre, ciudad=ciudad).exclude(pk=pk).exists():
+            return HttpResponse(
+                f'<p class="text-danger">Ya existe el barrio "{nombre}" en {ciudad.nombre}.</p>',
+                status=400
+            )
+        barrio.nombre     = nombre
+        barrio.ciudad     = ciudad
+        barrio.habilitado = habilitado
+        barrio.save()
+        return render(request, 'localidades/partials/barrio_row.html', {'barrio': barrio})
+    return HttpResponse(status=405)
+ 
+ 
+@grupo_requerido('Administrador')
+@require_POST
+def barrios_toggle_htmx(request, pk):
+    """Habilita/deshabilita el barrio en lugar de eliminar."""
+    barrio = get_object_or_404(Barrio, pk=pk)
+    barrio.habilitado = not barrio.habilitado
+    barrio.save()
+    return render(request, 'localidades/partials/barrio_row.html', {'barrio': barrio})
+
+
+#Vistas adicionales
+@grupo_requerido('Administrador')
+def adicionales(request):
+    """Página principal de gestión de adicionales."""
+    return render(request, 'administrador/adicionales/adicionales.html')
+
+
+@grupo_requerido('Administrador')
+def adicionales_listar_partial(request):
+    """Devuelve la tabla de adicionales (solo activos por defecto, o todos si se pide)."""
+    mostrar_inactivos = request.GET.get('mostrar_inactivos', 'false') == 'true'
+    
+    if mostrar_inactivos:
+        adicionales_lista = Adicional.objects.all().order_by('nombre')
+    else:
+        adicionales_lista = Adicional.objects.filter(activo=True).order_by('nombre')
+    
+    return render(request, 'administrador/adicionales/listar_partial.html', {
+        'adicionales': adicionales_lista,
+        'mostrar_inactivos': mostrar_inactivos
+    })
+
+
+@grupo_requerido('Administrador')
+def adicionales_crear_partial(request):
+    """Devuelve el formulario vacío para crear un adicional."""
+    items = Item.objects.filter(tipo='MATERIA_PRIMA').order_by('nombre')
+    return render(request, 'administrador/adicionales/form_partial.html', {
+        'adicional': None,
+        'items': items
+    })
+
+@grupo_requerido('Administrador')
+def adicionales_crear_htmx(request):
+    """Guarda un nuevo adicional y devuelve la fila HTML para insertarla en la tabla."""
+    if request.method == 'POST':
+        nombre = request.POST.get('nombre', '').strip()
+        precio = request.POST.get('precio', '')
+        item_id = request.POST.get('item', '')
+        cantidad = request.POST.get('cantidad', '')
+        
+        # Validaciones
+        errores = []
+        if not nombre:
+            errores.append('El nombre es obligatorio.')
+        if not precio:
+            errores.append('El precio es obligatorio.')
+        elif not precio.isdigit() or int(precio) <= 0:
+            errores.append('El precio debe ser un número positivo.')
+        
+        # Validar cantidad si fue proporcionada
+        if cantidad:
+            try:
+                cantidad_decimal = Decimal(cantidad)
+                if cantidad_decimal < 0:
+                    errores.append('La cantidad no puede ser negativa.')
+            except:
+                errores.append('La cantidad debe ser un número válido.')
+        else:
+            cantidad_decimal = None
+        
+        if errores:
+            return HttpResponse(
+                f'<div class="alert alert-danger">{" ".join(errores)}</div>',
+                status=400
+            )
+        
+        # Crear el adicional
+        adicional = Adicional.objects.create(
+            nombre=nombre,
+            precio=int(precio),
+            item_id=item_id if item_id else None,
+            cantidad=cantidad_decimal,
+            activo=True
+        )
+        
+        return render(request, 'administrador/adicionales/row_partial.html', {'adicional': adicional})
+    
+    return HttpResponse(status=405)
+
+
+@grupo_requerido('Administrador')
+def adicionales_editar_partial(request, pk):
+    """Devuelve el formulario pre-cargado con los datos del adicional a editar."""
+    adicional = get_object_or_404(Adicional, pk=pk)
+    items = Item.objects.filter(tipo='MATERIA_PRIMA').order_by('nombre')
+    return render(request, 'administrador/adicionales/form_partial.html', {
+        'adicional': adicional,
+        'items': items
+    })
+
+@grupo_requerido('Administrador')
+def adicionales_editar_htmx(request, pk):
+    """Actualiza el adicional y devuelve la fila actualizada."""
+    adicional = get_object_or_404(Adicional, pk=pk)
+    
+    if request.method == 'POST':
+        nombre = request.POST.get('nombre', '').strip()
+        precio = request.POST.get('precio', '')
+        item_id = request.POST.get('item', '')
+        cantidad = request.POST.get('cantidad', '')
+        
+        # Validaciones
+        errores = []
+        if not nombre:
+            errores.append('El nombre es obligatorio.')
+        if not precio:
+            errores.append('El precio es obligatorio.')
+        elif not precio.isdigit() or int(precio) <= 0:
+            errores.append('El precio debe ser un número positivo.')
+        
+        # Validar cantidad si fue proporcionada
+        if cantidad:
+            try:
+                cantidad_decimal = Decimal(cantidad)
+                if cantidad_decimal < 0:
+                    errores.append('La cantidad no puede ser negativa.')
+            except:
+                errores.append('La cantidad debe ser un número válido.')
+        else:
+            cantidad_decimal = None
+        
+        if errores:
+            return HttpResponse(
+                f'<div class="alert alert-danger">{" ".join(errores)}</div>',
+                status=400
+            )
+        
+        # Actualizar el adicional
+        adicional.nombre = nombre
+        adicional.precio = int(precio)
+        adicional.item_id = item_id if item_id else None
+        adicional.cantidad = cantidad_decimal
+        adicional.save()
+        
+        return render(request, 'administrador/adicionales/row_partial.html', {'adicional': adicional})
+    
+    return HttpResponse(status=405)
+
+
+@grupo_requerido('Administrador')
+def adicionales_toggle_htmx(request, pk):
+    """Habilita/deshabilita el adicional en lugar de eliminar."""
+    adicional = get_object_or_404(Adicional, pk=pk)
+    if request.method == 'POST':
+        adicional.activo = not adicional.activo
+        adicional.save()
+        return render(request, 'administrador/adicionales/row_partial.html', {'adicional': adicional})
+    return HttpResponse(status=405)

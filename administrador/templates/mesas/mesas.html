@@ -1,0 +1,60 @@
+{% extends "administrador/layout.html" %}
+{% load static %}
+
+{% block title %}Mesas{% endblock %}
+
+{% block body %}
+<div class="container-fluid">
+
+    <div class="header">
+        <h2>Gestión de Mesas</h2>
+        <hr>
+    </div>
+
+    <div class="header d-flex gap-2 mb-3">
+        <button class="btn btn-primary"
+            data-bs-toggle="modal" data-bs-target="#mesaModal"
+            hx-get="{% url 'administrador:mesas_crear_partial' %}"
+            hx-target="#mesaFormBody"
+            hx-swap="innerHTML">
+            + Nueva Mesa
+        </button>
+    </div>
+
+    <div class="table-contenedor w-100">
+        <table class="table table-striped table-hover w-100">
+            <thead>
+                <tr>
+                    <th>Nº Mesa</th>
+                    <th>Capacidad</th>
+                    <th>Estado</th>
+                    <th>Activa</th>
+                    <th>Mostrador</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="mesaTableBody"
+                hx-get="{% url 'administrador:mesas_listar_partial' %}"
+                hx-trigger="load"
+                hx-swap="innerHTML">
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal para crear / editar mesa -->
+<div class="modal fade" id="mesaModal" tabindex="-1" aria-labelledby="mesaModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="mesaModalLabel">Mesa</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body" id="mesaFormBody">
+                <!-- El formulario se carga vía HTMX -->
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,13 @@
+{% for adicional in adicionales %}
+    {% include "administrador/adicionales/row_partial.html" with adicional=adicional %}
+{% empty %}
+    <tr>
+        <td colspan="6" class="text-center">
+            {% if mostrar_inactivos %}
+                No hay adicionales registrados.
+            {% else %}
+                No hay adicionales activos.
+            {% endif %}
+        </td>
+    </tr>
+{% endfor %}

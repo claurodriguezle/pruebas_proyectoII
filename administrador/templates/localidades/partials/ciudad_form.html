@@ -1,0 +1,45 @@
+<form
+    method="POST"
+    {% if ciudad %}
+        hx-post="{% url 'administrador:ciudades_editar_htmx' ciudad.id %}"
+        hx-target="#ciudad-{{ ciudad.id }}"
+        hx-swap="outerHTML"
+    {% else %}
+        hx-post="{% url 'administrador:ciudades_crear_htmx' %}"
+        hx-target="#ciudadTableBody"
+        hx-swap="beforeend"
+    {% endif %}
+    hx-on::after-request="
+        if(event.detail.successful) {
+            bootstrap.Modal.getInstance(document.getElementById('ciudadModal')).hide();
+        }
+    "
+>
+    {% csrf_token %}
+
+    <div id="ciudad-form-errors"></div>
+
+    <div class="mb-3">
+        <label for="nombreCiudad" class="form-label fw-semibold">Nombre <span class="text-danger">*</span></label>
+        <input
+            type="text"
+            class="form-control"
+            id="nombreCiudad"
+            name="nombre"
+            value="{{ ciudad.nombre|default:'' }}"
+            placeholder="Ej: Asunción"
+            required
+            autofocus
+        >
+    </div>
+
+    <!-- Zona de errores HTMX -->
+    <div id="ciudad-error-msg"></div>
+
+    <div class="d-flex justify-content-end gap-2 mt-3">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn {% if ciudad %}btn-primary{% else %}btn-success{% endif %}">
+            {% if ciudad %}Actualizar{% else %}Crear{% endif %}
+        </button>
+    </div>
+</form>
