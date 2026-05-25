@@ -41,12 +41,19 @@
 
             <!-- Usuarios - solo Administrador -->
             {% if request.user.groups.first.name == 'Administrador' %}
-            <li class="nav-item"><a href="{% url 'usuarios:index' %}" class="nav-link">Usuarios</a></li>
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">Usuarios</a>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="{% url 'usuarios:index' %}">Usuarios</a></li>
+                    <li><a class="dropdown-item" href="{% url 'usuarios:lista_grupos' %}">Grupos y permisos </a></li>
+                </ul>
+            </li>
             {% endif %}
 
             <!-- Caja - Administrador y Empleado (Cajero) -->
             {% if request.user.groups.first.name == 'Administrador' or request.user.groups.first.name == 'Empleado' %}
             <li class="nav-item"><a href="{% url 'caja:apertura_caja' %}" class="nav-link">Caja</a></li>
+            <li class="nav-item"><a href="{% url 'egresos:lista_egresos' %}" class="nav-link">Egresos</a></li>
             {% endif %}
 
             <!-- Facturación - solo Administrador -->
@@ -55,7 +62,7 @@
                 <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">Facturación</a>
                 <ul class="dropdown-menu">
                     <li><a class="dropdown-item" href="{% url 'facturacion:timbrado_list' %}">Timbrado</a></li>
-                    <li><a class="dropdown-item" href="{% url 'facturacion:factura_view' %}">Factura</a></li>
+                    <!-- <li><a class="dropdown-item" href="{% url 'facturacion:factura_view' %}">Factura</a></li> -->
                     <li><a class="dropdown-item" href="{% url 'facturacion:facturas_list' %}">Lista de Facturas</a></li>
                 </ul>
             </li>

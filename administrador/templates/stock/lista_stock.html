@@ -49,7 +49,7 @@
                         <th class="text-nowrap">Disponible</th>
                         <th class="text-nowrap">Precio Unitario</th>
                         <th class="text-nowrap">Últ. Entrada</th>
-                        <th class="text-nowrap">Últ. Salida</th>
+                        <!-- <th class="text-nowrap">Últ. Salida</th> -->
                         <th class="text-nowrap">Estado</th>
                         <th class="text-nowrap">Acciones</th>
                     </tr>
@@ -66,7 +66,7 @@
                         <td class="text-end fw-bold">{{ stock.cant_disponible|floatformat:2 }}</td>
                         <td class="text-end">{{ stock.precio_unitario|punto_miles }} Gs</td>
                         <td>{{ stock.fecha_ultima_entrada|date:"d/m/Y"|default:"-" }}</td>
-                        <td>{{ stock.fecha_ultima_salida|date:"d/m/Y"|default:"-" }}</td>
+                        <!-- <td>{{ stock.fecha_ultima_salida|date:"d/m/Y"|default:"-" }}</td> -->
                         <td>
                             {% if stock.cant_minima > 0 and stock.cant_disponible < stock.cant_minima %}
                                 <span class="badge bg-warning text-dark">

@@ -152,7 +152,7 @@ def agregar_pedido_cuenta(request):
         sin_nombres = item.get('sin', [])
         
         producto = get_object_or_404(Producto, pk=producto_id, estado='A')
-        adicionales = Adicional.objects.filter(id__in=adicionales_ids)
+        adicionales = Adicional.objects.filter(id__in=adicionales_ids, activo=True)
         
         precio_unitario = producto.precio + sum(ad.precio for ad in adicionales)
         total_item = precio_unitario * cantidad

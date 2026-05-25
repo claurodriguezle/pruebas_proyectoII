@@ -1,0 +1,340 @@
+{% extends "base_empleado.html" %}
+{% load static %}
+
+{% block title %}{% if modo == 'crear' %}Nuevo Grupo{% else %}Editar Grupo — {{ grupo.name }}{% endif %}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .permisos-container {
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    .permisos-header {
+        background: #f8f9fa;
+        padding: .6rem 1rem;
+        font-weight: 600;
+        font-size: .85rem;
+        border-bottom: 1px solid #dee2e6;
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+    }
+    .permisos-search {
+        padding: .5rem;
+        border-bottom: 1px solid #dee2e6;
+        background: #fff;
+    }
+    .permisos-search input {
+        width: 100%;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        padding: .3rem .6rem;
+        font-size: .85rem;
+    }
+    .permisos-list {
+        height: 280px;
+        overflow-y: auto;
+        background: #fff;
+    }
+    .permisos-list select {
+        width: 100%;
+        height: 100%;
+        border: none;
+        outline: none;
+        padding: 4px;
+        font-size: .82rem;
+    }
+    .permisos-list select option {
+        padding: 4px 8px;
+        cursor: pointer;
+    }
+    .permisos-list select option:checked {
+        background: #0d6efd;
+        color: #fff;
+    }
+    .btn-mover {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        align-items: center;
+        justify-content: center;
+        padding: 0 .75rem;
+    }
+    .btn-mover button {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border: 1px solid #dee2e6;
+        background: #fff;
+        cursor: pointer;
+        font-size: .9rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background .15s;
+    }
+    .btn-mover button:hover {
+        background: #0d6efd;
+        color: #fff;
+        border-color: #0d6efd;
+    }
+    .permisos-footer {
+        padding: .4rem .6rem;
+        background: #f8f9fa;
+        border-top: 1px solid #dee2e6;
+        font-size: .78rem;
+        color: #6c757d;
+        display: flex;
+        justify-content: space-between;
+    }
+    .permisos-footer a {
+        color: #0d6efd;
+        cursor: pointer;
+        text-decoration: none;
+    }
+    .permisos-footer a:hover { text-decoration: underline; }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="container-fluid px-4 py-3">
+
+    <div class="d-flex align-items-center gap-3 mb-4">
+        <a href="{% url 'usuarios:lista_grupos' %}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left"></i> Volver
+        </a>
+        <div>
+            <h2 class="mb-0 fw-bold">
+                {% if modo == 'crear' %}Nuevo Grupo{% else %}{{ grupo.name }}{% endif %}
+            </h2>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body p-4">
+            <form method="post" id="grupo-form">
+                {% csrf_token %}
+
+                <!-- Nombre -->
+                <div class="mb-4">
+                    <label class="form-label fw-semibold">Nombre <span class="text-danger">*</span></label>
+                    <input type="text"
+                           name="name"
+                           class="form-control"
+                           style="max-width: 350px"
+                           value="{{ grupo.name|default:'' }}"
+                           placeholder="Ej: Mozo, Supervisor..."
+                           required>
+                </div>
+
+                <hr>
+
+                <!-- Widget de permisos -->
+                <div class="mb-4">
+                    <label class="form-label fw-semibold mb-3">Permisos</label>
+
+                    <div class="d-flex align-items-stretch gap-0">
+
+                        <!-- Lista izquierda: Disponibles -->
+                        <div class="permisos-container flex-grow-1">
+                            <div class="permisos-header">
+                                <i class="bi bi-list-ul"></i> Permisos disponibles
+                            </div>
+                            <div class="permisos-search">
+                                <input type="text"
+                                       id="search-disponibles"
+                                       placeholder="&#128269; Filtrar..."
+                                       oninput="filtrarPermisos('disponibles', this.value)">
+                            </div>
+                            <div class="permisos-list">
+                                <select id="disponibles" multiple size="15">
+                                    {% for permiso in permisos %}
+                                        {% if permiso.id not in permisos_elegidos %}
+                                        <option value="{{ permiso.id }}"
+                                                data-label="{{ permiso.content_type.app_label }} | {{ permiso.content_type.model }} | {{ permiso.name }}">
+                                            {{ permiso.content_type.app_label }} | {{ permiso.content_type.model }} | {{ permiso.name }}
+                                        </option>
+                                        {% endif %}
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="permisos-footer">
+                                <a onclick="seleccionarTodos('disponibles')">Seleccionar todos</a>
+                                <span id="count-disponibles">0</span>
+                            </div>
+                        </div>
+
+                        <!-- Botones mover -->
+                        <div class="btn-mover">
+                            <button type="button" onclick="mover('disponibles', 'elegidos')" title="Agregar">
+                                <i class="bi bi-chevron-right"></i>
+                            </button>
+                            <button type="button" onclick="moverTodos('disponibles', 'elegidos')" title="Agregar todos">
+                                <i class="bi bi-chevron-double-right"></i>
+                            </button>
+                            <button type="button" onclick="moverTodos('elegidos', 'disponibles')" title="Quitar todos">
+                                <i class="bi bi-chevron-double-left"></i>
+                            </button>
+                            <button type="button" onclick="mover('elegidos', 'disponibles')" title="Quitar">
+                                <i class="bi bi-chevron-left"></i>
+                            </button>
+                        </div>
+
+                        <!-- Lista derecha: Elegidos -->
+                        <div class="permisos-container flex-grow-1">
+                            <div class="permisos-header">
+                                <i class="bi bi-check2-square"></i> Permisos elegidos
+                            </div>
+                            <div class="permisos-search">
+                                <input type="text"
+                                       id="search-elegidos"
+                                       placeholder="&#128269; Filtrar..."
+                                       oninput="filtrarPermisos('elegidos', this.value)">
+                            </div>
+                            <div class="permisos-list">
+                                <select id="elegidos" multiple size="15">
+                                    {% for permiso in permisos %}
+                                        {% if permiso.id in permisos_elegidos %}
+                                        <option value="{{ permiso.id }}"
+                                                data-label="{{ permiso.content_type.app_label }} | {{ permiso.content_type.model }} | {{ permiso.name }}">
+                                            {{ permiso.content_type.app_label }} | {{ permiso.content_type.model }} | {{ permiso.name }}
+                                        </option>
+                                        {% endif %}
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="permisos-footer">
+                                <a onclick="seleccionarTodos('elegidos')">Seleccionar todos</a>
+                                <span id="count-elegidos">0</span>
+                            </div>
+                        </div>
+
+                    </div>
+                    <div class="form-text mt-2">
+                        Mantené presionado <kbd>Ctrl</kbd> para seleccionar varios permisos a la vez.
+                    </div>
+                </div>
+
+                <!-- Hidden inputs para enviar permisos elegidos -->
+                <div id="permisos-hidden"></div>
+
+                <!-- Botones -->
+                <div class="d-flex gap-2 mt-3">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-floppy-fill me-1"></i> Guardar
+                    </button>
+                    <a href="{% url 'usuarios:lista_grupos' %}" class="btn btn-secondary">
+                        Cancelar
+                    </a>
+                    {% if modo == 'editar' %}
+                    <form method="post"
+                          action="{% url 'usuarios:eliminar_grupo' grupo.pk %}"
+                          class="ms-auto"
+                          onsubmit="return confirm('¿Eliminar el grupo {{ grupo.name }}?')">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-trash-fill me-1"></i> Eliminar
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Actualizar contadores
+function actualizarContadores() {
+    document.getElementById('count-disponibles').textContent =
+        document.getElementById('disponibles').options.length + ' opción(es)';
+    document.getElementById('count-elegidos').textContent =
+        document.getElementById('elegidos').options.length + ' opción(es)';
+}
+
+// Mover opciones seleccionadas de una lista a otra
+function mover(origen, destino) {
+    const selectOrigen  = document.getElementById(origen);
+    const selectDestino = document.getElementById(destino);
+    const seleccionadas = Array.from(selectOrigen.selectedOptions);
+
+    seleccionadas.forEach(opt => {
+        selectOrigen.removeChild(opt);
+        opt.selected = false;
+        selectDestino.appendChild(opt);
+    });
+
+    sortSelect(selectDestino);
+    actualizarContadores();
+}
+
+// Mover todas las opciones visibles
+function moverTodos(origen, destino) {
+    const selectOrigen  = document.getElementById(origen);
+    const selectDestino = document.getElementById(destino);
+    const todas = Array.from(selectOrigen.options);
+
+    todas.forEach(opt => {
+        if (opt.style.display !== 'none') {
+            selectOrigen.removeChild(opt);
+            opt.selected = false;
+            selectDestino.appendChild(opt);
+        }
+    });
+
+    sortSelect(selectDestino);
+    actualizarContadores();
+}
+
+// Seleccionar todas las visibles
+function seleccionarTodos(id) {
+    const select = document.getElementById(id);
+    Array.from(select.options).forEach(opt => {
+        if (opt.style.display !== 'none') opt.selected = true;
+    });
+}
+
+// Ordenar opciones alfabéticamente
+function sortSelect(select) {
+    const opts = Array.from(select.options).sort((a, b) =>
+        a.text.localeCompare(b.text)
+    );
+    opts.forEach(opt => select.appendChild(opt));
+}
+
+// Filtrar opciones por texto
+function filtrarPermisos(id, texto) {
+    const select = document.getElementById(id);
+    const filtro = texto.toLowerCase();
+    Array.from(select.options).forEach(opt => {
+        const label = opt.getAttribute('data-label').toLowerCase();
+        opt.style.display = label.includes(filtro) ? '' : 'none';
+    });
+}
+
+// Al hacer submit, seleccionar todas las opciones de "elegidos"
+// para que se envíen como permissions[] en el POST
+document.getElementById('grupo-form').addEventListener('submit', function () {
+    const elegidos = document.getElementById('elegidos');
+    Array.from(elegidos.options).forEach(opt => opt.selected = true);
+
+    // Agregar campo name="permissions" para cada opción elegida
+    const contenedor = document.getElementById('permisos-hidden');
+    contenedor.innerHTML = '';
+    Array.from(elegidos.options).forEach(opt => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'permissions';
+        input.value = opt.value;
+        contenedor.appendChild(input);
+    });
+});
+
+// Inicializar contadores al cargar
+actualizarContadores();
+</script>
+{% endblock %}

@@ -1,0 +1,12 @@
+{% load humanize %}
+{% for salario in salarios %}
+    {% include "salarios/partials/row_partial.html" with salario=salario %}
+{% empty %}
+    <tr>
+        <td colspan="3" class="text-center py-4 text-muted">
+            <i class="bi bi-cash-stack" style="font-size: 2rem; opacity:.3"></i>
+            <p class="mt-2 mb-0">No hay salarios registrados</p>
+            <small class="text-muted">Hacé clic en "Nuevo Salario" para agregar</small>
+        </td>
+    </tr>
+{% endfor %}

@@ -20,6 +20,20 @@
         
     </div>
 
+    <!-- Toggle para mostrar inactivas - CORREGIDO -->
+    <div class="form-check form-switch mb-3">
+        <input class="form-check-input" type="checkbox" id="mostrarInactivasCheck"
+               name="mostrar_inactivas"
+               value="on"
+               hx-get="{% url 'administrador:listar_categorias_partial' %}"
+               hx-target="#tabla-container"
+               hx-swap="innerHTML"
+               hx-trigger="change">
+        <label class="form-check-label" for="mostrarInactivasCheck">
+            Mostrar categorías inactivas
+        </label>
+    </div>
+
     <div class="table-responsive" id="tabla-container"
     hx-get="{% url 'administrador:listar_categorias_partial' %}"
     hx-trigger="load"

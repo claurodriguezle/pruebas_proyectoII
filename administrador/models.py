@@ -215,7 +215,7 @@ class Compra(models.Model):
     ]
     numero_factura = models.CharField(
         max_length= 50,
-        unique= True,  #El numero de factura debe ser unico
+        unique= False,  #El numero de factura debe ser unico
         verbose_name="Numero de factura"
     )
     fecha = models.DateField(verbose_name= "Fecha de Compra")
@@ -291,6 +291,7 @@ class CategoriaProducto(models.Model):
         choices=TIPOS,
         default='ingrediente'
     )
+    activo = models.BooleanField(default=True)
 
     def __str__(self):
         return self.nombre_categ
