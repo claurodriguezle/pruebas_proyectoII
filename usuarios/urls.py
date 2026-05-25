@@ -27,7 +27,12 @@ urlpatterns = [
     path('usuarios/<int:pk>/editar/',            views.editar_usuario_admin,   name='editar'),
     path('usuarios/<int:pk>/toggle/',            views.toggle_activo,          name='toggle'),
     path('usuarios/<int:pk>/password/',          views.cambiar_password_admin, name='cambiar_password'),
-
+    # ── Gestión de grupos y permisos (panel administrador) ─────────────────────────
+    path('grupos/',                    views.lista_grupos,   name='lista_grupos'),
+    path('grupos/crear/',              views.crear_grupo,    name='crear_grupo'),
+    path('grupos/<int:pk>/editar/',    views.editar_grupo,   name='editar_grupo'),
+    path('grupos/<int:pk>/eliminar/',  views.eliminar_grupo, name='eliminar_grupo'),
+ 
      # ── NUEVAS RUTAS PARA EMPLEADOS ──────────────────────────────────────
     path('empleados/login/', views.login_empleado, name='login_empleado'),
     path('empleados/logout/', views.logout_empleado, name='logout_empleado'),

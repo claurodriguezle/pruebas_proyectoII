@@ -64,6 +64,19 @@
                 hx-include="[name='categoria']"
                 hx-trigger="input changed delay:300ms, search">
         </div>
+        <div class="form-check form-switch mt-2">
+            <input class="form-check-input" type="checkbox" id="mostrarInactivosCheck"
+                name="mostrar_inactivos"
+                value="on"
+                hx-get="{% url 'administrador:listar_partial' %}"
+                hx-target="#productTableBody"
+                hx-swap="innerHTML"
+                hx-trigger="change"
+                hx-include="#searchInput, [name='categoria']">
+            <label class="form-check-label" for="mostrarInactivosCheck">
+                Mostrar productos inactivos
+            </label>
+        </div>
     </div>
     
     <div class="table-contenedor w-100"> <!-- table-container -->

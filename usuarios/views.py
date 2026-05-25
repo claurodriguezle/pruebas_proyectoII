@@ -7,6 +7,7 @@ from usuarios.forms import RegistroClienteForm, DireccionForm, UsuarioAdminForm,
 from django.contrib import messages
 from django.db import transaction, IntegrityError
 from django.http import HttpResponse
+from django.contrib.auth.models import Group, Permission
 
 # Create your views here.
 def index(request):
@@ -466,7 +467,32 @@ def editar_usuario_admin(request, pk):
                     if grupo:
                         user.groups.add(grupo)
  
-                    if persona:
+                    if not persona:
+                        persona = Persona.objects.create(
+                            nombre=cd['nombre'],
+                            apellido=cd['apellido'],
+                            cedula=cd['cedula'],
+                            telefono=cd['telefono'],
+                            fecha_nacimiento=cd['fecha_nacimiento'],
+                            nacionalidad=cd['nacionalidad'],
+                            ruc=cd.get('ruc') or None,
+                            correo=cd['email'],
+                            ciudad=cd['ciudad'],
+                            barrio=cd['barrio'],
+                        )
+                        #Crear o actualizar perfil según el grupo
+                        grupo = cd.get('grupo')
+                        if grupo and grupo.name in ['Administrador', 'Cocina', 'Empleado']:
+                            Empleado.objects.create(
+                                persona=persona,
+                                user=user,
+                                tipo=cd.get('tipo_empleado'),
+                                fecha_contratacion=cd.get('fecha_contratacion'),
+                                salario=cd.get('salario'),
+                            )
+                        else:
+                            Cliente.objects.create(persona=persona, user=user)
+                    else:
                         persona.nombre = cd['nombre']
                         persona.apellido = cd['apellido']
                         persona.cedula = cd['cedula']
@@ -478,13 +504,13 @@ def editar_usuario_admin(request, pk):
                         persona.ciudad = cd['ciudad']
                         persona.barrio = cd['barrio']
                         persona.save()
- 
-                    if tipo in ['Administrador', 'Cocina', 'Empleado'] and perfil:
-                        perfil.tipo = cd.get('tipo_empleado')
-                        perfil.fecha_contratacion = cd.get('fecha_contratacion')
-                        perfil.salario = cd.get('salario')
-                        perfil.save()
- 
+
+                        if tipo in ['Administrador', 'Cocina', 'Empleado'] and perfil:
+                            perfil.tipo = cd.get('tipo_empleado')
+                            perfil.fecha_contratacion = cd.get('fecha_contratacion')
+                            perfil.salario = cd.get('salario')
+                            perfil.save()
+    
                 messages.success(request, f'Usuario "{user.username}" actualizado.')
                 return HttpResponse(status=204, headers={'HX-Trigger': 'usuarioGuardado'})
  
@@ -653,3 +679,82 @@ def dashboard_redireccion(request):
         return redirect('pedidos:cocina')
     else:
         return redirect('pedidos:index')
+
+#Vistas para administrar los grupos y permisos
+@login_required
+def lista_grupos(request):
+    grupos = Group.objects.prefetch_related('user_set').order_by('name')
+    return render(request, 'usuarios/grupos/lista.html', {'grupos': grupos})
+
+
+@login_required
+def crear_grupo(request):
+    permisos = Permission.objects.select_related('content_type').order_by(
+        'content_type__app_label', 'content_type__model', 'name'
+    )
+    if request.method == 'POST':
+        nombre = request.POST.get('name', '').strip()
+        permisos_ids = request.POST.getlist('permissions')
+
+        if not nombre:
+            messages.error(request, 'El nombre del grupo es obligatorio.')
+        elif Group.objects.filter(name__iexact=nombre).exists():
+            messages.error(request, f'Ya existe un grupo llamado "{nombre}".')
+        else:
+            grupo = Group.objects.create(name=nombre)
+            if permisos_ids:
+                grupo.permissions.set(permisos_ids)
+            messages.success(request, f'Grupo "{nombre}" creado correctamente.')
+            return redirect('usuarios:lista_grupos')
+
+    return render(request, 'usuarios/grupos/form.html', {
+        'permisos': permisos,
+        'grupo': None,
+        'permisos_elegidos': [],
+        'modo': 'crear'
+    })
+
+
+@login_required
+def editar_grupo(request, pk):
+    grupo = get_object_or_404(Group, pk=pk)
+    permisos = Permission.objects.select_related('content_type').order_by(
+        'content_type__app_label', 'content_type__model', 'name'
+    )
+    permisos_elegidos = list(grupo.permissions.values_list('id', flat=True))
+
+    if request.method == 'POST':
+        nombre = request.POST.get('name', '').strip()
+        permisos_ids = request.POST.getlist('permissions')
+
+        if not nombre:
+            messages.error(request, 'El nombre del grupo es obligatorio.')
+        elif Group.objects.filter(name__iexact=nombre).exclude(pk=pk).exists():
+            messages.error(request, f'Ya existe un grupo llamado "{nombre}".')
+        else:
+            grupo.name = nombre
+            grupo.permissions.set(permisos_ids)
+            grupo.save()
+            messages.success(request, f'Grupo "{nombre}" actualizado correctamente.')
+            return redirect('usuarios:lista_grupos')
+
+    return render(request, 'usuarios/grupos/form.html', {
+        'permisos': permisos,
+        'grupo': grupo,
+        'permisos_elegidos': permisos_elegidos,
+        'modo': 'editar'
+    })
+
+
+@login_required
+def eliminar_grupo(request, pk):
+    grupo = get_object_or_404(Group, pk=pk)
+    if request.method == 'POST':
+        usuarios_con_grupo = grupo.user_set.count()
+        if usuarios_con_grupo > 0:
+            messages.error(request, f'No se puede eliminar: {usuarios_con_grupo} usuario(s) pertenecen a este grupo.')
+        else:
+            nombre = grupo.name
+            grupo.delete()
+            messages.success(request, f'Grupo "{nombre}" eliminado.')
+    return redirect('usuarios:lista_grupos')

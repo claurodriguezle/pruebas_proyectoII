@@ -22,7 +22,8 @@ urlpatterns = [
     path('producto/crear/htmx/', views.crear_htmx, name='crear_htmx'),
     path('producto/partials/editar/<int:pk>/', views.editar_partial, name='editar_partial'),
     path('producto/editar/<int:pk>/htmx/', views.editar_htmx, name='editar_htmx'),
-    path('producto/eliminar/<int:pk>/', views.eliminar_htmx, name='eliminar_htmx'),
+    path('producto/desactivar/<int:pk>/', views.desactivar_producto_htmx, name='desactivar_producto'),
+    path('producto/activar/<int:pk>/', views.activar_producto_htmx, name='activar_producto'),
 
 
     #Rutas para compras
@@ -48,7 +49,7 @@ urlpatterns = [
     path('categorias/', views.categorias, name='categorias'),
     path('categorias/crear', views.crear_categorias, name='crear_categorias'),
     path('categorias/listar', views.listar_categorias_partial, name="listar_categorias_partial"),
-    path('categorias/eliminar/<int:pk>/', views.eliminar_categoria, name='eliminar_categoria'),
+    path('categorias/toggle/<int:pk>/', views.toggle_categoria, name='toggle_categoria'),
     path('categorias/editar/<int:pk>/', views.editar_categoria, name='editar_categoria'),
 
     # INGREDIENTES DE PRODUCTOS
@@ -68,6 +69,13 @@ urlpatterns = [
     path('salarios/crear/',            views.crear_salario,    name='crear_salario'),
     path('salarios/<int:pk>/editar/',  views.editar_salario,   name='editar_salario'),
     path('salarios/<int:pk>/eliminar/',views.eliminar_salario, name='eliminar_salario'),
+    # ===== NUEVAS RUTAS HTMX PARA SALARIOS =====
+    path('salarios/listar-partial/', views.listar_salarios_partial, name='listar_salarios_partial'),
+    path('salarios/crear-partial/', views.crear_salario_partial, name='crear_salario_partial'),
+    path('salarios/crear-htmx/', views.crear_salario_htmx, name='crear_salario_htmx'),
+    path('salarios/editar-partial/<int:pk>/', views.editar_salario_partial, name='editar_salario_partial'),
+    path('salarios/editar-htmx/<int:pk>/', views.editar_salario_htmx, name='editar_salario_htmx'),
+    path('salarios/eliminar-htmx/<int:pk>/', views.eliminar_salario_htmx, name='eliminar_salario_htmx'),
 
     # RUTAS PARA TIPO DE EMPLEADO
     path('tipo-empleado/',                          views.lista_tipo_empleado,           name='lista_tipo_empleado'),

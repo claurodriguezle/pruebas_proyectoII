@@ -38,8 +38,8 @@ def index(request):
 
 
 def menu_productos(request):
-    categorias = CategoriaProducto.objects.all()
-    adicionales = Adicional.objects.all()
+    categorias = CategoriaProducto.objects.filter(activo=True).order_by('nombre_categ')
+    adicionales = Adicional.objects.filter(activo=True)
     carrito = request.session.get('carrito', [])
     
     # Total de item para el contador del carrito
@@ -105,7 +105,7 @@ def modal_personalizacion(request, producto_id):
         puede_eliminarse=True
     ).select_related('item')
 
-    extras = producto.adicionales.all()
+    extras = producto.adicionales.filter(activo=True)
 
     return render(request, 'pedidos/partials/modal_personalizacion.html', {
         'eliminables': eliminables,

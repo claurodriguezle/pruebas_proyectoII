@@ -235,7 +235,13 @@ def productos(request):
 # RENDERIZA LA LISTA DE PRODUCTOS ACTIVOS (estado='A') ORDENADOS POR CÓDIGO
 @grupo_requerido('Administrador')
 def listar_partial(request):
-    productos = Producto.objects.filter(estado='A').order_by('codigo')
+    # Leer correctamente el checkbox (viene como 'on' cuando está marcado)
+    mostrar_inactivos = request.GET.get('mostrar_inactivos') == 'on' or request.GET.get('mostrar_inactivos') == 'true'
+    
+    if mostrar_inactivos:
+        productos = Producto.objects.all().order_by('codigo')
+    else:
+        productos = Producto.objects.filter(estado='A').order_by('codigo')
     
     search = request.GET.get('search', '').strip()
     categoria_id = request.GET.get('categoria', '').strip()
@@ -247,7 +253,10 @@ def listar_partial(request):
     if categoria_id:
         productos = productos.filter(categoria__id=categoria_id)
 
-    return render(request, 'productos/listar_partial.html', {'productos': productos})
+    return render(request, 'productos/listar_partial.html', {
+        'productos': productos,
+        'mostrar_inactivos': mostrar_inactivos
+    })
 
 # RENDERIZA EL FORMULARIO VACÍO PARA CREAR UN NUEVO PRODUCTO
 @grupo_requerido('Administrador')
@@ -290,10 +299,20 @@ def editar_htmx(request, pk):
 
 # ELIMINA UN PRODUCTO Y DEVUELVE UNA RESPUESTA VACÍA PARA QUE HTMX ELIMINE LA FILA EN LA VISTA
 @grupo_requerido('Administrador')
-def eliminar_htmx(request, pk):
+def desactivar_producto_htmx(request, pk):
+    """Desactiva un producto (cambia estado a 'I')"""
     producto = get_object_or_404(Producto, pk=pk)
-    producto.delete()
+    producto.estado = 'I'
+    producto.save()
     return HttpResponse('')
+
+@grupo_requerido('Administrador')
+def activar_producto_htmx(request, pk):
+    """Activa un producto (cambia estado a 'A') y devuelve la fila"""
+    producto = get_object_or_404(Producto, pk=pk)
+    producto.estado = 'A'
+    producto.save()
+    return render(request, 'productos/row_partial.html', {'producto': producto})
 
 #COMPRAS
 
@@ -848,19 +867,36 @@ def crear_categorias(request):
 
 @grupo_requerido('Administrador')
 def listar_categorias_partial(request):
-    categorias = CategoriaProducto.objects.all().order_by('nombre_categ')
-    return render(request, 'categorias/partials/lista.html', {'categorias': categorias})
+    # Leer el checkbox correctamente
+    mostrar_inactivas = request.GET.get('mostrar_inactivas') == 'on' or request.GET.get('mostrar_inactivas') == 'true'
+    if mostrar_inactivas:
+        categorias = CategoriaProducto.objects.all().order_by('nombre_categ')
+    else:
+        categorias = CategoriaProducto.objects.filter(activo=True).order_by('nombre_categ')
+    
+    return render(request, 'categorias/partials/lista.html', {
+        'categorias': categorias,
+        'mostrar_inactivas': mostrar_inactivas
+    })
 
 @grupo_requerido('Administrador')
-def eliminar_categoria(request, pk):
-    if request.method == 'DELETE':
-        try:
-            categoria = CategoriaProducto.objects.get(pk=pk)
-            categoria.delete()
-            categorias = CategoriaProducto.objects.all()
-            return render(request, 'categorias/partials/lista.html', {'categorias': categorias})
-        except CategoriaProducto.DoesNotExist:
-            raise Http404('Categoría no encontrada')
+def toggle_categoria(request, pk):
+    """Activa o desactiva una categoría"""
+    #print(f"🔍 Toggle categoría - pk recibido: {pk}")
+    categoria = get_object_or_404(CategoriaProducto, pk=pk)
+    #print(f"🔍 Categoría encontrada: ID={categoria.id}, Nombre={categoria.nombre_categ}")
+    categoria.activo = not categoria.activo
+    categoria.save()
+    #print(f"🔍 Nuevo estado activo: {categoria.activo}")
+    # Determinar si debemos mostrar inactivas después del toggle
+    mostrar_inactivas = request.POST.get('mostrar_inactivas') == 'on' or request.GET.get('mostrar_inactivas') == 'on'
+    #print(f"🔍 mostrar_inactivas: {mostrar_inactivas}")
+    html = render_to_string('categorias/partials/categoria_row_partial.html', {
+        'categoria': categoria,
+        'mostrar_inactivas': mostrar_inactivas
+    })
+    
+    return HttpResponse(html)
 
 @grupo_requerido('Administrador')
 def editar_categoria(request, pk):
@@ -1055,9 +1091,11 @@ def eliminar_item(request, pk):
 
 @grupo_requerido('Administrador')
 def lista_salarios(request):
-    """Lista todos los salarios con los empleados asignados a cada uno."""
+    """Lista todos los salarios con los empleados asignados a cada uno.
     salarios = Salario.objects.prefetch_related('empleado_set').order_by('monto')
-    return render(request, 'salarios/lista.html', {'salarios': salarios})
+    return render(request, 'salarios/lista.html', {'salarios': salarios})"""
+    return render(request, 'salarios/lista.html')
+
 
 
 @grupo_requerido('Administrador')
@@ -1131,6 +1169,134 @@ def eliminar_salario(request, pk):
             messages.success(request, 'Salario eliminado correctamente.')
 
     return redirect('administrador:salarios')
+
+# ==================== SALARIOS - VISTAS HTMX (NUEVAS) ====================
+
+@grupo_requerido('Administrador')
+def listar_salarios_partial(request):
+    """Devuelve solo el <tbody> con todos los salarios"""
+    salarios = Salario.objects.all().order_by('monto')
+    return render(request, 'salarios/partials/listar_partial.html', {'salarios': salarios})
+
+
+@grupo_requerido('Administrador')
+def crear_salario_partial(request):
+    """Devuelve el formulario vacío dentro del modal"""
+    return render(request, 'salarios/partials/form_partial.html', {'modo': 'crear'})
+
+
+@grupo_requerido('Administrador')
+def crear_salario_htmx(request):
+    """Procesa la creación y devuelve la fila HTML"""
+    if request.method == 'POST':
+        monto = request.POST.get('monto', '').strip()
+        
+        if not monto:
+            return HttpResponse(
+                '<div class="alert alert-danger">El monto es obligatorio.</div>',
+                status=400
+            )
+        
+        try:
+            monto_val = float(monto)
+            if monto_val <= 0:
+                raise ValueError
+            
+            if Salario.objects.filter(monto=monto_val).exists():
+                return HttpResponse(
+                    f'<div class="alert alert-danger">Ya existe un salario de Gs. {monto_val:,.0f}.</div>',
+                    status=400
+                )
+            
+            nuevo_salario = Salario.objects.create(monto=monto_val)
+            
+            from django.template.loader import render_to_string
+            html = render_to_string(
+                'salarios/partials/row_partial.html',
+                {'salario': nuevo_salario, 'forloop': {'counter': 0}}
+            )
+            return HttpResponse(html)
+            
+        except ValueError:
+            return HttpResponse(
+                '<div class="alert alert-danger">Ingresá un monto válido mayor a cero.</div>',
+                status=400
+            )
+    
+    return HttpResponse(status=405)
+
+
+@grupo_requerido('Administrador')
+def editar_salario_partial(request, pk):
+    """Devuelve el formulario con datos para editar"""
+    salario = get_object_or_404(Salario, pk=pk)
+    return render(request, 'salarios/partials/form_partial.html', {
+        'modo': 'editar',
+        'salario': salario
+    })
+
+
+@grupo_requerido('Administrador')
+def editar_salario_htmx(request, pk):
+    """Procesa la edición y devuelve la fila actualizada"""
+    salario = get_object_or_404(Salario, pk=pk)
+    
+    if request.method == 'POST':
+        monto = request.POST.get('monto', '').strip()
+        
+        if not monto:
+            return HttpResponse(
+                '<div class="alert alert-danger">El monto es obligatorio.</div>',
+                status=400
+            )
+        
+        try:
+            monto_val = float(monto)
+            if monto_val <= 0:
+                raise ValueError
+            
+            if Salario.objects.filter(monto=monto_val).exclude(pk=pk).exists():
+                return HttpResponse(
+                    f'<div class="alert alert-danger">Ya existe un salario de Gs. {monto_val:,.0f}.</div>',
+                    status=400
+                )
+            
+            salario.monto = monto_val
+            salario.save()
+            
+            from django.template.loader import render_to_string
+            html = render_to_string(
+                'salarios/partials/row_partial.html',
+                {'salario': salario, 'forloop': {'counter': 0}}
+            )
+            return HttpResponse(html)
+            
+        except ValueError:
+            return HttpResponse(
+                '<div class="alert alert-danger">Ingresá un monto válido mayor a cero.</div>',
+                status=400
+            )
+    
+    return HttpResponse(status=405)
+
+
+@grupo_requerido('Administrador')
+def eliminar_salario_htmx(request, pk):
+    """Elimina el salario y devuelve vacío para que HTMX remueva la fila"""
+    salario = get_object_or_404(Salario, pk=pk)
+    
+    if request.method == 'POST':
+        empleados_asignados = salario.empleado_set.count()
+        if empleados_asignados > 0:
+            return HttpResponse(
+                f'<div class="alert alert-danger">No se puede eliminar: {empleados_asignados} empleado(s) tienen este salario asignado.</div>',
+                status=400
+            )
+        
+        salario.delete()
+        return HttpResponse('')
+    
+    return HttpResponse(status=405)
 
 #Vistas para CRUD de mesas
 @grupo_requerido('Administrador')

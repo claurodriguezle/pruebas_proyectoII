@@ -3,15 +3,24 @@
         <tr>
             <th>ID</th>
             <th>Nombre</th>
+            <th>Tipo</th>
             <th>Acciones</th>
         </tr>
     </thead>
     <tbody id="categoriaTableBody">
         {% for categoria in categorias %}
-            {% include "categorias/partials/categoria_row_partial.html" %}
+            {% include "categorias/partials/categoria_row_partial.html" with categoria=categoria mostrar_inactivas=mostrar_inactivas %}
         {% empty %}
             <tr>
-                <td colspan="3">No hay categorías registradas.</td>
+                <td colspan="4" class="text-center py-4 text-muted">
+                    <i class="bi bi-tags" style="font-size: 2rem; opacity:.3"></i>
+                    <p class="mt-2 mb-0">No hay categorías registradas</p>
+                    {% if mostrar_inactivas %}
+                        <small class="text-muted">No hay categorías activas ni inactivas</small>
+                    {% else %}
+                        <small class="text-muted">Hacé clic en "Mostrar inactivas" para ver categorías desactivadas</small>
+                    {% endif %}
+                </td>
             </tr>
         {% endfor %}
     </tbody>

@@ -1,7 +1,7 @@
 {% for producto in productos %}
-    {% include "productos/row_partial.html" with producto=producto  %}
+    {% include "productos/row_partial.html" with producto=producto mostrar_inactivos=mostrar_inactivos %}
 {% empty %}
     <tr>
-        <td colspan="6" class="text-center">No hay productos disponibles</td>
+        <td colspan="7" class="text-center">No hay productos disponibles</td>
     </tr>
 {% endfor %}

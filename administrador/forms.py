@@ -73,7 +73,7 @@ class RolForm(forms.Form):
         choices=[
             ('', '---------'),
             ('cliente', 'Cliente'),
-            ('empleado', 'Empleado'),
+            #('empleado', 'Empleado'),
             ('proveedor', 'Proveedor'),
         ],
         widget=forms.Select(attrs={'class': 'form-select', 'id': 'rol-select'}),
@@ -155,9 +155,33 @@ class CompraForm(forms.ModelForm):
         widgets = {
             'fecha': forms.DateInput(attrs={
                 'type': 'date',
-                'max': timezone.now().date().isoformat()  # Establece el máximo como hoy
+                'max': timezone.now().date().isoformat()
             }),
         }
+
+    def clean_numero_factura(self):
+        """Valida que no exista otra compra ACTIVA con el mismo número de factura"""
+        numero_factura = self.cleaned_data.get('numero_factura')
+        
+        if not numero_factura:
+            return numero_factura
+        
+        # Si es una edición, excluir la compra actual
+        compra_actual = self.instance if self.instance.pk else None
+        
+        # Buscar otra compra ACTIVA con el mismo número
+        compra_existente = Compra.objects.filter(
+            numero_factura=numero_factura,
+            estado='ACTIVA'
+        ).exclude(pk=compra_actual.pk if compra_actual else None).first()
+        
+        if compra_existente:
+            raise forms.ValidationError(
+                f'Ya existe una compra ACTIVA con el número de factura "{numero_factura}". '
+                f'Si la compra anterior fue anulada, este número ya puede ser reutilizado.'
+            )
+        
+        return numero_factura
 
     def clean_fecha(self):
         fecha = self.cleaned_data.get('fecha')

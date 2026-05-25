@@ -1,0 +1,33 @@
+{% load humanize %}
+<tr id="salario-{{ salario.id }}">
+    <td class="text-muted small">{{ salario.id }}</td>
+    <td>
+        <span class="salario-monto">
+            Gs. {{ salario.monto|floatformat:0|intcomma }}
+        </span>
+    </td>
+    <td class="text-center">
+        <div class="d-flex gap-1 justify-content-center">
+            <!-- Botón Editar -->
+            <button class="btn btn-sm btn-outline-primary btn-accion"
+                    title="Editar"
+                    data-bs-toggle="modal"
+                    data-bs-target="#salarioModal"
+                    hx-get="{% url 'administrador:editar_salario_partial' salario.id %}"
+                    hx-target="#salarioFormBody"
+                    hx-swap="innerHTML">
+                <i class="bi bi-pencil-fill"></i>
+            </button>
+
+            <!-- Botón Eliminar -->
+            <button class="btn btn-sm btn-outline-danger btn-accion"
+                    title="Eliminar"
+                    hx-post="{% url 'administrador:eliminar_salario_htmx' salario.id %}"
+                    hx-target="#salario-{{ salario.id }}"
+                    hx-swap="outerHTML"
+                    hx-confirm="¿Eliminar este salario? Solo es posible si no tiene empleados asignados.">
+                <i class="bi bi-trash-fill"></i>
+            </button>
+        </div>
+    </td>
+</tr>
