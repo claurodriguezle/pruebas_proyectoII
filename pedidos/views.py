@@ -14,9 +14,10 @@ from django.views.decorators.http import require_http_methods
 from django.utils import timezone
 from django.db.models import Q
 from django.utils import timezone
+from caja.models import Caja
 
 # ── Horario de atención del local ──────────────────────────────────────────
-HORA_APERTURA = 18   # 18:40
+HORA_APERTURA = 12   # 18:40
 MIN_APERTURA  = 40
 HORA_CIERRE   = 22   # 22:30
 MIN_CIERRE    = 30
