@@ -18,7 +18,8 @@ class PersonaForm(forms.ModelForm):
             'nombre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Juan'}),
             'apellido': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Perez'}),
             'telefono': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '0987654321'}),
-            'fecha_nacimiento': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'fecha_nacimiento': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'},
+            format='%Y-%m-%d'),
             'cedula': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '123456789'}),
             'ruc': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '123456789-0'}),
             'correo' : forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'example@example.com'}),
@@ -48,7 +49,8 @@ class EmpleadoForm(forms.ModelForm):
         fields = ['salario', 'fecha_contratacion', 'tipo']
         widgets = {
             'salario': forms.Select(attrs={'class': 'form-select'}),
-            'fecha_contratacion': forms.DateInput(attrs={'class': 'form-control', 'type': 'date', 'min': '2020-01-01'}),
+            'fecha_contratacion': forms.DateInput(attrs={'class': 'form-control', 'type': 'date', 'min': '2020-01-01'}, 
+            format='%Y-%m-%d'),
             'tipo': forms.Select(attrs={'class': 'form-select'}),
         }
     

@@ -8,6 +8,12 @@ body {
   height: 100vh;
 }
 
+.dropend:hover > .dropdown-menu {
+    display: block;
+    margin-top: 0;
+    margin-left: 0.125rem;
+}
+
 h4{
   text-align: center;
 }

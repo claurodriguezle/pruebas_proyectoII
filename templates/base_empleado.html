@@ -36,36 +36,49 @@
         <hr>
         
         <ul class="nav flex-column">
-            <!-- Inicio - visible para todos los empleados -->
-            <li class="nav-item"><a href="{% url 'usuarios:dashboard_redireccion' %}" class="nav-link">Inicio</a></li>
 
             <!-- Usuarios - solo Administrador -->
             {% if request.user.groups.first.name == 'Administrador' %}
             <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">Usuarios</a>
+                <a class="nav-link dropdown-toggle" href="{% url 'usuarios:index' %}" role="button" data-bs-toggle="dropdown">Usuarios</a>
                 <ul class="dropdown-menu">
                     <li><a class="dropdown-item" href="{% url 'usuarios:index' %}">Usuarios</a></li>
-                    <li><a class="dropdown-item" href="{% url 'usuarios:lista_grupos' %}">Grupos y permisos </a></li>
+
+                    <!-- Dropdown anidado de Personas -->
+                    <li class="dropend">
+                        <a class="dropdown-item dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">Personas</a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{% url 'administrador:crear_persona' %}">Registro</a></li>
+                            <li><a class="dropdown-item" href="{% url 'administrador:listar_personas' %}">Listar</a></li>
+                            <li><a class="dropdown-item" href="{% url 'administrador:lista_tipo_empleado' %}">Tipo de Empleado</a></li>
+                        </ul>
+                    </li>
+
+                    <li><a class="dropdown-item" href="{% url 'usuarios:lista_grupos' %}">Grupos y permisos</a></li>
                 </ul>
             </li>
             {% endif %}
 
             <!-- Caja - Administrador y Empleado (Cajero) -->
             {% if request.user.groups.first.name == 'Administrador' or request.user.groups.first.name == 'Empleado' %}
-            <li class="nav-item"><a href="{% url 'caja:apertura_caja' %}" class="nav-link">Caja</a></li>
-            <li class="nav-item"><a href="{% url 'egresos:lista_egresos' %}" class="nav-link">Egresos</a></li>
-            {% endif %}
 
-            <!-- Facturación - solo Administrador -->
-            {% if request.user.groups.first.name == 'Administrador' %}
             <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">Facturación</a>
+                <a class="nav-link dropdown-toggle" href="{% url 'caja:apertura_caja' %}" role="button" data-bs-toggle="dropdown">Caja</a>
                 <ul class="dropdown-menu">
-                    <li><a class="dropdown-item" href="{% url 'facturacion:timbrado_list' %}">Timbrado</a></li>
-                    <!-- <li><a class="dropdown-item" href="{% url 'facturacion:factura_view' %}">Factura</a></li> -->
-                    <li><a class="dropdown-item" href="{% url 'facturacion:facturas_list' %}">Lista de Facturas</a></li>
+                    <li><a class="dropdown-item" href="{% url 'caja:apertura_caja' %}">Caja</a></li>
+                    <li><a class="dropdown-item" href="{% url 'egresos:lista_egresos' %}">Egresos</a></li>
+
+                    <!-- Dropdown anidado de Facturacion -->
+                    <li class="dropend">
+                        <a class="dropdown-item dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">Facturacion</a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{% url 'facturacion:timbrado_list' %}">Timbrado</a></li>
+                            <li><a class="dropdown-item" href="{% url 'facturacion:facturas_list' %}">Lista de Facturas</a></li>
+                        </ul>
+                    </li>
                 </ul>
             </li>
+
             {% endif %}
 
             <!-- Pedidos - visible según rol -->
@@ -124,15 +137,8 @@
 
             <!-- Personas - solo Administrador -->
             {% if request.user.groups.first.name == 'Administrador' %}
-            <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">Personas</a>
-                <ul class="dropdown-menu">
-                    <li><a class="dropdown-item" href="{% url 'administrador:crear_persona' %}">Registro</a></li>
-                    <li><a class="dropdown-item" href="{% url 'administrador:listar_personas' %}">Listar</a></li>
-                    <li><a class="dropdown-item" href="{% url 'administrador:lista_tipo_empleado' %}">Tipo de Empleado</a></li>
-                    <li><a class="dropdown-item" href="{% url 'administrador:salarios' %}">Salarios</a></li>
-                    <li><a class="dropdown-item" href="{% url 'administrador:localidades' %}">Localidades</a></li>
-                </ul>
+            <li class="nav-item">
+                <a href="{% url 'administrador:localidades' %}" class="nav-link">Localidades</a>
             </li>
             {% endif %}
         </ul>

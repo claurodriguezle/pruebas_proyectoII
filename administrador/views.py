@@ -146,6 +146,10 @@ def crear_persona(request):
 def editar_persona(request, id):
     persona = get_object_or_404(Persona, id=id)
 
+    print("tiene empleado:", hasattr(persona, 'empleado'))
+    print("tiene proveedor:", hasattr(persona, 'proveedor'))
+    print("tiene cliente:", hasattr(persona, 'cliente'))
+
     rol_principal = None
     if hasattr(persona, 'empleado'):
         rol_principal = 'empleado'
