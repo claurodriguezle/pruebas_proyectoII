@@ -28,6 +28,11 @@ class PersonaForm(forms.ModelForm):
             'nacionalidad': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Paraguaya'}),
         }
     
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not self.instance.pk:  # solo al crear, no al editar
+            self.fields['nacionalidad'].initial = 'Paraguaya'
+
     def clean_fecha_nacimiento(self):
         fecha_nacimiento = self.cleaned_data.get('fecha_nacimiento')
         hoy = date.today()

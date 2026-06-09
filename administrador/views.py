@@ -53,24 +53,24 @@ def listar_personas(request):
     # Inicializamos la variable personas como lista vacía
     personas = []
 
-    # FILTRO POR GRUPO
     if grupo == 'Clientes':
-        personas = Cliente.objects.annotate(tipo_persona=Value("Cliente", output_field=CharField()))
+        personas = Cliente.objects.select_related('persona').annotate(tipo_persona=Value("Cliente", output_field=CharField()))
     elif grupo == 'Empleados':
-        personas = Empleado.objects.annotate(tipo_persona=Value("Empleado", output_field=CharField()))
+        personas = Empleado.objects.select_related('persona').annotate(tipo_persona=Value("Empleado", output_field=CharField()))
     elif grupo == 'Proveedores':
-        personas = Proveedor.objects.annotate(tipo_persona=Value("Proveedor", output_field=CharField()))
+        personas = Proveedor.objects.select_related('persona').annotate(tipo_persona=Value("Proveedor", output_field=CharField()))
     else:
-        # Si no se seleccionó ningún grupo, traemos todos
-        personas = list(Cliente.objects.annotate(tipo_persona=Value("Cliente", output_field=CharField())))
-        personas += list(Empleado.objects.annotate(tipo_persona=Value("Empleado", output_field=CharField())))
-        personas += list(Proveedor.objects.annotate(tipo_persona=Value("Proveedor", output_field=CharField())))
+        personas = list(Cliente.objects.select_related('persona').annotate(tipo_persona=Value("Cliente", output_field=CharField())))
+        personas += list(Empleado.objects.select_related('persona').annotate(tipo_persona=Value("Empleado", output_field=CharField())))
+        personas += list(Proveedor.objects.select_related('persona').annotate(tipo_persona=Value("Proveedor", output_field=CharField())))
 
     # FILTRO POR BÚSQUEDA
     if search:
         personas = [
             p for p in personas
-            if search.lower() in p.nombre.lower() or search in p.cedula
+            if search.lower() in p.persona.nombre.lower()
+            or search.lower() in p.persona.apellido.lower()
+            or search in p.persona.cedula
         ]
 
     # RENDERIZADO
@@ -106,7 +106,7 @@ def crear_persona(request):
             elif rol == 'proveedor':
                 proveedor_form = ProveedorForm(request.POST)
                 if not proveedor_form.is_valid():
-                    return(render, 'administrador/registro.html', {
+                    return render(request, 'administrador/registro.html', {
                         'persona_form': persona_form,
                         'rol_form': rol_form,
                         'empleado_form': EmpleadoForm(),
@@ -145,16 +145,15 @@ def crear_persona(request):
 @grupo_requerido('Administrador')
 def editar_persona(request, id):
     persona = get_object_or_404(Persona, id=id)
-
-    print("tiene empleado:", hasattr(persona, 'empleado'))
-    print("tiene proveedor:", hasattr(persona, 'proveedor'))
-    print("tiene cliente:", hasattr(persona, 'cliente'))
+    user = request.user
 
     rol_principal = None
     if hasattr(persona, 'empleado'):
         rol_principal = 'empleado'
     elif hasattr(persona, 'proveedor'):
         rol_principal = 'proveedor'
+    elif hasattr(persona, 'cliente'):
+        rol_principal = 'cliente'
 
     es_cliente = hasattr(persona, 'cliente')
 
@@ -219,6 +218,7 @@ def editar_persona(request, id):
         'persona': persona,
         'rol_principal': rol_principal,
         'es_cliente': es_cliente,
+        'user': user,
     })
 
 
