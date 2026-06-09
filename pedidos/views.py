@@ -410,7 +410,7 @@ def resumen_pedido(request):
 
     return render(request, 'pedidos/resumen_pedido.html', context)
 
-@login_required
+#@login_required
 def confirmar_pedido(request):
     #Verificamos que la caja este abierta
     if not local_esta_abierto():

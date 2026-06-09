@@ -16,6 +16,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.views.generic import RedirectView
 
 from django.conf import settings
 from django.conf.urls.static import static
@@ -27,7 +28,8 @@ def sin_permiso(request):
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('',include('administrador.urls')),
+    path('administrador/', include('administrador.urls')),
+    path('', RedirectView.as_view(url='/pedidos/'), name='inicio'),
     path('facturacion/', include('facturacion.urls')),
     path('pedidos/', include(('pedidos.urls', 'pedidos'), namespace='pedidos')),
     path('usuarios/', include('usuarios.urls')),
