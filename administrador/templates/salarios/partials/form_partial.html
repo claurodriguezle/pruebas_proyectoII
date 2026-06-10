@@ -63,7 +63,7 @@
                        placeholder="Ej: 2500000"
                        min="1"
                        step="1"
-                       value="{{ salario.monto|floatformat:0 }}"
+                       value="{{ salario.monto|punto_miles }}"
                        required>
             </div>
             <div class="form-text text-muted mt-1">

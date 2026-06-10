@@ -161,7 +161,7 @@
         {% if empleado.salario and es_admin %}
         <div class="campo">
             <label>Salario</label>
-            <div class="valor">Gs. {{ empleado.salario.monto|floatformat:2|intcomma }}</div>
+            <div class="valor">Gs. {{ empleado.salario.monto|punto_miles }}</div>
         </div>
         {% endif %}
     </div>

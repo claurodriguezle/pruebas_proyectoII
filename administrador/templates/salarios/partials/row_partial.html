@@ -3,7 +3,7 @@
     <td class="text-muted small">{{ salario.id }}</td>
     <td>
         <span class="salario-monto">
-            Gs. {{ salario.monto|floatformat:0|intcomma }}
+            Gs. {{ salario.monto|punto_miles }}
         </span>
     </td>
     <td class="text-center">

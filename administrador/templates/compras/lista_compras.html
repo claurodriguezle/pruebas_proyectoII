@@ -59,10 +59,10 @@
                                 <span class="badge bg-success">Activa</span>
                             {% endif %}
                         </td>
-                        <td class="text-end">{{ compra.total_sin_iva|intcomma }} Gs.</td>
-                        <td class="text-end">{{ compra.iva_5|intcomma }} Gs.</td>
-                        <td class="text-end">{{ compra.iva_10|intcomma }} Gs.</td>
-                        <td class="text-end fw-bold">{{ compra.monto_total|intcomma }} Gs.</td>
+                        <td class="text-end">{{ compra.total_sin_iva|punto_miles }} Gs.</td>
+                        <td class="text-end">{{ compra.iva_5|punto_miles }} Gs.</td>
+                        <td class="text-end">{{ compra.iva_10|punto_miles }} Gs.</td>
+                        <td class="text-end fw-bold">{{ compra.monto_total|punto_miles }} Gs.</td>
                         <!--<td class="text-center">
                             <a href="{% url 'administrador:detalle_compra' compra.id %}" title="Ver detalle" style="color: #333;">ⓘ</a>
                             <a href="{% url 'administrador:editar_compra' compra.id %}" title="Editar" style="color: #333;">🖉</a>

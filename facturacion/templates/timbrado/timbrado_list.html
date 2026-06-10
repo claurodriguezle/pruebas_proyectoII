@@ -58,7 +58,7 @@
                                         <a href="{% url 'facturacion:timbrado_update' timbrado.pk %}" class="btn btn-sm btn-outline-warning" title="Editar">
                                             <i class="bi bi-pencil"></i>
                                         </a>
-                                        <a href="{% url 'facturacion:timbrado_soft_delete' timbrado.pk %}" class="btn btn-sm btn-danger">Eliminar</a>
+                                        <!-- <a href="{% url 'facturacion:timbrado_soft_delete' timbrado.pk %}" class="btn btn-sm btn-danger">Eliminar</a> -->
                                         <form method="post" action="{% url 'facturacion:timbrado_toggle_active' timbrado.pk %}" class="d-inline">
                                             {% csrf_token %}
                                             <button type="submit" class="btn btn-sm btn-{% if timbrado.activo %}outline-danger{% else %}outline-success{% endif %}" title="{% if timbrado.activo %}Desactivar{% else %}Activar{% endif %}">
