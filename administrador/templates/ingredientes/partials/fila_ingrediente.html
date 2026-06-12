@@ -1,6 +1,7 @@
+
 <tr id="ingrediente-{{ ingrediente.id }}" data-item-id="{{ ingrediente.item.id }}">
     <td>{{ ingrediente.item.nombre }}</td>
-    <td>{{ ingrediente.cantidad }}</td>
+    <td>{{ ingrediente.cantidad|numero_py }} {{ ingrediente.item.get_unidad_medida_display }}</td>
     <td>
         {% if ingrediente.puede_eliminarse %}
             <span class="badge bg-success">Sí</span>

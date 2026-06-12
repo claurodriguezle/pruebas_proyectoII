@@ -603,7 +603,7 @@ def reporte_ganancias_datos(request):
 # REPORTE DE INSUMO
 # Helpers
 
-def _get_datos_reporte(fecha_fin):
+def _get_datos_stock(fecha_fin):
     """
     Retorna los datos del reporte de stock/insumos.
     - Trae todos los items con stock (MATERIA_PRIMA y ARTICULO).
@@ -642,7 +642,7 @@ def _get_datos_reporte(fecha_fin):
         datos.append({
             'nombre': item.nombre,
             'tipo': item.tipo,
-            'existencia': stock.cantidad_display,
+            'existencia': stock.cant_disponible,
             'unidad': stock.unidad_display,
             'precio_unitario': precio_compra,
             'precio_promedio': cpp_display(item, cpp_dict),
@@ -685,7 +685,7 @@ def reporte_stock(request):
 def reporte_stock_datos(request):
     """Endpoint HTMX. Devuelve el partial con la tabla de resultados."""
     fecha_inicio, fecha_fin = _parse_fechas(request)
-    datos = _get_datos_reporte(fecha_fin)
+    datos = _get_datos_stock(fecha_fin)
 
     context = {
         'datos':              datos,
@@ -696,3 +696,95 @@ def reporte_stock_datos(request):
         'sin_resultados':     len(datos) == 0,
     }
     return render(request, 'reportes/partials/stock_resultados.html', context)
+
+# REPORTE DE COSTOS DE TODOS LOS PRODUCTOS (por categoría y rango de fechas)
+
+def reporte_costos_productos(request):
+    """Vista principal del reporte de costos de todos los productos activos."""
+    hoy = date.today()
+    categorias = CategoriaProducto.objects.filter(tipo='ingrediente', activo=True).order_by('nombre_categ')
+    context = {
+        'categorias': categorias,
+        'fecha_inicio_default': hoy.replace(day=1),
+        'fecha_fin_default': hoy,
+    }
+    return render(request, 'reportes/costos_productos.html', context)
+
+
+def reporte_costos_productos_datos(request):
+    """Partial HTMX con los datos del reporte de costos de todos los productos activos."""
+    hoy = date.today()
+
+    # --- Parámetros ---
+    try:
+        fecha_inicio = date.fromisoformat(request.GET.get('fecha_inicio', ''))
+    except (ValueError, TypeError):
+        fecha_inicio = hoy.replace(day=1)
+
+    try:
+        fecha_fin = date.fromisoformat(request.GET.get('fecha_fin', ''))
+    except (ValueError, TypeError):
+        fecha_fin = hoy
+
+    if fecha_inicio > fecha_fin:
+        fecha_inicio, fecha_fin = fecha_fin, fecha_inicio
+
+    categoria_id = request.GET.get('categoria', '')
+
+    # --- Productos activos ---
+    productos_qs = (
+        Producto.objects
+        .filter(estado='A', categoria__tipo='ingrediente')
+        .select_related('categoria')
+        .prefetch_related('ingredientes__item')
+        .order_by('categoria__nombre_categ', 'nombre')
+    )
+
+    if categoria_id:
+        try:
+            productos_qs = productos_qs.filter(categoria_id=int(categoria_id))
+        except (ValueError, TypeError):
+            pass
+
+    # --- CPP acumulado hasta fecha_fin ---
+    cpp_dict = calcular_cpp_por_item(hasta_fecha=fecha_fin)
+
+    # --- Construcción de filas ---
+    filas = []
+    for producto in productos_qs:
+        costo_unit = calcular_costo_producto(producto, cpp_dict)
+        filas.append({
+            'nombre': producto.nombre,
+            'codigo': producto.codigo,
+            'categoria': producto.categoria.nombre_categ if producto.categoria else '—',
+            'precio': producto.precio,
+            'costo_unit': int(costo_unit),
+            'margen_gs': producto.precio - int(costo_unit),
+            'margen_pct': float(
+                (Decimal(str(producto.precio - int(costo_unit))) / Decimal(str(producto.precio)) * 100)
+                .quantize(Decimal('0.1'), rounding=ROUND_HALF_UP)
+            ) if producto.precio > 0 else 0.0,
+        })
+
+    sin_resultados = len(filas) == 0
+
+    if not sin_resultados:
+        costo_promedio = int(sum(f['costo_unit'] for f in filas) / len(filas))
+        producto_mas_costoso = max(filas, key=lambda x: x['costo_unit'])
+        producto_menor_margen = min(filas, key=lambda x: x['margen_pct'])
+    else:
+        costo_promedio = 0
+        producto_mas_costoso = None
+        producto_menor_margen = None
+
+    context = {
+        'filas': filas,
+        'sin_resultados': sin_resultados,
+        'fecha_inicio': fecha_inicio,
+        'fecha_fin': fecha_fin,
+        'costo_promedio': costo_promedio,
+        'producto_mas_costoso': producto_mas_costoso,
+        'producto_menor_margen': producto_menor_margen,
+        'total_productos': len(filas),
+    }
+    return render(request, 'reportes/partials/costos_productos_resultados.html', context)

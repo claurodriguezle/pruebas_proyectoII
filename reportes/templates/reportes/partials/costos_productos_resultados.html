@@ -1,0 +1,61 @@
+{% load humanize %}
+
+{% if sin_resultados %}
+  <div class="text-center py-5 text-muted">
+    <i class="bi bi-inbox fs-1 d-block mb-2 opacity-25"></i>
+    <p class="small">No hay productos disponibles para los filtros seleccionados.</p>
+  </div>
+{% else %}
+
+{# ── Botón imprimir ── #}
+<div class="d-flex justify-content-end mb-3 no-print">
+  <button onclick="imprimirReporte()" class="btn btn-outline-dark btn-sm btn-imprimir">
+    <i class="bi bi-printer me-1"></i> Imprimir reporte
+  </button>
+</div>
+
+{# ── Tabla de productos ── #}
+<div class="card border-0 shadow-sm">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+      <h6 class="fw-semibold mb-0">Detalle de costos</h6>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover table-sm align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th style="width:40px;">Nº</th>
+            <th>Código</th>
+            <th>Producto</th>
+            <th>Categoría</th>
+            <th class="text-end">Precio (Gs.)</th>
+            <th class="text-end">Costo unit. (Gs.)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for f in filas %}
+          <tr>
+            <td class="text-muted small fw-medium">{{ forloop.counter }}</td>
+            <td class="text-muted small">{{ f.codigo }}</td>
+            <td class="fw-medium">{{ f.nombre }}</td>
+            <td>
+                {{ f.categoria }}
+              </span>
+            </td>
+            <td class="text-end">{{ f.precio|punto_miles }}</td>
+            <td class="text-end fw-semibold">{{ f.costo_unit|punto_miles }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot class="table-light">
+          <tr>
+            <td colspan="5" class="fw-semibold small">Total productos: {{ total_productos }}</td>
+            <td class="text-end fw-semibold">{{ costo_promedio|punto_miles }}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endif %}

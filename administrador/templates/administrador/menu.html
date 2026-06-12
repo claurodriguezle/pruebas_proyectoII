@@ -32,8 +32,8 @@
                         <li class="alerta-item {% if stock.cant_disponible == 0 %}alerta-critica{% else %}alerta-baja{% endif %}">
                             <span class="alerta-nombre">{{ stock.item.nombre }}: </span>
                             <span class="alerta-detalle">
-                                Mínimo {{ stock.cant_minima }} {{ stock.unidad_display }}
-                                | <strong> Restante {{ stock.cant_disponible }}</strong> {{ stock.unidad_display }}
+                                Mínimo {{ stock.cant_minima|numero_py }} {{ stock.unidad_display }}
+                                | <strong> Existencia {{ stock.cant_disponible|numero_py }}</strong> {{ stock.unidad_display }}
                             </span>
                         </li>
                         {% endfor %}
@@ -58,7 +58,7 @@
                         <tr>
                             <th>Insumo</th>
                             <th>Stock Mínimo</th>
-                            <th>Stock Restante</th>
+                            <th>Existencia</th>
                             <th>Estado</th>
                         </tr>
                     </thead>
@@ -66,8 +66,8 @@
                         {% for stock in stocks_criticos %}
                         <tr>
                             <td>{{ stock.item.nombre }}</td>
-                            <td>{{ stock.cant_minima }} {{ stock.unidad_display }}</td>
-                            <td>{{ stock.cant_disponible }} {{ stock.unidad_display }}</td>
+                            <td>{{ stock.cant_minima|numero_py }} {{ stock.unidad_display }}</td>
+                            <td>{{ stock.cant_disponible|numero_py }} {{ stock.unidad_display }}</td>
                             <td>{% if stock.cant_disponible == 0 %}SIN STOCK{% else %}BAJO{% endif %}</td>
                         </tr>
                         {% endfor %}

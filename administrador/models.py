@@ -145,11 +145,11 @@ class Item(models.Model):
         return f"{self.nombre}({self.get_unidad_medida_display()})"
     #Metodo que devuelve la unidad de medida segun el tipo de item
     def get_unidad_medida_display(self):
-        if self.tipo == 'MATERIA_PRIMA':
-            return 'gramos'
-        elif self.tipo == 'ARTICULO':
-            return 'unidades'
-        return self.unidad_medida or ''
+        if self.tipo == 'MATERIA_PRIMA' and self.unidad_medida == 'kg':
+            return 'gr.'
+        elif self.tipo == 'ARTICULO' or self.unidad_medida == 'unidad':
+            return 'unid.'
+        return self.unidad_medida
 
     #Estandarizar el nombre del item ante de guardar
     def clean(self):
@@ -403,9 +403,9 @@ class Stock(models.Model):
         """Devuelve la unidad de medida correcta segun se almacena internamente"""
         if self.item.tipo == 'MATERIA_PRIMA' and self.item.unidad_medida == 'kg':
             return 'g.'
-        if self.item.tipo == 'ARTICULO':
+        if self.item.tipo == 'ARTICULO' or self.item.tipo == 'MATERIA_PRIMA': # Para materia prima que sea por unidad como pan
             return 'und.'
-        return self.item.unidad_medida
+        #return self.item.unidad_medida
 
     @property
     def precio_unitario_display(self):

@@ -30,4 +30,7 @@ urlpatterns = [
     # Reporte Stock / Insumos
     path('reportes/stock/',        views.reporte_stock,       name='reporte_stock'),
     path('reportes/stock/datos/',  views.reporte_stock_datos, name='reporte_stock_datos'),
+
+    path('costos-productos/', views.reporte_costos_productos, name='costos_productos'),
+    path('costos-productos/datos/', views.reporte_costos_productos_datos, name='costos_productos_datos'),
 ]
