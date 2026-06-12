@@ -284,14 +284,14 @@
         {% for item in venta.pedido.items.all %}
         <div class="item-row">
           <span>{{ item.cantidad }}× {{ item.producto.nombre }}</span>
-          <span>₲{{ item.precio_unitario|floatformat:0 }}</span>
+          <span>₲{{ item.precio_unitario|punto_miles }}</span>
         </div>
         {% endfor %}
       </div>
       {% endif %}
       <div class="resumen-row total-row">
         <label>Total cobrado</label>
-        <span>₲{{ venta.total|floatformat:0 }}</span>
+        <span>₲{{ venta.total|punto_miles }}</span>
       </div>
     </div>
 
@@ -420,9 +420,6 @@
                 {% if not cliente_previo %}disabled{% endif %}>
           <i class="bi bi-file-earmark-check"></i> Emitir Factura
         </button>
-        <a href="{% url 'caja:punto_de_venta' %}" class="btn-cancelar">
-          Cancelar — Volver sin facturar
-        </a>
       </div>
     </form>
 
@@ -558,6 +555,29 @@ function limpiarMensajes() {
 // Enter en el input de búsqueda
 document.getElementById('input-cedula')?.addEventListener('keydown', e => {
     if (e.key === 'Enter') { e.preventDefault(); buscarCliente(); }
+});
+
+// ── Bloqueo de navegación hacia atrás ─────────────────────
+// Impide que el cajero vuelva al POS sin emitir la factura
+history.pushState(null, '', location.href);
+window.addEventListener('popstate', function () {
+    history.pushState(null, '', location.href);
+});
+
+// Advertencia si intenta cerrar la pestaña o navegar a otra URL
+let facturaEmitida = false;
+window.addEventListener('beforeunload', function (e) {
+    if (!facturaEmitida) {
+        e.preventDefault();
+        e.returnValue = '⚠️ Todavía no emitiste la factura. Si salís, la venta quedará sin comprobante fiscal.';
+    }
+});
+
+// Marcar como emitida cuando se envía el formulario correctamente
+document.getElementById('form-factura')?.addEventListener('submit', function () {
+    if (hiddenId.value) {
+        facturaEmitida = true;
+    }
 });
 
 // Doble submit

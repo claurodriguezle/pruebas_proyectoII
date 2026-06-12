@@ -191,6 +191,7 @@
             <div class="row g-1" id="grilla-productos" style="max-height:260px;overflow-y:auto;">
               {% for p in productos %}
               <div class="col-4 col-md-3 prod-item" data-cat="{{ p.categoria_id|default:'x' }}">
+                {% if p.tiene_stock %}
                 <div class="prod-card"
                      data-id="{{ p.id }}"
                      data-nombre="{{ p.nombre }}"
@@ -204,6 +205,18 @@
                   <div class="prod-nombre">{{ p.nombre|truncatechars:18 }}</div>
                   <div class="prod-precio">₲{{ p.precio|punto_miles }}</div>
                 </div>
+                {% else %}
+                <div class="prod-card" style="opacity:.45; cursor:not-allowed;" title="Sin stock">
+                  {% if p.imagen %}
+                  <img src="{{ p.imagen.url }}" alt="{{ p.nombre }}">
+                  {% else %}
+                  <div class="prod-icon">🍔</div>
+                  {% endif %}
+                  <div class="prod-nombre">{{ p.nombre|truncatechars:18 }}</div>
+                  <div class="prod-precio">₲{{ p.precio|punto_miles }}</div>
+                  <span class="badge bg-danger" style="font-size:.6rem;">Sin stock</span>
+                </div>
+                {% endif %}
               </div>
               {% endfor %}
             </div>
@@ -841,10 +854,28 @@ function cargarCuenta() {
 
         let html = '';
         data.pedidos.forEach(p => {
+            // Badge superior: color según estado de cocina
+            const badgeCocina = p.estado_cocina === 'Listo'
+                ? `<span class="badge bg-dark">${p.estado_cocina}</span>`
+                : p.estado_cocina === 'En preparación'
+                ? `<span class="badge bg-warning text-dark">${p.estado_cocina}</span>`
+                : `<span class="badge bg-secondary">${p.estado_cocina}</span>`;
+
+            // Badge/botón inferior: solo cancelar si está Pendiente, estado si ya avanzó
+            const accionInferior = p.estado_cocina === 'Pendiente'
+                ? `<button class="btn btn-outline-danger btn-sm py-0 px-2"
+                            onclick="cancelarPedidoPOS(${p.pedido_id})"
+                            title="Cancelar pedido">
+                        <i class="fas fa-ban"></i> Cancelar
+                   </button>`
+                : p.estado_cocina === 'Listo'
+                ? `<span class="badge bg-success" style="font-size:.65rem;">Listo</span>`
+                : `<span class="badge bg-warning text-dark" style="font-size:.65rem;">En preparación</span>`;
+
             html += `<div class="mb-2 border rounded p-2">
                 <div class="d-flex justify-content-between align-items-center mb-1">
                     <strong class="small">Pedido #${p.pedido_id}</strong>
-                    <span class="badge bg-secondary">${p.estado_cocina}</span>
+                    ${badgeCocina}
                 </div>`;
             p.items.forEach(item => {
                 html += `<div class="d-flex justify-content-between small text-muted px-1">
@@ -854,14 +885,7 @@ function cargarCuenta() {
             });
             html += `<div class="d-flex justify-content-between align-items-center mt-1">
                         <span class="small fw-semibold text-danger">Subtotal: ${gs(p.total)}</span>
-                        ${p.estado_cocina === 'Pendiente'
-                          ? `<button class="btn btn-outline-danger btn-sm py-0 px-2"
-                                      onclick="cancelarPedidoPOS(${p.pedido_id})"
-                                      title="Cancelar pedido">
-                                <i class="fas fa-ban"></i> Cancelar
-                              </button>`
-                          : `<span class="badge bg-warning text-dark" style="font-size:.65rem;">En cocina</span>`
-                        }
+                        ${accionInferior}
                     </div>
                     </div>`;
         });
@@ -904,6 +928,13 @@ function cancelarPedidoPOS(pedidoId) {
 
 // ── Modal cobro ───────────────────────────────────────────
 function abrirModalCobro(total) {
+    // Validar que no haya ítems en el carrito local sin enviar a cocina
+    if (ordenItems.length > 0) {
+        alert('⚠️ Tenés productos en el carrito que no fueron enviados a cocina.\nEnviá el pedido antes de cobrar.');
+        switchTab('tab-pedido', document.querySelector('[data-tab="tab-pedido"]'));
+        return;
+    }
+
     totalACobrar = total;
     document.getElementById('cobro-mesa-num').textContent = mesaActual.numero;
     document.getElementById('cobro-total').textContent = parseInt(total).toLocaleString('es-PY');
@@ -945,44 +976,11 @@ function confirmarCobro() {
     .then(data => {
         bootstrap.Modal.getInstance(document.getElementById('modalCobro'))?.hide();
         if (data.success) {
-            // Limpiar estado local ANTES de mostrar el modal de éxito,
-            // así el polling no intenta usar una cuenta ya cerrada.
-            const mesaNumero = data.mesa_numero;
-            const mesaId = mesaActual ? mesaActual.id : null;
+            // Limpiar estado local antes de redirigir
             mesaActual = null;
             ordenItems = [];
-            // Justo antes de mostrar el modal de éxito, actualizás el href del botón
-            const btnFactura = document.getElementById('btn-emitir-factura');
-            if (btnFactura && data.venta_id) {
-                btnFactura.href = `/facturacion/emitir/${data.venta_id}/`;
-            } else if (btnFactura) {
-                btnFactura.classList.add('d-none'); // ocultar si no hay venta_id
-            }
-            // Actualizar la grilla: marcar la mesa como libre inmediatamente
-            if (mesaId) {
-                actualizarMesaUI({
-                    id: mesaId, estado: 'libre',
-                    cuenta_id: null, total: 0,
-                    num_pedidos: 0, nombre_cliente: '',
-                });
-                const el = document.querySelector(`.mesa-btn[data-mesa-id="${mesaId}"]`);
-                if (el) {
-                    el.dataset.mesaEstado = 'libre';
-                    el.dataset.cuentaId = '';
-                    el.classList.remove('seleccionada');
-                }
-            }
-
-            // Cerrar paneles sin llamar a cerrarPaneles() para no pisar el modal
-            document.getElementById('panel-inicial').classList.remove('d-none');
-            document.getElementById('panel-abrir').classList.add('d-none');
-            document.getElementById('panel-mesa').classList.add('d-none');
-
-            document.getElementById('exito-mesa').textContent = mesaNumero;
-            document.getElementById('exito-total').textContent = data.total.toLocaleString('es-PY');
-            document.getElementById('exito-recibido').textContent = data.monto_recibido.toLocaleString('es-PY');
-            document.getElementById('exito-vuelto').textContent = data.vuelto.toLocaleString('es-PY');
-            new bootstrap.Modal(document.getElementById('modalExitoCobro')).show();
+            // Redirigir directo al formulario de facturación — obligatorio en Paraguay
+            window.location.href = `/facturacion/emitir/${data.venta_id}/`;
         } else {
             alert('Error: ' + data.error);
             btn.disabled = false;
@@ -1013,6 +1011,11 @@ function sincronizarMesas() {
                 actualizarMesaUI(m);
             }
         });
+        // Si la tab Cuenta está visible, refrescarla para mostrar estados de cocina actualizados
+        const tabCuenta = document.getElementById('tab-cuenta');
+        if (tabCuenta && !tabCuenta.classList.contains('d-none') && mesaActual) {
+            cargarCuenta();
+        }
         // Indicador visual: parpadeo breve en verde
         if (badgeSync) {
             badgeSync.classList.replace('bg-secondary', 'bg-success');
