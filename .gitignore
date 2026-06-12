@@ -7,3 +7,7 @@ notes/
 *.pyo
 *.sqlite3
 .env
+echo "__pycache__/" 
+echo "*.pyc" 
+echo "*.pyo"
+echo "*.pyd"

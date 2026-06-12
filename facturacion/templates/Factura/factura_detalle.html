@@ -1,4 +1,4 @@
-{% extends "administrador/layout.html" %}
+{% extends "base_empleado.html" %}
 {% load static %}
 
 {% block title %}Factura {{ factura.nro_fact }}{% endblock %}
@@ -6,9 +6,53 @@
 {% block extra_css %}
 <style>
   @media print {
-    .no-print { display: none !important; }
-    .print-area { box-shadow: none !important; border: none !important; }
-    body { background: white !important; }
+    /* Contrarrestar el menu.css global que oculta todo con visibility:hidden */
+    body * {
+      visibility: visible !important;
+    }
+
+    /* Ocultar sidebar, topbar y botones — no deben aparecer en la factura */
+    nav,
+    main > .topbar,
+    .no-print {
+      display: none !important;
+      visibility: hidden !important;
+    }
+
+    /* Resetear márgenes del layout (menu.css pone margin-left: 250px en main) */
+    html, body {
+      margin: 0 !important;
+      padding: 0 !important;
+      background: white !important;
+      display: block !important;
+      height: auto !important;
+    }
+
+    main {
+      margin: 0 !important;
+      padding: 0 !important;
+      width: 100% !important;
+    }
+
+    /* Contenedor de la factura sin márgenes extra */
+    .fact-wrapper {
+      max-width: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+
+    /* Limpiar sombra y borde de la tarjeta */
+    .factura, .print-area {
+      box-shadow: none !important;
+      border: none !important;
+      padding: 1rem !important;
+    }
+
+    /* Forzar colores de fondo en impresión */
+    * {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
   }
 
   body { background: #f3f4f6; font-family: 'Segoe UI', sans-serif; }
@@ -149,7 +193,9 @@
 <div class="fact-wrapper">
 
   <div class="fact-actions no-print">
-    <a href="{% url 'caja:punto_de_venta' %}" class="btn-back">← Volver</a>
+    <a href="{% url 'caja:punto_de_venta' %}" class="btn btn-success">
+        <i class="bi bi-grid-3x3"></i> Volver al mapa de mesas
+    </a>
     <button class="btn-print" onclick="window.print()">🖨 Imprimir</button>
   </div>
 

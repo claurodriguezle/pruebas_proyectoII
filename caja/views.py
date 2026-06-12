@@ -138,26 +138,67 @@ def agregar_pedido_cuenta(request):
 
     cuenta = get_object_or_404(Cuenta, id=cuenta_id, estado='abierta', caja=caja)
 
+    categoria_nombre = request.GET.get('categoria')
+    if categoria_nombre:
+        productos = Producto.objects.filter(estado='A', categoria__nombre_categ=categoria_nombre)
+    else:
+        productos = Producto.objects.filter(estado='A')
+    
+    # Verificar Stock por producto
+    productos_con_stock = []
+    for producto in productos:
+        producto.tiene_stock = producto.calcular_tiene_stock()
+        productos_con_stock.append(producto)
+
     # Importar modelos necesarios
     from pedidos.models import Adicional, DetalleAdicionalPedido, IngredienteEliminadoPedido, DetallePedido
     from administrador.models import IngredienteProducto
     
+    from administrador.models import Stock
+
+    # Validar stock antes de crear el pedido (igual que pedidos online)
+    for item in productos_data:
+        producto = get_object_or_404(Producto, pk=int(item['producto_id']), estado='A')
+        cantidad = int(item['cantidad'])
+        ingredientes = producto.ingredientes.select_related('item')
+
+        if not ingredientes.exists():
+            return JsonResponse({
+                'success': False,
+                'error': f"'{producto.nombre}' no tiene ingredientes configurados en el sistema."
+            })
+
+        for ingrediente in ingredientes:
+            try:
+                stock = Stock.objects.get(item=ingrediente.item)
+                cantidad_necesaria = ingrediente.cantidad * cantidad
+                if stock.cant_disponible < cantidad_necesaria:
+                    return JsonResponse({
+                        'success': False,
+                        'error': f"Sin stock suficiente de '{producto.nombre}'. Retirá ese producto del pedido."
+                    })
+            except Stock.DoesNotExist:
+                return JsonResponse({
+                    'success': False,
+                    'error': f"No hay stock registrado para '{producto.nombre}'."
+                })
+
     total = 0
     productos_info = []
-    
+
     for item in productos_data:
         producto_id = int(item['producto_id'])
         cantidad = int(item['cantidad'])
         adicionales_ids = [int(ad['id']) for ad in item.get('adicionales', [])]
         sin_nombres = item.get('sin', [])
-        
+
         producto = get_object_or_404(Producto, pk=producto_id, estado='A')
         adicionales = Adicional.objects.filter(id__in=adicionales_ids, activo=True)
-        
+
         precio_unitario = producto.precio + sum(ad.precio for ad in adicionales)
         total_item = precio_unitario * cantidad
         total += total_item
-        
+
         productos_info.append({
             'producto': producto,
             'cantidad': cantidad,
@@ -547,12 +588,16 @@ def punto_de_venta(request):
             'total': total,
         })
 
-    productos = (
+    productos_qs = list(
         Producto.objects
         .filter(estado='A')
         .select_related('categoria')
+        .prefetch_related('ingredientes__item__stocks')
         .order_by('categoria', 'nombre')
     )
+    for p in productos_qs:
+        p.tiene_stock = p.calcular_tiene_stock()
+    productos = productos_qs
 
     # ── NUEVO: últimas ventas de la caja actual ──
     ventas_recientes = (
@@ -698,10 +743,34 @@ def pos_cancelar_pedido(request, pedido_id):
     with transaction.atomic():
         devolver_stock(pedido)
         pedido.estado_entrega = 'CA'
-        pedido.save(update_fields=['estado_entrega'])
+        pedido.estado_cocina = 'PE'
+        pedido.save(update_fields=['estado_entrega', 'estado_cocina'])
+
+        # Si la cuenta no tiene más pedidos activos, cerrarla y liberar la mesa
+        # Excluimos el pedido actual (pk=pedido.pk) además de los CA,
+        # porque el ORM puede no reflejar aún el save() recién hecho
+        cuenta = pedido.cuenta
+        mesa_liberada = False
+        if cuenta:
+            pedidos_activos = cuenta.pedidos.exclude(
+                estado_entrega='CA'
+            ).exclude(pk=pedido.pk).exists()
+            if not pedidos_activos:
+                cuenta.estado = 'anulada'
+                cuenta.fecha_cierre = timezone.now()
+                cuenta.save(update_fields=['estado', 'fecha_cierre'])
+
+                mesa = cuenta.mesa
+                mesa.estado = 'libre'
+                mesa.save(update_fields=['estado'])
+                mesa_liberada = True
 
     return JsonResponse({
         'success': True,
         'pedido_id': pedido.id,
-        'mensaje': f'Pedido #{pedido.id} cancelado y stock restaurado.'
+        'mesa_liberada': mesa_liberada,
+        'mensaje': (
+            f'Pedido #{pedido.id} cancelado y stock restaurado.'
+            + (' La mesa fue liberada.' if mesa_liberada else '')
+        ),
     })
