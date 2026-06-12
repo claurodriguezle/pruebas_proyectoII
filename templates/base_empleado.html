@@ -1,5 +1,5 @@
 {% load static %}
-{% load humanize %}
+{% load l10n humanize custom_filters%}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -131,6 +131,7 @@
                     <li><a class="dropdown-item" href="{% url 'reportes:ventas' %}">Ventas</a></li>
                     <li><a class="dropdown-item" href="{% url 'reportes:costos' %}">Costos</a></li>
                     <li><a class="dropdown-item" href="{% url 'reportes:ganancias' %}">Ganancias</a></li>
+                    <li><a class="dropdown-item" href="{% url 'reportes:reporte_stock' %}">Insumos</a></li>
                 </ul>
             </li>
             {% endif %}

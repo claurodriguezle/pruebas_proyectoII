@@ -47,7 +47,7 @@
                         <th class="text-nowrap">Mín</th>
                         <th class="text-nowrap">Máx</th>
                         <th class="text-nowrap">Disponible</th>
-                        <th class="text-nowrap">Precio Unitario</th>
+                        <th class="text-nowrap">Precio Promedio (CPP)</th>
                         <th class="text-nowrap">Últ. Entrada</th>
                         <!-- <th class="text-nowrap">Últ. Salida</th> -->
                         <th class="text-nowrap">Estado</th>
@@ -55,20 +55,26 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for stock in stocks %}
+                    {% for item in stocks %}
                     <tr>
-                        <td>{{ stock.item.nombre }}</td>
-                        <td>{{ stock.item.get_tipo_display }}</td>
-                        <td>{{ stock.item.get_unidad_medida_display }}</td>
-                        <td>{{ stock.proveedor_principal.nombre_empresa|default:"-" }}</td>
-                        <td class="text-end">{{ stock.cant_minima|floatformat:2 }}</td>
-                        <td class="text-end">{{ stock.cant_maxima|floatformat:2 }}</td>
-                        <td class="text-end fw-bold">{{ stock.cant_disponible|floatformat:2 }}</td>
-                        <td class="text-end">{{ stock.precio_unitario|punto_miles }} Gs</td>
-                        <td>{{ stock.fecha_ultima_entrada|date:"d/m/Y"|default:"-" }}</td>
-                        <!-- <td>{{ stock.fecha_ultima_salida|date:"d/m/Y"|default:"-" }}</td> -->
+                        <td>{{ item.stock.item.nombre }}</td>
+                        <td>{{ item.stock.item.get_tipo_display }}</td>
+                        <td>{{ item.stock.item.get_unidad_medida_display }}</td>
+                        <td>{{ item.stock.proveedor_principal.nombre_empresa|default:"-" }}</td>
+                        <td class="text-end">{{ item.stock.cant_minima|floatformat:2 }}</td>
+                        <td class="text-end">{{ item.stock.cant_maxima|floatformat:2 }}</td>
+                        <td class="text-end fw-bold">{{ item.stock.cant_disponible|floatformat:2 }}</td>
+                        <td class="text-end">
+                            {% if item.cpp > 0 %}
+                                {{ item.cpp|punto_miles }} Gs
+                            {% else %}
+                                <span class="text-muted small">Sin datos</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ item.stock.fecha_ultima_entrada|date:"d/m/Y"|default:"-" }}</td>
+                        <!-- <td>{{ item.stock.fecha_ultima_salida|date:"d/m/Y"|default:"-" }}</td> -->
                         <td>
-                            {% if stock.cant_minima > 0 and stock.cant_disponible < stock.cant_minima %}
+                            {% if item.stock.cant_minima > 0 and item.stock.cant_disponible < item.stock.cant_minima %}
                                 <span class="badge bg-warning text-dark">
                                     <i class="bi bi-exclamation-triangle-fill"></i> Bajo
                                 </span>
@@ -79,11 +85,11 @@
                             {% endif %}
                         </td>
                         <td class="text-nowrap">
-                            <a href="{% url 'administrador:editar_stock' stock.id %}" 
+                            <a href="{% url 'administrador:editar_stock' item.stock.id %}" 
                                class="btn btn-sm btn-primary">
                                 <i class="bi bi-pencil"></i>
                             </a>
-                            <a href="{% url 'administrador:eliminar_stock' stock.id %}" 
+                            <a href="{% url 'administrador:eliminar_stock' item.stock.id %}" 
                                class="btn btn-sm btn-danger"
                                onclick="return confirm('¿Seguro que deseas eliminar este ítem del stock?');">
                                 <i class="bi bi-trash"></i>

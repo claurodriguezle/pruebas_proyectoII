@@ -1,0 +1,63 @@
+{% load humanize custom_filters %}
+
+{% if sin_resultados %}
+  <div class="alert alert-warning d-flex align-items-center gap-2">
+    <i class="bi bi-exclamation-triangle-fill"></i>
+    No se encontraron insumos o artículos con stock registrado.
+  </div>
+
+{% else %}
+
+  {# ── Tarjetas resumen ── #}
+  <div class="row g-3 mb-4">
+  </div>
+
+  {# ── Tabla ── #}
+  <div class="card shadow-sm">
+    <div class="card-header bg-white d-flex align-items-center justify-content-between py-3">
+      <h6 class="mb-0 fw-semibold">
+        <i class="bi bi-table me-2 text-primary"></i>Detalle de stock
+      </h6>
+      <span class="badge bg-primary rounded-pill">{{ total_items }} ítems</span>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-hover table-striped align-middle mb-0">
+        <thead class="table-dark">
+          <tr>
+            <th>Nº</th>
+            <th>Nombre</th>
+            <th>Tipo</th>
+            <th class="text-end">Existencia</th>
+            <th class="text-end">Precio compra</th>
+            <th class="text-end">Precio promedio (CPP)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for d in datos %}
+          <tr>
+            <td class="text-muted small">{{ forloop.counter }}</td>
+            <td class="fw-semibold">{{ d.nombre }}</td>
+            <td>
+              
+                {{ d.tipo }}
+              </span>
+            </td>
+            <td class="text-end">
+              {{ d.existencia }}
+              <small class="text-muted">{{ d.unidad }}</small>
+            </td>
+            <td class="text-end">
+              Gs. {{ d.precio_unitario|punto_miles }}
+            </td>
+            <td class="text-end">
+              Gs. {{ d.precio_promedio|punto_miles }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+{% endif %}

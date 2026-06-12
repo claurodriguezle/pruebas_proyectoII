@@ -27,6 +27,7 @@ from egresos.models import Egreso
 from pedidos.models import Adicional
 
 from django.core.paginator import Paginator
+from reportes.utils_costos import calcular_cpp_por_item, cpp_display
 
 #Importaciones para permisos
 from usuarios.decorators import grupo_requerido
@@ -644,18 +645,29 @@ def anular_compra(request, compra_id):
 @grupo_requerido('Administrador')
 def lista_stock(request):
     query = request.GET.get('q', '').strip()
-    
+ 
     stocks = Stock.objects.all().select_related('item', 'proveedor_principal').order_by('item__nombre')
-    
+ 
     if query:
         stocks = stocks.filter(
             Q(item__nombre__icontains=query) |
             Q(proveedor_principal__nombre_empresa__icontains=query)
         )
+ 
+    # Calcular CPP acumulado hasta hoy para todos los items
+    cpp_dict = calcular_cpp_por_item()
+ 
+    # Agregar CPP a cada stock
+    stocks_con_cpp = []
+    for stock in stocks:
+        stocks_con_cpp.append({
+            'stock': stock,
+            'cpp': cpp_display(stock.item, cpp_dict),
+        })
     
     return render(request, 'stock/lista_stock.html', {
-        'stocks': stocks,
-        'query': query
+        'stocks': stocks_con_cpp,
+        'query': query,
     })
 
 

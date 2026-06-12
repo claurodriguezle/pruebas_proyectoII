@@ -9,8 +9,8 @@ from django.db.models.functions import TruncDate
 from django.db.models.functions import ExtractWeekDay
 
 from facturacion.models import DetalleFactura, Factura
-from administrador.models import Item, DetalleCompra, Producto, IngredienteProducto, CategoriaProducto
-
+from administrador.models import Item, DetalleCompra, Producto, IngredienteProducto, CategoriaProducto, Stock
+from reportes.utils_costos import calcular_cpp_por_item, calcular_costo_producto, cpp_display
 
 def _get_datos_reporte(fecha_inicio, fecha_fin, categoria_id=None):
 
@@ -332,52 +332,6 @@ def reporte_ventas_datos(request):
     return render(request, 'reportes/partials/ventas_resultados.html', context)
 
 # REPORTES DE COSTOS
-def calcular_cpp_por_item(hasta_fecha=None):
-    """
-    Calcula el Costo Promedio Ponderado (CPP) por item.
-    Solo considera compras ACTIVAS.
-    Si se pasa hasta_fecha, solo considera compras hasta esa fecha (inclusive).
-    Retorna un dict: { item_id: cpp_valor (Decimal) }
-    """
-    qs = DetalleCompra.objects.filter(compra__estado='ACTIVA')
- 
-    if hasta_fecha:
-        qs = qs.filter(compra__fecha__lte=hasta_fecha)
- 
-    datos = (
-        qs.values('item_id')
-        .annotate(
-            suma_ponderada=Sum(F('precio_compra') * F('cantidad')),
-            suma_cantidad=Sum('cantidad'),
-        )
-    )
- 
-    cpp = {}
-    for d in datos:
-        if d['suma_cantidad'] and d['suma_cantidad'] > 0:
-            cpp[d['item_id']] = (
-                Decimal(str(d['suma_ponderada'])) / Decimal(str(d['suma_cantidad']))
-            )
-        else:
-            cpp[d['item_id']] = Decimal('0')
- 
-    return cpp
- 
- 
-def calcular_costo_producto(producto, cpp_dict):
-    """
-    Calcula el costo unitario de producción de un producto
-    en base a sus ingredientes y el CPP de cada item.
-    Retorna el costo como Decimal redondeado a entero.
-    """
-    costo = Decimal('0')
-    for ing in producto.ingredientes.select_related('item').all():
-        cpp_item = cpp_dict.get(ing.item_id, Decimal('0'))
-        costo += Decimal(str(ing.cantidad)) * cpp_item
- 
-    return costo.quantize(Decimal('1'), rounding=ROUND_HALF_UP)
- 
- 
 def reporte_costos(request):
     """Vista principal del reporte de costos mensuales."""
     hoy = date.today()
@@ -392,8 +346,7 @@ def reporte_costos(request):
         ],
     }
     return render(request, 'reportes/costos.html', context)
- 
- 
+
 def reporte_costos_datos(request):
     """Partial HTMX con los datos del reporte de costos del período."""
     hoy = date.today()
@@ -646,4 +599,100 @@ def reporte_ganancias_datos(request):
         'nombre_mes': NOMBRES_MES.get(mes, ''),
     }
     return render(request, 'reportes/partials/ganancias_resultados.html', context)
- 
+
+# REPORTE DE INSUMO
+# Helpers
+
+def _get_datos_reporte(fecha_fin):
+    """
+    Retorna los datos del reporte de stock/insumos.
+    - Trae todos los items con stock (MATERIA_PRIMA y ARTICULO).
+    - El CPP se calcula considerando compras hasta `fecha_fin` (inclusive).
+    - El precio de compra es el último precio registrado hasta `fecha_fin`.
+    """
+
+    cpp_dict = calcular_cpp_por_item(hasta_fecha=fecha_fin)
+
+    stocks = (
+        Stock.objects
+        .select_related('item', 'detalle_compra')
+        .filter(item__tipo__in=['MATERIA_PRIMA', 'ARTICULO'])
+        .order_by('item__nombre')
+    )
+
+    datos = []
+    for stock in stocks:
+        item = stock.item
+
+        # Último precio de compra hasta fecha_fin
+        ultima_compra = (
+            DetalleCompra.objects
+            .filter(item=item, compra__fecha__lte=fecha_fin, compra__estado='ACTIVA')
+            .order_by('-compra__fecha')
+            .first()
+        )
+        precio_compra_raw = ultima_compra.precio_compra if ultima_compra else 0
+
+        # Conversión según unidad
+        if item.tipo == 'MATERIA_PRIMA' and item.unidad_medida == 'kg':
+            precio_compra = precio_compra_raw * 1000
+        else:
+            precio_compra = precio_compra_raw
+        
+        datos.append({
+            'nombre': item.nombre,
+            'tipo': item.tipo,
+            'existencia': stock.cantidad_display,
+            'unidad': stock.unidad_display,
+            'precio_unitario': precio_compra,
+            'precio_promedio': cpp_display(item, cpp_dict),
+            'bajo_minimo': stock.cant_disponible < stock.cant_minima,
+        })
+
+    return datos
+
+
+def _parse_fechas(request):
+    """Parsea y valida fechas desde GET. Devuelve (fecha_inicio, fecha_fin)."""
+    hoy = date.today()
+    fecha_inicio_str = request.GET.get('fecha_inicio')
+    fecha_fin_str    = request.GET.get('fecha_fin')
+
+    fecha_inicio = parse_date(fecha_inicio_str) if fecha_inicio_str else hoy.replace(day=1)
+    fecha_fin    = parse_date(fecha_fin_str)    if fecha_fin_str    else hoy
+
+    if not fecha_inicio:
+        fecha_inicio = hoy.replace(day=1)
+    if not fecha_fin:
+        fecha_fin = hoy
+    if fecha_inicio > fecha_fin:
+        fecha_inicio, fecha_fin = fecha_fin, fecha_inicio
+
+    return fecha_inicio, fecha_fin
+
+# Vistas
+
+def reporte_stock(request):
+    """Vista principal. Renderiza el template con filtros."""
+    hoy = date.today()
+    context = {
+        'fecha_inicio_default': hoy.replace(day=1).strftime('%Y-%m-%d'),
+        'fecha_fin_default':    hoy.strftime('%Y-%m-%d'),
+    }
+    return render(request, 'reportes/stock.html', context)
+
+
+def reporte_stock_datos(request):
+    """Endpoint HTMX. Devuelve el partial con la tabla de resultados."""
+    fecha_inicio, fecha_fin = _parse_fechas(request)
+    datos = _get_datos_reporte(fecha_fin)
+
+    context = {
+        'datos':              datos,
+        'fecha_inicio':       fecha_inicio,
+        'fecha_fin':          fecha_fin,
+        'total_items':        len(datos),
+        'items_bajo_minimo':  sum(1 for d in datos if d['bajo_minimo']),
+        'sin_resultados':     len(datos) == 0,
+    }
+    return render(request, 'reportes/partials/stock_resultados.html', context)

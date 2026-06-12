@@ -1,0 +1,94 @@
+{% extends "base_empleado.html" %}
+{% load humanize %}
+
+{% block title %}Reporte de Stock / Insumos{% endblock %}
+
+{% block body %}
+<div class="container-fluid py-4">
+
+  {# ── Encabezado ── #}
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+      <h2 class="mb-0 fw-bold">
+      <!-- <i class="bi bi-box-seam me-2 text-primary"></i> --> Reporte de Insumos
+      </h2>
+      <!-- <p class="text-muted mb-0 small">Existencias, precio de compra y costo promedio ponderado</p> -->
+    </div>
+  </div>
+
+  {# ── Filtros ── #}
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+
+      {# Alerta de error de fechas (usada por el JS global) #}
+      <div id="error-fechas" class="alert alert-danger d-none py-2 mb-3" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <span id="error-fechas-msg"></span>
+      </div>
+
+      <form id="filtros-form"
+            hx-get="{% url 'reportes:reporte_stock_datos' %}"
+            hx-target="#resultado-reporte"
+            hx-trigger="submit"
+            hx-indicator="#spinner"
+            class="row g-3 align-items-end">
+
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">Fecha inicio</label>
+          <input type="date" name="fecha_inicio" id="fecha_inicio"
+                 class="form-control"
+                 value="{{ fecha_inicio_default }}">
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">Fecha fin</label>
+          <input type="date" name="fecha_fin" id="fecha_fin"
+                 class="form-control"
+                 value="{{ fecha_fin_default }}">
+        </div>
+
+        <div class="col-md-4 d-flex gap-2">
+          <button type="submit" class="btn btn-primary flex-grow-1">
+            <span id="spinner" class="htmx-indicator spinner-border spinner-border-sm me-1" role="status"></span>
+            <i class="bi bi-bar-chart-line me-1"></i> Generar reporte
+          </button>
+          <button type="button" class="btn btn-outline-danger" onclick="generarPDF()">
+            <i class="bi bi-file-earmark-pdf"></i> Imprimir
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {# ── Zona de resultados ── #}
+  <div id="resultado-reporte">
+    <div class="text-center text-muted py-5">
+      <i class="bi bi-bar-chart-line fs-1 d-block mb-2 opacity-50"></i>
+      Seleccioná un rango de fechas y presioná <strong>Consultar</strong>.
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Precargar resultados al entrar a la página
+  document.addEventListener('DOMContentLoaded', function () {
+    htmx.trigger('#filtros-form', 'submit');
+  });
+
+  function generarPDF() {
+    const fechaInicio = document.getElementById('fecha_inicio').value;
+    const fechaFin    = document.getElementById('fecha_fin').value;
+
+    const filtrosHTML = `Período: <strong>${fechaInicio}</strong> al <strong>${fechaFin}</strong>`;
+
+    imprimirTabla({
+      titulo: 'Reporte de Stock e Insumos',
+      filtrosHTML: filtrosHTML,
+      selectorTabla: '#resultado-reporte .table',
+    });
+  }
+</script>
+{% endblock %}
