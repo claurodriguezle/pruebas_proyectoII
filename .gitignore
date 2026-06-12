@@ -1,13 +1,8 @@
 .vscode/
-
 notes/
-
 **/__pycache__/
 *.pyc
 *.pyo
 *.sqlite3
 .env
-echo "__pycache__/" 
-echo "*.pyc" 
-echo "*.pyo"
-echo "*.pyd"
+*.pyd
