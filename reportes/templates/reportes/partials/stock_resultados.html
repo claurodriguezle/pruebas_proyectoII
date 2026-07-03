@@ -11,14 +11,6 @@
   <div class="row g-3 mb-4">
   </div>
 
-  <!--
-  {# ── Botón imprimir ── #}
-  <div class="d-flex justify-content-end mb-3 no-print">
-    <button onclick="imprimirReporte()" class="btn btn-outline-dark btn-sm btn-imprimir">
-      <i class="bi bi-printer me-1"></i> Imprimir reporte
-    </button>
-  </div> -->
-
   {# ── Tabla ── #}
   <div class="card border-0 shadow-sm">
     <div class="card-body">
@@ -37,7 +29,8 @@
               <th>Tipo</th>
               <th class="text-end">Existencia</th>
               <th class="text-end">Precio compra (Gs.)</th>
-              <th class="text-end">Precio promedio CPP (Gs.)</th>
+              <th class="text-end">Precio promedio de Compra (Gs.)</th>
+              <th class="text-end">Valor total (Gs.)</th>
             </tr>
           </thead>
           <tbody>
@@ -52,13 +45,14 @@
               </td>
               <td class="text-end">{{ d.precio_unitario|punto_miles }}</td>
               <td class="text-end fw-semibold">{{ d.precio_promedio|punto_miles }}</td>
+              <td class="text-end fw-semibold">{{ d.valor_total|punto_miles }}</td>
             </tr>
             {% endfor %}
           </tbody>
-          <tfoot class="table-light">
-            <tr>
-              <td colspan="5" class="fw-semibold small">Total ítems: {{ total_items }}</td>
-              <td class="text-end"></td>
+          <tfoot>
+            <tr class="table-light fw-bold">
+              <td colspan="6" class="text-end">Valor total del stock:</td>
+              <td class="text-end">{{ valor_total_stock|punto_miles }}</td>
             </tr>
           </tfoot>
         </table>

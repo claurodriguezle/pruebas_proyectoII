@@ -53,10 +53,6 @@
                             ₲ {{ egreso.monto|punto_miles }}
                         </td>
                         <td class="text-center">
-                            <a href="{% url 'egresos:editar_egreso' egreso.pk %}"
-                               class="btn btn-sm btn-outline-primary">
-                                ✏️
-                            </a>
                             <button class="btn btn-sm btn-outline-danger"
                                 hx-get="{% url 'egresos:anular_egreso' egreso.pk %}"
                                 hx-target="#modal-anulacion-content"

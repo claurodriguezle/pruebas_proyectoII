@@ -29,9 +29,12 @@ def lista_egresos(request):
         egresos = egresos.filter(categoria=categoria)
 
     compras = Compra.objects.filter(
-        fecha=fecha,
-        estado='ACTIVA'
+        estado='ACTIVA',
+        egreso__isnull=True
     ).select_related('proveedor')
+
+    if fecha_str:
+        compras = compras.filter(fecha=fecha)
 
     total_egresos = sum(e.monto for e in egresos)
     total_compras = sum(c.monto_total for c in compras)
@@ -59,26 +62,25 @@ def crear_egreso(request):
     if request.method == 'POST':
         form = EgresoForm(request.POST)
         if form.is_valid():
+            salio_de_caja = form.cleaned_data['salio_de_caja']
+            caja = None
+
+            if salio_de_caja:
+                caja = Caja.objects.filter(estado='abierta').first()
+                if not caja:
+                    form.add_error('salio_de_caja', 'No hay una caja abierta en este momento.')
+                    return render(request, 'egresos/form_egreso.html', {
+                        'form': form,
+                        'titulo': 'Nuevo Egreso'
+                    })
+
             egreso = form.save(commit=False)
             egreso.usuario = request.user
-
-            # Si salió de la caja, buscar la caja abierta
-            if egreso.salio_de_caja:
-                caja_abierta = Caja.objects.filter(estado='abierta').first()
-                if caja_abierta:
-                    egreso.caja = caja_abierta
-                else:
-                    form.add_error('salio_de_caja', 'No hay una caja abierta en este momento.')
-                    return render(request, 'egresos/form_egreso.html', {'form': form, 'titulo': 'Nuevo Egreso'})
-
+            egreso.caja = caja
             egreso.save()
             if egreso.caja:
                 egreso.caja.recalcular_monto_esperado()
 
-            if request.headers.get('HX-Request'):
-                return render(request, 'egresos/partials/tabla_egresos.html', {
-                    'egresos': Egreso.objects.filter(estado='ACTIVO').select_related('proveedor', 'caja')
-                })
             return redirect('egresos:lista_egresos')
     else:
         form = EgresoForm()
@@ -87,46 +89,6 @@ def crear_egreso(request):
         'form': form,
         'titulo': 'Nuevo Egreso'
     })
-
-
-@login_required
-def editar_egreso(request, pk):
-    egreso = get_object_or_404(Egreso, pk=pk, estado='ACTIVO')
-
-    if request.method == 'POST':
-        form = EgresoForm(request.POST, instance=egreso)
-        if form.is_valid():
-            egreso = form.save(commit=False)
-
-            # Recalcular caja si cambió salio_de_caja
-            if egreso.salio_de_caja:
-                caja_abierta = Caja.objects.filter(estado='abierta').first()
-                if caja_abierta:
-                    egreso.caja = caja_abierta
-                else:
-                    form.add_error('salio_de_caja', 'No hay una caja abierta en este momento.')
-                    return render(request, 'egresos/form_egreso.html', {'form': form, 'titulo': 'Editar Egreso'})
-            else:
-                egreso.caja = None
-
-            egreso.save()
-            if egreso.caja:
-                egreso.caja.recalcular_monto_esperado()
-
-            if request.headers.get('HX-Request'):
-                return render(request, 'egresos/partials/tabla_egresos.html', {
-                    'egresos': Egreso.objects.filter(estado='ACTIVO').select_related('proveedor', 'caja')
-                })
-            return redirect('egresos:lista_egresos')
-    else:
-        form = EgresoForm(instance=egreso)
-
-    return render(request, 'egresos/form_egreso.html', {
-        'form': form,
-        'titulo': 'Editar Egreso',
-        'egreso': egreso,
-    })
-
 
 @login_required
 def anular_egreso(request, pk):

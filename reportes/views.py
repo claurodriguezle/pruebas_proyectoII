@@ -639,6 +639,15 @@ def _get_datos_stock(fecha_fin):
         else:
             precio_compra = precio_compra_raw
         
+        precio_promedio = cpp_display(item, cpp_dict)
+        # Convertir existencia a la misma unidad que el precio_promedio
+        if item.tipo == 'MATERIA_PRIMA' and item.unidad_medida == 'kg':
+            existencia_para_calculo = stock.cant_disponible / Decimal('1000')  # g → kg
+        else:
+            existencia_para_calculo = stock.cant_disponible
+
+        valor_total = existencia_para_calculo * Decimal(str(precio_promedio))
+        
         datos.append({
             'nombre': item.nombre,
             'tipo': item.tipo,
@@ -646,6 +655,7 @@ def _get_datos_stock(fecha_fin):
             'unidad': stock.unidad_display,
             'precio_unitario': precio_compra,
             'precio_promedio': cpp_display(item, cpp_dict),
+            'valor_total': valor_total,
             'bajo_minimo': stock.cant_disponible < stock.cant_minima,
         })
 
@@ -693,6 +703,7 @@ def reporte_stock_datos(request):
         'fecha_fin':          fecha_fin,
         'total_items':        len(datos),
         'items_bajo_minimo':  sum(1 for d in datos if d['bajo_minimo']),
+        'valor_total_stock': sum(d['valor_total'] for d in datos),
         'sin_resultados':     len(datos) == 0,
     }
     return render(request, 'reportes/partials/stock_resultados.html', context)

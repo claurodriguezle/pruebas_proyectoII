@@ -56,7 +56,7 @@
                         {% for detalle in compra.detalles.all %}
                         <tr>
                             <td>{{ detalle.item.nombre }}</td>
-                            <td>{{ detalle.cantidad }} {{ detalle.item.get_unidad_medida_display }}</td>
+                            <td>{{ detalle.cantidad|numero_py }} {{ detalle.item.get_unidad_medida_display }}</td>
                             <td class="text-end">₲ {{ detalle.precio_compra|punto_miles }}</td>
                             <td class="text-end">₲ {{ detalle.subtotal|punto_miles }}</td>
                         </tr>

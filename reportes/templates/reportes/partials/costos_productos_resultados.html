@@ -28,7 +28,7 @@
             <th>Código</th>
             <th>Producto</th>
             <th>Categoría</th>
-            <th class="text-end">Precio (Gs.)</th>
+            <!-- <th class="text-end">Precio (Gs.)</th> -->
             <th class="text-end">Costo unit. (Gs.)</th>
           </tr>
         </thead>
@@ -42,7 +42,7 @@
                 {{ f.categoria }}
               </span>
             </td>
-            <td class="text-end">{{ f.precio|punto_miles }}</td>
+            <!-- <td class="text-end">{{ f.precio|punto_miles }}</td> -->
             <td class="text-end fw-semibold">{{ f.costo_unit|punto_miles }}</td>
           </tr>
           {% endfor %}
@@ -50,7 +50,7 @@
         <tfoot class="table-light">
           <tr>
             <td colspan="5" class="fw-semibold small">Total productos: {{ total_productos }}</td>
-            <td class="text-end fw-semibold">{{ costo_promedio|punto_miles }}</td>
+            <!-- <td class="text-end fw-semibold">{{ costo_promedio|punto_miles }}</td> -->
           </tr>
         </tfoot>
       </table>
