@@ -10,55 +10,54 @@ from caja.models import Caja
 
 @login_required
 def lista_egresos(request):
-    fecha_str = request.GET.get('fecha')
-    
-    if fecha_str:
-        fecha = datetime.date.fromisoformat(fecha_str)
-    else:
-        fecha = timezone.now().date()
-
+    fecha_desde_str = request.GET.get('fecha_desde')
+    fecha_hasta_str = request.GET.get('fecha_hasta')
     categoria = request.GET.get('categoria', '')
-    
+    hay_filtros = fecha_desde_str or fecha_hasta_str or categoria
+
     egresos = Egreso.objects.filter(
         estado='ACTIVO'
     ).select_related('proveedor', 'caja', 'usuario')
 
-    egresos = egresos.filter(fecha=fecha)
+    if not hay_filtros:
+        # Por defecto: egresos de hoy
+        egresos = egresos.filter(fecha=timezone.now().date())
+    else:
+        # Si hay rango de fechas
+        if fecha_desde_str:
+            fecha_desde = datetime.date.fromisoformat(fecha_desde_str)
+            egresos = egresos.filter(fecha__gte=fecha_desde)
+        if fecha_hasta_str:
+            fecha_hasta = datetime.date.fromisoformat(fecha_hasta_str)
+            egresos = egresos.filter(fecha__lte=fecha_hasta)
+        # Si solo hay categoría sin fechas → trae todos de esa categoría
+        if categoria:
+            egresos = egresos.filter(categoria=categoria)
 
-    if categoria:
-        egresos = egresos.filter(categoria=categoria)
-
-    compras = Compra.objects.filter(
+    compras_pendientes = Compra.objects.filter(
         estado='ACTIVA',
         egreso__isnull=True
     ).select_related('proveedor')
 
-    if fecha_str:
-        compras = compras.filter(fecha=fecha)
-
     total_egresos = sum(e.monto for e in egresos)
-    total_compras = sum(c.monto_total for c in compras)
-    total_general = total_egresos + total_compras
 
     context = {
         'egresos': egresos,
-        'compras': compras,
+        'compras_pendientes': compras_pendientes,
         'total_egresos': total_egresos,
-        'total_compras': total_compras,
-        'total_general': total_general,
-        'fecha_filtro': fecha,
+        'fecha_desde_filtro': fecha_desde_str or '',
+        'fecha_hasta_filtro': fecha_hasta_str or '',
         'categoria_filtro': categoria,
         'categorias': Egreso.CATEGORIA_CHOICES,
+        'hay_filtros': hay_filtros,
     }
-
-    print(f"Fecha filtro: {fecha} tipo: {type(fecha)}")
-    print(f"Compras encontradas: {compras.count()}")
-    print(f"Todas las compras de hoy: {Compra.objects.filter(fecha=fecha).count()}")
     return render(request, 'egresos/lista_egresos.html', context)
 
 
 @login_required
 def crear_egreso(request):
+    caja_abierta = Caja.objects.filter(estado='abierta').first()
+
     if request.method == 'POST':
         form = EgresoForm(request.POST)
         if form.is_valid():
@@ -66,13 +65,14 @@ def crear_egreso(request):
             caja = None
 
             if salio_de_caja:
-                caja = Caja.objects.filter(estado='abierta').first()
-                if not caja:
+                if not caja_abierta:
                     form.add_error('salio_de_caja', 'No hay una caja abierta en este momento.')
                     return render(request, 'egresos/form_egreso.html', {
                         'form': form,
-                        'titulo': 'Nuevo Egreso'
+                        'titulo': 'Nuevo Egreso',
+                        'caja_abierta': caja_abierta,
                     })
+                caja = caja_abierta
 
             egreso = form.save(commit=False)
             egreso.usuario = request.user
@@ -87,7 +87,8 @@ def crear_egreso(request):
 
     return render(request, 'egresos/form_egreso.html', {
         'form': form,
-        'titulo': 'Nuevo Egreso'
+        'titulo': 'Nuevo Egreso',
+        'caja_abierta': caja_abierta,
     })
 
 @login_required
@@ -120,6 +121,7 @@ def anular_egreso(request, pk):
 def registrar_compra_como_egreso(request, compra_pk):
     
     compra = get_object_or_404(Compra, pk=compra_pk, estado='ACTIVA')
+    caja = Caja.objects.filter(estado='abierta').first()
 
     if hasattr(compra, 'egreso'):
         return redirect('egresos:lista_egresos')
@@ -131,7 +133,6 @@ def registrar_compra_como_egreso(request, compra_pk):
             caja = None
 
             if salio_de_caja:
-                caja = Caja.objects.filter(estado='abierta').first()
                 if not caja:
                     form.add_error('salio_de_caja', 'No hay una caja abierta en este momento.')
                     return render(request, 'egresos/form_compra_egreso.html', {
@@ -161,4 +162,23 @@ def registrar_compra_como_egreso(request, compra_pk):
     return render(request, 'egresos/form_compra_egreso.html', {
         'form': form,
         'compra': compra,
+        'caja': caja,
+    })
+
+@login_required
+def lista_anulados(request):
+    egresos_anulados = Egreso.objects.filter(
+        estado='ANULADO'
+    ).select_related('proveedor', 'caja').order_by('-fecha_registro')
+
+    context = {
+        'egresos_anulados': egresos_anulados,
+    }
+    return render(request, 'egresos/lista_anulados.html', context)
+
+@login_required
+def detalle_anulado(request, pk):
+    egreso = get_object_or_404(Egreso, pk=pk, estado='ANULADO')
+    return render(request, 'egresos/partials/modal_detalle_anulado.html', {
+        'egreso': egreso,
     })

@@ -1,0 +1,63 @@
+{% load humanize %}
+
+<div class="modal-header">
+    <h5 class="modal-title fw-bold">📝 Detalle del Egreso Anulado</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+</div>
+
+<div class="modal-body">
+    <div class="row g-3">
+        <div class="col-6">
+            <div class="small text-muted">Fecha</div>
+            <div class="fw-semibold">{{ egreso.fecha|date:"d/m/Y" }}</div>
+        </div>
+        <div class="col-6">
+            <div class="small text-muted">Monto</div>
+            <div class="fw-semibold text-danger">₲ {{ egreso.monto|intcomma }}</div>
+        </div>
+        <div class="col-6">
+            <div class="small text-muted">Categoría</div>
+            <div>{{ egreso.get_categoria_display }}</div>
+        </div>
+        <div class="col-6">
+            <div class="small text-muted">Proveedor</div>
+            <div>
+                {% if egreso.proveedor %}
+                    {{ egreso.proveedor.nombre_empresa }}
+                {% else %}
+                    <span class="text-muted">—</span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="col-6">
+            <div class="small text-muted">N° Comprobante</div>
+            <div>
+                {% if egreso.numero_comprobante %}
+                    {{ egreso.numero_comprobante }}
+                {% else %}
+                    <span class="text-muted">—</span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="col-6">
+            <div class="small text-muted">Registrado por</div>
+            <div>{{ egreso.usuario.get_full_name|default:egreso.usuario.username }}</div>
+        </div>
+        <div class="col-12">
+            <div class="small text-muted">Descripción</div>
+            <div>{{ egreso.descripcion }}</div>
+        </div>
+        <div class="col-12">
+            <div class="alert alert-danger mt-2">
+                <div class="small fw-semibold mb-1">Motivo de anulación:</div>
+                <div>{{ egreso.motivo_anulacion }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal-footer">
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+        Cerrar
+    </button>
+</div>

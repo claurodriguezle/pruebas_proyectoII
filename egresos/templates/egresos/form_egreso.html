@@ -109,6 +109,12 @@
                                     {{ form.salio_de_caja.label }}
                                 </label>
                             </div>
+                            {% if caja_abierta %}
+                                <div class="small text-muted mt-1">
+                                    Se descontará de: Caja #{{ caja_abierta.id }}
+                                    (abierta por {{ caja_abierta.usuario_apertura_nombre }})
+                                </div>
+                            {% endif %}
                             <div class="small text-muted mt-1">
                                 Activá esta opción si el dinero salió físicamente de la caja del día.
                             </div>

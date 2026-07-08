@@ -1,0 +1,86 @@
+{% extends "base_empleado.html" %}
+{% load static %}
+
+{% block title %}Egresos Anulados{% endblock %}
+
+{% block body %}
+<div class="container-fluid py-4">
+
+    <!-- ENCABEZADO -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="fw-bold mb-0">🗑️ Egresos Anulados</h4>
+        <a href="{% url 'egresos:lista_egresos' %}" class="btn btn-outline-secondary">
+            ← Volver
+        </a>
+    </div>
+
+    <!-- TABLA -->
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Descripción</th>
+                            <th>Categoría</th>
+                            <th>Proveedor</th>
+                            <th class="text-end">Monto</th>
+                            <th class="text-center">Detalle</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for egreso in egresos_anulados %}
+                        <tr style="cursor:pointer"
+                            hx-get="{% url 'egresos:detalle_anulado' egreso.pk %}"
+                            hx-target="#modal-detalle-content"
+                            hx-swap="innerHTML"
+                            data-bs-toggle="modal"
+                            data-bs-target="#modalDetalle">
+                            <td>{{ egreso.fecha|date:"d/m/Y" }}</td>
+                            <td>{{ egreso.descripcion }}</td>
+                            <td>
+                                <span class="badge bg-secondary">
+                                    {{ egreso.get_categoria_display }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if egreso.proveedor %}
+                                    {{ egreso.proveedor.nombre_empresa }}
+                                {% else %}
+                                    <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end fw-semibold">
+                                ₲ {{ egreso.monto|punto_miles }}
+                            </td>
+                            <td class="text-center">
+                                <button class="btn btn-sm btn-outline-secondary">
+                                    📝 Ver detalle
+                                </button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">
+                                No hay egresos anulados.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- MODAL DETALLE -->
+<div class="modal fade" id="modalDetalle" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content" id="modal-detalle-content">
+        </div>
+    </div>
+</div>
+
+{% endblock %}

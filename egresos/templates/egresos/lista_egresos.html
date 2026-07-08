@@ -9,22 +9,31 @@
     <!-- ENCABEZADO -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h4 class="fw-bold mb-0">📋 Egresos</h4>
-        <a href="{% url 'egresos:crear_egreso' %}"
-           class="btn btn-primary">
-            + Nuevo Egreso
-        </a>
+        <div class="d-flex gap-2">
+            <a href="{% url 'egresos:lista_anulados' %}" class="btn btn-outline-danger">
+                🗑️ Anulados
+            </a>
+            <a href="{% url 'egresos:crear_egreso' %}" class="btn btn-primary">
+                + Nuevo Egreso
+            </a>
+        </div>
     </div>
 
     <!-- FILTROS -->
     <div class="card shadow-sm mb-4">
         <div class="card-body">
             <form method="GET" class="row g-3 align-items-end">
-                <div class="col-md-4">
-                    <label class="form-label fw-semibold">Fecha</label>
-                    <input type="date" name="fecha" class="form-control"
-                           value="{{ fecha_filtro }}">
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Desde</label>
+                    <input type="date" name="fecha_desde" class="form-control"
+                           value="{{ fecha_desde_filtro }}">
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Hasta</label>
+                    <input type="date" name="fecha_hasta" class="form-control"
+                           value="{{ fecha_hasta_filtro }}">
+                </div>
+                <div class="col-md-3">
                     <label class="form-label fw-semibold">Categoría</label>
                     <select name="categoria" class="form-select">
                         <option value="">Todas</option>
@@ -36,11 +45,12 @@
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-md-4 d-flex gap-2">
+                <div class="col-md-3 d-flex gap-2">
                     <button type="submit" class="btn btn-secondary w-100">
                         🔍 Filtrar
                     </button>
-                    <a href="{% url 'egresos:lista_egresos' %}" class="btn btn-outline-secondary w-100">
+                    <a href="{% url 'egresos:lista_egresos' %}"
+                       class="btn btn-outline-secondary w-100">
                         Limpiar
                     </a>
                 </div>
@@ -48,21 +58,86 @@
         </div>
     </div>
 
-    <!-- TARJETAS RESUMEN -->
+    <!-- AVISO SI HAY FILTROS ACTIVOS -->
+    {% if hay_filtros %}
+    <div class="alert alert-info py-2">
+        📌 Mostrando resultados filtrados.
+        <!--
+        <a href="{% url 'egresos:lista_egresos' %}" class="alert-link">
+            Ver egresos de hoy
+        </a>
+        -->
+    </div>
+    {% endif %}
+
+    <!-- RESUMEN -->
     <div class="row g-3 mb-4">
         <div class="col-md-4">
             <div class="card border-0 shadow-sm bg-danger text-white">
                 <div class="card-body">
-                    <div class="small opacity-75">Egresos varios</div>
+                    <div class="small opacity-75">
+                        {% if hay_filtros %}Total filtrado{% else %}Total de hoy{% endif %}
+                    </div>
                     <div class="fs-5 fw-bold">₲ {{ total_egresos|punto_miles }}</div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- TABLA -->
+    <!-- TABLA EGRESOS -->
     <div id="tabla-egresos">
         {% include "egresos/partials/tabla_egresos.html" %}
+    </div>
+
+    <!-- COMPRAS PENDIENTES -->
+    <div class="card shadow-sm mt-4">
+        <div class="card-header fw-semibold">
+            🛒 Compras
+            {% if compras_pendientes %}
+                <span class="badge bg-warning text-dark ms-2">
+                    {{ compras_pendientes.count }}
+                </span>
+            {% endif %}
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Fecha</th>
+                            <th>N° Factura</th>
+                            <th>Proveedor</th>
+                            <th class="text-end">Monto</th>
+                            <th class="text-center">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for compra in compras_pendientes %}
+                        <tr>
+                            <td>{{ compra.fecha|date:"d/m/Y" }}</td>
+                            <td>{{ compra.numero_factura }}</td>
+                            <td>{{ compra.proveedor.nombre_empresa }}</td>
+                            <td class="text-end fw-semibold">
+                                ₲ {{ compra.monto_total|punto_miles }}
+                            </td>
+                            <td class="text-center">
+                                <a href="{% url 'egresos:registrar_compra_como_egreso' compra.pk %}"
+                                   class="btn btn-sm btn-outline-primary">
+                                    💸 Registrar egreso
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-4">
+                                ✅ Todas las compras fueron registradas como egreso.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
 </div>

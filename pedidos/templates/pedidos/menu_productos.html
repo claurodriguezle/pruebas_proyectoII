@@ -121,12 +121,12 @@ Menu
               <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
             <!--<button type="submit" class="btn btn-primary">Agregar al carrito</button>-->
             {% if caja_abierta %}
-                <button class="agregar-carrito" data-producto-id="{{ producto.id }}">
+                <button class="btn btn-primary agregar-carrito" data-producto-id="{{ producto.id }}">
                     Agregar al carrito
                 </button>
             {% else %}
-                <button class="agregar-carrito disabled" disabled style="opacity: 0.5; cursor: not-allowed;">
-                    Caja cerrada
+                <button class="btn btn-primary agregar-carrito disabled" disabled style="opacity: 0.5; cursor: not-allowed;">
+                    No disponible
                 </button>
             {% endif %}
             </div>

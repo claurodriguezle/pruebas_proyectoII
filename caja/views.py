@@ -13,6 +13,7 @@ from pedidos.models import Pedido, DetallePedido
 import json
 from datetime import date
 from pedidos.views import descontar_stock
+from reportes.utils_costos import calcular_costo_ventas_caja
 
 #Importamos los decoradores de grupos
 from usuarios.decorators import grupo_requerido
@@ -462,10 +463,13 @@ def cierre_caja(request):
 
     mesas_abiertas = caja.cuentas.filter(estado='abierta').count()
     caja.recalcular_monto_esperado()
+    costo_ventas = calcular_costo_ventas_caja(caja)
+
     totales = {
         'ventas': caja.total_ventas,
         'egresos': caja.total_egresos,
-        'ganancia': caja.total_ventas - caja.total_egresos,
+        'costos': costo_ventas,
+        'ganancia': caja.total_ventas - costo_ventas,
     }
     
     # 🔥 NUEVO: Calcular resumen de ventas por origen (Local vs Online)

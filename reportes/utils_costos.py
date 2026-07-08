@@ -1,7 +1,8 @@
-from django.db.models import Sum, F
+from django.db.models import Sum, F, Q
 from decimal import Decimal, ROUND_HALF_UP
-from administrador.models import DetalleCompra
-
+from administrador.models import DetalleCompra, Producto
+from facturacion.models import DetalleFactura
+from django.utils import timezone
 
 def calcular_cpp_por_item(hasta_fecha=None):
     """
@@ -62,3 +63,43 @@ def cpp_display(item, cpp_dict):
         cpp = cpp * 1000  # convertir de gs/gramo a gs/kg
 
     return int(cpp.quantize(Decimal('1'), rounding=ROUND_HALF_UP))
+
+def calcular_costo_ventas_caja(caja, fecha_referencia=None):
+    """
+    Calcula el costo total (CPP) de los productos vendidos en una caja específica.
+    Contempla dos caminos hacia la caja porque en las facturas generadas
+    desde pedidos online, Factura.venta_caja queda en None (bug conocido);
+    en ese caso se llega igual vía Factura.pedido.venta_caja.
+    """
+    if fecha_referencia is None:
+        fecha_referencia = timezone.now().date()
+
+    cpp_dict = calcular_cpp_por_item(hasta_fecha=fecha_referencia)
+
+    detalles = (
+        DetalleFactura.objects
+        .filter(
+            Q(factura__venta_caja__caja=caja, factura__venta_caja__anulado=False)
+            | Q(factura__pedido__venta_caja__caja=caja, factura__pedido__venta_caja__anulado=False)
+        )
+        .distinct()
+        .values('producto')
+        .annotate(cant_vendida=Sum('cantidad'))
+    )
+
+    producto_ids = [d['producto'] for d in detalles]
+    productos_map = {
+        p.pk: p for p in Producto.objects.filter(pk__in=producto_ids)
+        .prefetch_related('ingredientes__item')
+        .select_related('categoria')
+    }
+
+    costo_total = 0
+    for d in detalles:
+        producto = productos_map.get(d['producto'])
+        if not producto:
+            continue
+        costo_unit = calcular_costo_producto(producto, cpp_dict)
+        costo_total += int(costo_unit * (d['cant_vendida'] or 0))
+
+    return costo_total

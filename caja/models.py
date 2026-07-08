@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
-
+from django.core.exceptions import ObjectDoesNotExist
 
 class Caja(models.Model):
     ESTADO_CHOICES = [
@@ -47,6 +47,15 @@ class Caja(models.Model):
         return self.egresos.filter(
         estado='ACTIVO'
         ).aggregate(total=models.Sum('monto'))['total'] or 0
+    
+    @property
+    def usuario_apertura_nombre(self):
+        user = self.usuario_apertura
+        try:
+            persona = user.empleado.persona
+            return f"{persona.nombre} {persona.apellido}"
+        except ObjectDoesNotExist:
+            return user.get_full_name() or user.username
 
     def recalcular_monto_esperado(self):
         self.monto_final_esperado = self.monto_inicial + self.total_ventas - self.total_egresos
