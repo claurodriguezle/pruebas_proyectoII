@@ -1,0 +1,62 @@
+{% extends 'pedidos/menu_layout.html' %}
+{% load static %}
+
+{% block title %}¿Dónde estamos? - Brother's Burger{% endblock %}
+
+{% block body %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <h2 class="text-center mb-4">📍 ¿Dónde estamos?</h2>
+            
+            <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+                <div class="card-body p-0">
+                    <!-- Mapa de Google Maps -->
+                    <div class="ratio ratio-16x9">
+                        <iframe 
+                            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3259.9304536526392!2d-56.442960224946766!3d-25.460306134090896!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x945ee9a01fccc963%3A0xa05f7210589ab774!2sBrother&#39;s%20Burger!5e1!3m2!1ses!2spy!4v1783632019620!5m2!1ses!2spy" 
+                            width="400" 
+                            height="300" 
+                            style="border:0;" 
+                            allowfullscreen="" 
+                            loading="lazy"
+                            referrerpolicy="strict-origin-when-cross-origin">
+                        </iframe>
+                    </div>
+                    
+                    <div class="p-4 p-md-5">
+                        <div class="row g-4">
+                            <!-- Dirección -->
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-start">
+                                    <i class="bi bi-geo-alt-fill fs-3 text-warning me-3"></i>
+                                    <div>
+                                        <h5 class="fw-semibold mb-1">Dirección</h5>
+                                        <p class="text-muted mb-0">Av. Principal 1234</p>
+                                        <p class="text-muted">Coronel Oviedo, Paraguay</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Referencias -->
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-start">
+                                    <i class="bi bi-signpost-2-fill fs-3 text-warning me-3"></i>
+                                    <div>
+                                        <h5 class="fw-semibold mb-1">Referencias</h5>
+                                        <ul class="text-muted mb-0 ps-3">
+                                            <li>A media cuadra de la plaza principal</li>
+                                            <li>Frente al supermercado Centro</li>
+                                            <li>Estacionamiento propio disponible</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

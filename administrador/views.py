@@ -1057,11 +1057,12 @@ def lista_items(request):
         'query': query
     })
 
-
+'''
 @grupo_requerido('Administrador')
 def editar_item(request, pk):
     item = get_object_or_404(Item, pk=pk)
-    
+    stock = Stock.objects.filter(item=item).first()
+
     if request.method == 'POST':
         # Procesar el formulario cuando se envía
         form = ItemForm(request.POST, instance=item)
@@ -1080,13 +1081,183 @@ def editar_item(request, pk):
         'unidad_medida': item.unidad_medida,
         # No incluimos datos de stock aquí
     }
-    
+
     return render(request, 'stock/crear_stock.html', {
         'modo_edicion': True,  # Flag clave para el template
         'valores_previos': valores_previos,
         'tipo_choices': Item.TIPO_CHOICES,
         'unidad_choices': Item.UNIDAD_CHOICES,
         'proveedores': Proveedor.objects.all()
+    })
+
+@grupo_requerido('Administrador')
+def editar_item(request, pk):
+    item = get_object_or_404(Item, pk=pk)
+    # Buscar el stock asociado a este item (relación 1 a 1)
+    stock = Stock.objects.filter(item=item).first()
+    
+    if request.method == 'POST':
+        try:
+            with transaction.atomic():
+                # 1. Actualizar el Item
+                item.nombre = request.POST.get('nombre', '').strip()
+                item.tipo = request.POST.get('tipo')
+                item.unidad_medida = request.POST.get('unidad_medida')
+                item.save()
+                
+                # 2. Actualizar o crear el Stock asociado
+                cant_minima = Decimal(request.POST.get('cant_minima', 0))
+                cant_maxima = Decimal(request.POST.get('cant_maxima', 0))
+                proveedor_id = request.POST.get('proveedor')
+                
+                # Conversión si es materia prima en kg
+                if item.tipo == 'MATERIA_PRIMA' and item.unidad_medida == 'kg':
+                    cant_minima = cant_minima * 1000
+                    cant_maxima = cant_maxima * 1000
+                
+                proveedor = None
+                if proveedor_id:
+                    proveedor = Proveedor.objects.get(id=proveedor_id)
+                
+                if stock:
+                    # Actualizar stock existente
+                    stock.cant_minima = cant_minima
+                    stock.cant_maxima = cant_maxima
+                    stock.proveedor_principal = proveedor
+                    stock.save()
+                else:
+                    # Crear nuevo stock si no existe
+                    stock = Stock.objects.create(
+                        item=item,
+                        cant_minima=cant_minima,
+                        cant_maxima=cant_maxima,
+                        cant_disponible=0,
+                        proveedor_principal=proveedor
+                    )
+                
+                messages.success(request, '✅ Ítem y stock actualizados correctamente')
+                return redirect('administrador:lista_items')
+                
+        except Exception as e:
+            messages.error(request, f'❌ Error al actualizar: {str(e)}')
+            return redirect('administrador:editar_item', pk=item.pk)
+    
+    # GET: Preparar valores para el formulario
+    # Valores del item
+    valores_previos = {
+        'nombre': item.nombre,
+        'tipo': item.tipo,
+        'unidad_medida': item.unidad_medida,
+    }
+    
+    # Valores del stock (si existe)
+    if stock:
+        cant_minima = stock.cant_minima
+        cant_maxima = stock.cant_maxima
+        
+        # Convertir de gramos a kg si es materia prima en kg
+        if item.tipo == 'MATERIA_PRIMA' and item.unidad_medida == 'kg':
+            cant_minima = cant_minima / 1000
+            cant_maxima = cant_maxima / 1000
+        
+        valores_previos['cant_minima'] = float(cant_minima)
+        valores_previos['cant_maxima'] = float(cant_maxima)
+        valores_previos['proveedor'] = stock.proveedor_principal.id if stock.proveedor_principal else ''
+    else:
+        valores_previos['cant_minima'] = 0
+        valores_previos['cant_maxima'] = 0
+        valores_previos['proveedor'] = ''
+    
+    return render(request, 'stock/crear_stock.html', {
+        'modo_edicion': True,
+        'valores_previos': valores_previos,
+        'tipo_choices': Item.TIPO_CHOICES,
+        'unidad_choices': Item.UNIDAD_CHOICES,
+        'proveedores': Proveedor.objects.all()
+    })
+'''
+@grupo_requerido('Administrador')
+def editar_item(request, pk):
+    item = get_object_or_404(Item, pk=pk)
+    stock = Stock.objects.filter(item=item).first()
+    
+    if request.method == 'POST':
+        try:
+            with transaction.atomic():
+                # Actualizar Item
+                item.nombre = request.POST.get('nombre', '').strip()
+                item.tipo = request.POST.get('tipo')
+                item.unidad_medida = request.POST.get('unidad_medida')
+                item.save()
+                
+                # Obtener o crear Stock
+                if not stock:
+                    stock = Stock.objects.create(item=item, cant_disponible=0)
+                
+                # Actualizar Stock
+                cant_minima = Decimal(request.POST.get('cant_minima', 0))
+                cant_maxima = Decimal(request.POST.get('cant_maxima', 0))
+                proveedor_id = request.POST.get('proveedor')
+                
+                # Conversión para materia prima en kg
+                if item.tipo == 'MATERIA_PRIMA' and item.unidad_medida == 'kg':
+                    cant_minima = cant_minima * 1000
+                    cant_maxima = cant_maxima * 1000
+                
+                stock.cant_minima = cant_minima
+                stock.cant_maxima = cant_maxima
+                stock.proveedor_principal_id = proveedor_id if proveedor_id else None
+                stock.save()
+                
+                messages.success(request, '✅ Ítem y stock actualizados correctamente')
+                return redirect('administrador:lista_items')
+                
+        except Exception as e:
+            messages.error(request, f'❌ Error: {str(e)}')
+            return redirect('administrador:editar_item', pk=item.pk)
+    
+    # GET - Preparar datos para el formulario
+    valores_previos = {
+        'nombre': item.nombre,
+        'tipo': item.tipo,
+        'unidad_medida': item.unidad_medida,
+    }
+    
+    # Agregar datos del stock si existe
+    if stock:
+        cant_min = stock.cant_minima
+        cant_max = stock.cant_maxima
+        
+        # Convertir de gramos a kg si corresponde
+        if item.tipo == 'MATERIA_PRIMA' and item.unidad_medida == 'kg':
+            cant_min = cant_min / 1000
+            cant_max = cant_max / 1000
+        
+        valores_previos['cant_minima'] = float(cant_min)
+        valores_previos['cant_maxima'] = float(cant_max)
+        valores_previos['proveedor'] = str(stock.proveedor_principal_id) if stock.proveedor_principal_id else ''
+    else:
+        valores_previos['cant_minima'] = 0
+        valores_previos['cant_maxima'] = 0
+        valores_previos['proveedor'] = ''
+    
+    # Debug: imprimir en consola para verificar
+    print("=== EDITANDO ITEM ===")
+    print(f"Item ID: {item.id}")
+    print(f"valores_previos: {valores_previos}")
+    # Debug: Verificar que los datos existen antes de renderizar
+    print("=== DATOS ENVIADOS AL TEMPLATE ===")
+    print(f"cant_minima: {valores_previos.get('cant_minima')}")
+    print(f"cant_maxima: {valores_previos.get('cant_maxima')}")
+    print(f"proveedor: {valores_previos.get('proveedor')}")
+    
+    return render(request, 'stock/crear_stock.html', {
+        'valores_previos': valores_previos,
+        'tipo_choices': Item.TIPO_CHOICES,
+        'unidad_choices': Item.UNIDAD_CHOICES,
+        'proveedores': Proveedor.objects.all(),
+        'modo_edicion': True,  # ← Esta variable está aquí pero el template no la usa
+        'es_edicion': True,  # ← Agregamos esta variable para el template
     })
 
 @grupo_requerido('Administrador')

@@ -124,8 +124,7 @@ class UsuarioAdminForm(forms.Form):
         label='Contraseña',
         required=False,
         widget=forms.PasswordInput(attrs={
-        'class': 'form-control', 
-        'placeholder': 'Dejar vacío para no cambiar'})
+        'class': 'form-control'})
     )
     password2 = forms.CharField(
         label='Confirmar contraseña',
@@ -219,6 +218,13 @@ class UsuarioAdminForm(forms.Form):
     def __init__(self, *args, **kwargs):
         self.usuario_id = kwargs.pop('usuario_id', None)
         super().__init__(*args, **kwargs)
+
+        if self.usuario_id:
+            #Modo editar: ya existe una contraseña, se puede dejar como está
+            self.fields['password1'].widget.attrs['placeholder'] = 'Dejar vacio para no cambiar'
+        else:
+            #Modo crear: la contraseña es obligatoria
+            self.fields['password1'].widget.attrs['placeholder'] = 'Minimo 8 caracteres'
  
     def clean_username(self):
         username = self.cleaned_data.get('username')

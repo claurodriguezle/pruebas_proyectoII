@@ -1,0 +1,84 @@
+{% extends 'pedidos/menu_layout.html' %}
+{% load static %}
+
+{% block title %}Contacto - Brother's Burger{% endblock %}
+
+{% block body %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <h2 class="text-center mb-4">Contacto</h2>
+            
+            <div class="card shadow-sm border-0 rounded-4">
+                <div class="card-body p-4 p-md-5">
+                    <div class="row g-4">
+                        <!-- Teléfono -->
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-start">
+                                <i class="bi bi-telephone-fill fs-3 text-warning me-3"></i>
+                                <div>
+                                    <h5 class="fw-semibold mb-1">Teléfono</h5>
+                                    <p class="text-muted mb-0">+595 971 123 456</p>
+                                    <p class="text-muted small">Lunes a Domingo, 18:40 - 22:30</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Correo -->
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-start">
+                                <i class="bi bi-envelope-fill fs-3 text-warning me-3"></i>
+                                <div>
+                                    <h5 class="fw-semibold mb-1">Correo electrónico</h5>
+                                    <p class="text-muted mb-0">contacto@brothersburger.com</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Horario -->
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-start">
+                                <i class="bi bi-clock-fill fs-3 text-warning me-3"></i>
+                                <div>
+                                    <h5 class="fw-semibold mb-1">Horario de atención</h5>
+                                    <p class="text-muted mb-0"><strong>Lunes a Domingo</strong></p>
+                                    <p class="text-muted">18:40 — 22:30</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Redes Sociales -->
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-start">
+                                <i class="bi bi-share-fill fs-3 text-warning me-3"></i>
+                                <div>
+                                    <h5 class="fw-semibold mb-1">Seguinos</h5>
+                                    <div class="d-flex gap-3 mt-1">
+                                        <a href="https://www.instagram.com/bb_burgerco?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==" class="text-dark" style="font-size: 1.5rem;">
+                                            <i class="bi bi-instagram"></i>
+                                        </a>
+                        
+                                        <a href="https://l.instagram.com/?u=https%3A%2F%2Fwa.me%2F595971607003%3Futm_source%3Dig%26utm_medium%3Dsocial%26utm_content%3Dlink_in_bio%26fbclid%3DPAZXh0bgNhZW0CMTEAc3J0YwZhcHBfaWQPOTM2NjE5NzQzMzkyNDU5AAGn4q4m-UdgWWKisufYcywdUFUupJm_EHl3eT3OHBMKvSp7ks3XEs5OjGfZRno_aem_czFLxf8oafGYkWPg-bLj-A&e=AUDTJJ7-T4KtwTFkXNzgAZ7UhqnEPciAWepxuCvC5bKMTEnA-u2GoQqQKxwM6ibPErnxJv_Mquz-yQxVrgkK-fUqtgdvciyYPF_t0dQCU0MIVNbyqjbcugj1Tr2r8r2A5rksRfA" class="text-dark" style="font-size: 1.5rem;">
+                                            <i class="bi bi-whatsapp"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr class="my-4">
+                    
+                    <!-- Mensaje adicional -->
+                    <div class="text-center">
+                        <p class="text-muted mb-0">
+                            <i class="bi bi-info-circle me-2"></i>
+                            ¿Tenés alguna consulta? ¡Escribinos y te responderemos a la brevedad!
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
