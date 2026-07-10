@@ -35,6 +35,24 @@ Detalles de Compra #{{ compra.numero_factura }}
         </div>
     </div>
 
+    {% if compra.estado == 'ANULADA' %}
+    <!-- Información de anulación -->
+    <div class="card mb-4 border-danger">
+        <div class="card-header bg-danger text-white">
+            <h4 class="mb-0">Compra Anulada</h4>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <p><strong>Fecha de Anulación:</strong> {{ compra.fecha_anulacion|date:"d/m/Y H:i" }}</p>
+                </div>
+                <div class="col-md-8">
+                    <p><strong>Motivo:</strong> {{ compra.motivo_anulacion }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
     <!-- Artículos comprados -->
     <div class="card mb-4">
         <div class="card-header bg-primary text-white">

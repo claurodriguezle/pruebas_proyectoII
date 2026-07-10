@@ -57,8 +57,7 @@
                 <label class="form-label fw-semibold">{{ form.password1.label }}</label>
                 <div class="input-group">
                     {{ form.password1 }}
-                    <button class="btn btn-outline-secondary" type="button"
-                            onclick="togglePass(this)"
+                    <button class="btn btn-outline-secondary toggle-pass" type="button"
                             data-target="id_password1">
                         <i class="bi bi-eye-fill"></i>
                     </button>
@@ -73,8 +72,7 @@
                 <label class="form-label fw-semibold">{{ form.password2.label }}</label>
                 <div class="input-group">
                     {{ form.password2 }}
-                    <button class="btn btn-outline-secondary" type="button"
-                            onclick="togglePass(this)"
+                    <button class="btn btn-outline-secondary toggle-pass" type="button"
                             data-target="id_password2">
                         <i class="bi bi-eye-fill"></i>
                     </button>
@@ -83,6 +81,7 @@
                 <div class="text-danger small">{{ form.password2.errors|join:", " }}</div>
                 {% endif %}
             </div>
+            <!-- Grupo -->
             <div class="col-md-6">
                 <label class="form-label fw-semibold">{{ form.grupo.label }}</label>
                 {{ form.grupo }}
@@ -266,5 +265,12 @@
             icon.classList.replace('bi-eye-slash-fill', 'bi-eye-fill');
         }
     }
+
+    // Enlazar los botones de mostrar/ocultar contraseña
+    document.querySelectorAll('.toggle-pass').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            togglePass(this);
+        });
+    });
 })();
 </script>

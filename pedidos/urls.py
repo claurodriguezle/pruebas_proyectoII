@@ -23,6 +23,8 @@ urlpatterns = [
     path('mis-pedidos/partial/', views.mis_pedidos_partial, name='mis_pedidos_partial'),
     path('detalle_pedido/<int:pedido_id>/', views.detalle_mi_pedido, name="detalle_mi_pedido"),
     path('delivery/', views.seleccionar_direccion_delivery, name='seleccionar_direccion_delivery'),
+    path('contacto/', views.contacto, name='contacto'),
+    path('donde-estamos/', views.donde_estamos, name='donde_estamos'),
     #RUTA PARA CANCELAR EL PEDIDO CUANDO SE ENCUENTRA EN PENDIENTE
     path('cancelar_pedido/<int:pedido_id>/', views.cancelar_pedido, name='cancelar_pedido'),
 

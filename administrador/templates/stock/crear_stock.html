@@ -137,15 +137,22 @@
             }
             
             // Validación adicional: cantidad mínima <= máxima
-            const min = parseFloat(document.getElementById('id_cantidad_minima').value)
-            const max = parseFloat(document.getElementById('id_cantidad_maxima').value)
+            const min = parseFloat(document.getElementById('id_cant_minima').value)
+            const max = parseFloat(document.getElementById('id_cant_maxima').value)
             
             if (min > max) {
                 alert('Error: La cantidad mínima no puede ser mayor que la máxima')
                 event.preventDefault()
                 return false
             }
+            // Validar que no sean NaN
+            if (!isNaN(min) && !isNaN(max) && min > max) {
+                alert('Error: La cantidad mínima no puede ser mayor que la máxima')
+                event.preventDefault()
+                return false
+            }
             
+            //form.classList.add('was-validated')
             form.classList.add('was-validated')
         }, false)
     })

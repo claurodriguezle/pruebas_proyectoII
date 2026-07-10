@@ -17,9 +17,9 @@ from django.utils import timezone
 from caja.models import Caja
 
 # ── Horario de atención del local ──────────────────────────────────────────
-HORA_APERTURA = 10   # 18:40
-MIN_APERTURA  = 10
-HORA_CIERRE   = 23   # 22:30
+HORA_APERTURA = 12   # 18:40
+MIN_APERTURA  = 40
+HORA_CIERRE   = 22   # 22:30
 MIN_CIERRE    = 30
 
 def local_esta_abierto():
@@ -983,3 +983,11 @@ def mi_factura(request, pedido_id):
         pedido=pedido
     )
     return render(request, 'pedidos/mi_factura.html', {'factura': factura, 'pedido': pedido})
+#Vistas de contacto y ubicación en index de clientes
+def contacto(request):
+    """Página de contacto estática con información del negocio."""
+    return render(request, 'pedidos/contacto.html')
+
+def donde_estamos(request):
+    """Página con mapa de Google Maps y dirección del local."""
+    return render(request, 'pedidos/donde_estamos.html')
