@@ -61,25 +61,18 @@
             </select>
         </div>
 
-        <div class="field-box">
-            <label class="field-label">Teléfono</label>
-            <input type="text" name="telefono"
-                   class="form-control form-control-sm border-0 bg-transparent p-0 field-value"
-                   value="{{ perfil.persona.telefono }}">
-        </div>
-
-        <div class="field-box">
-            <label class="field-label">RUC <span style="color:#bbb;">(opcional)</span></label>
-            <input type="text" name="ruc"
-                   class="form-control form-control-sm border-0 bg-transparent p-0 field-value"
-                   value="{{ perfil.persona.ruc|default:'' }}">
-        </div>
-
         <div class="field-box full">
             <label class="field-label">Correo electrónico</label>
             <input type="email" name="correo"
                    class="form-control form-control-sm border-0 bg-transparent p-0 field-value"
                    value="{{ user.email }}">
+        </div>
+
+        <div class="field-box">
+            <label class="field-label">Teléfono</label>
+            <input type="text" name="telefono"
+                   class="form-control form-control-sm border-0 bg-transparent p-0 field-value"
+                   value="{{ perfil.persona.telefono }}">
         </div>
 
     </div>

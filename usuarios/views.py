@@ -30,7 +30,9 @@ def registro_cliente(request):
                     )
 
                     # Crear persona
-                    persona = form.save()
+                    persona = form.save(commit=False)
+                    persona.correo = form.cleaned_data['email']
+                    persona.save()
 
                     # Crear el cliente asociado a la persona
                     Cliente.objects.create(
@@ -132,19 +134,23 @@ def editar_perfil_cliente(request):
     persona = perfil.persona
 
     if request.method == 'POST':
-        nuevo_correo = request.POST.get('correo', usuario.email)
+        nuevo_correo = request.POST.get('correo', persona.correo)
         nombre       = request.POST.get('nombre', persona.nombre)
         apellido     = request.POST.get('apellido', persona.apellido)
         telefono     = request.POST.get('telefono', persona.telefono)
-        ruc          = request.POST.get('ruc') or None
         ciudad_id    = request.POST.get('ciudad')
         barrio_id    = request.POST.get('barrio')
 
-        # Validar correo duplicado ANTES de asignarlo
-        if User.objects.filter(email=nuevo_correo).exclude(pk=usuario.pk).exists():
+        ciudades = Ciudad.objects.all().order_by('nombre')
+        barrios  = Barrio.objects.all().order_by('nombre')
+
+        # Validar correo duplicado (contra User y contra Persona)
+        correo_en_uso = (
+            User.objects.filter(email=nuevo_correo).exclude(pk=usuario.pk).exists()
+            or Persona.objects.filter(correo=nuevo_correo).exclude(pk=persona.pk).exists()
+        )
+        if correo_en_uso:
             messages.error(request, "El correo ya se encuentra en uso.")
-            ciudades = Ciudad.objects.all().order_by('nombre')
-            barrios  = Barrio.objects.all().order_by('nombre')
             return render(request, 'usuarios/editar_perfil.html', {
                 'perfil'  : perfil,
                 'usuario' : usuario,
@@ -153,11 +159,10 @@ def editar_perfil_cliente(request):
             })
 
         # Asignar valores solo si pasó la validación
-        usuario.email    = nuevo_correo
+        persona.correo   = nuevo_correo   # 👈 la señal propaga esto a usuario.email
         persona.nombre   = nombre
         persona.apellido = apellido
         persona.telefono = telefono
-        persona.ruc      = ruc
 
         if ciudad_id:
             persona.ciudad_id = ciudad_id
@@ -165,15 +170,18 @@ def editar_perfil_cliente(request):
             persona.barrio_id = barrio_id
 
         try:
-            usuario.save()
-            persona.save()
+            with transaction.atomic():
+                persona.save()
             messages.success(request, "Datos actualizados correctamente.")
             return redirect('usuarios:perfil_user')
-        except IntegrityError as e:
-            if 'ruc' in str(e).lower():
-                messages.error(request, "El RUC ya se encuentra en uso.")
-            else:
-                messages.error(request, "Error al guardar: datos inválidos.")
+        except IntegrityError:
+            messages.error(request, "Error al guardar: datos inválidos.")
+            return render(request, 'usuarios/editar_perfil.html', {
+                'perfil'  : perfil,
+                'usuario' : usuario,
+                'ciudades': ciudades,
+                'barrios' : barrios,
+            })
 
     ciudades = Ciudad.objects.all().order_by('nombre')
     barrios  = Barrio.objects.all().order_by('nombre')

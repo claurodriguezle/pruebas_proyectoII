@@ -31,7 +31,7 @@ class RegistroClienteForm(forms.ModelForm):
         model = Persona
         fields = [
             'nombre', 'apellido', 'telefono', 'fecha_nacimiento',
-            'cedula', 'ciudad', 'barrio', 'nacionalidad',
+            'cedula', 'ruc', 'ciudad', 'barrio', 'nacionalidad',
         ]
         widgets = {
             'nombre': forms.TextInput(attrs={'class': 'form-control'}),

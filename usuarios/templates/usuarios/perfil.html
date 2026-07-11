@@ -68,22 +68,15 @@
                         <div class="field-label">Barrio</div>
                         <div class="field-value">{{ perfil.persona.barrio }}</div>
                     </div>
-                    <div class="field-box">
-                        <div class="field-label">Teléfono</div>
-                        <div class="field-value">{{ perfil.persona.telefono }}</div>
-                    </div>
-                    <div class="field-box">
-                        <div class="field-label">RUC</div>
-                        {% if perfil.persona.ruc %}
-                            <div class="field-value">{{ perfil.persona.ruc }}</div>
-                        {% else %}
-                            <div class="field-value empty">--</div>
-                        {% endif %}
-                    </div>
                     <div class="field-box full">
                         <div class="field-label">Correo electrónico</div>
                         <div class="field-value">{{ user.email }}</div>
                     </div>
+                    <div class="field-box">
+                        <div class="field-label">Teléfono</div>
+                        <div class="field-value">{{ perfil.persona.telefono }}</div>
+                    </div>
+                    
                 </div>
                 {% endblock %}
 
