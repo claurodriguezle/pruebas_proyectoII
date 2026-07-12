@@ -94,6 +94,20 @@ class DireccionForm(forms.ModelForm):
             "latitud": forms.HiddenInput(),
             "longitud": forms.HiddenInput()
         }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # El modelo tiene blank=True, así que forzamos
+        # que el form lo exija igual
+        self.fields["barrio"].required = True
+        self.fields["barrio"].empty_label = "Seleccione un barrio"
+
+    def clean_barrio(self):
+        barrio = self.cleaned_data.get("barrio")
+        if not barrio:
+            raise forms.ValidationError("Debes seleccionar un barrio.")
+        return barrio
+
     def clean_latitud(self):
         lat = self.cleaned_data.get("latitud")
         if lat is not None:

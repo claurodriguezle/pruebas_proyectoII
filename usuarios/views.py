@@ -159,7 +159,7 @@ def editar_perfil_cliente(request):
             })
 
         # Asignar valores solo si pasó la validación
-        persona.correo   = nuevo_correo   # 👈 la señal propaga esto a usuario.email
+        persona.correo   = nuevo_correo   #  la señal propaga esto a usuario.email
         persona.nombre   = nombre
         persona.apellido = apellido
         persona.telefono = telefono
