@@ -20,7 +20,7 @@
                             <li>Sin {{ item.sin|join:", " }}</li>
                         {% endif %}
                         {% for adicional in item.adicionales %}
-                            <li>+ {{ adicional.nombre }} <span class="text-success">{{ adicional.precio }} Gs</span></li>
+                            <li>+ {{ adicional.nombre }} <span class="text-success">{{ adicional.precio|punto_miles }} Gs</span></li>
                         {% endfor %}
                         {% if item.comentario %}
                             <li>Nota: {{ item.comentario }}</li>

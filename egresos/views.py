@@ -119,9 +119,8 @@ def anular_egreso(request, pk):
 
 @login_required
 def registrar_compra_como_egreso(request, compra_pk):
-    
     compra = get_object_or_404(Compra, pk=compra_pk, estado='ACTIVA')
-    caja = Caja.objects.filter(estado='abierta').first()
+    caja_abierta = Caja.objects.filter(estado='abierta').first()
 
     if hasattr(compra, 'egreso'):
         return redirect('egresos:lista_egresos')
@@ -133,12 +132,13 @@ def registrar_compra_como_egreso(request, compra_pk):
             caja = None
 
             if salio_de_caja:
-                if not caja:
+                if not caja_abierta:  # caja_abierta, no caja
                     form.add_error('salio_de_caja', 'No hay una caja abierta en este momento.')
                     return render(request, 'egresos/form_compra_egreso.html', {
                         'form': form,
                         'compra': compra
                     })
+                caja = caja_abierta  # asigna solo si existe
 
             egreso = Egreso.objects.create(
                 fecha=compra.fecha,
@@ -162,7 +162,7 @@ def registrar_compra_como_egreso(request, compra_pk):
     return render(request, 'egresos/form_compra_egreso.html', {
         'form': form,
         'compra': compra,
-        'caja': caja,
+        'caja': caja_abierta,
     })
 
 @login_required

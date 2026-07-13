@@ -10,8 +10,8 @@ from django.http import HttpResponse
 from django.contrib.auth.models import Group, Permission
 
 # Create your views here.
-def index(request):
-    return render(request, 'usuarios/index.html')
+# def index(request):
+#    return render(request, 'usuarios/index.html')
 
 def sesion(request):
     return render(request, 'usuarios/sesion.html')
@@ -84,21 +84,25 @@ def iniciar_sesion(request):
 
         user = authenticate(request, username=username, password=password)
         if user is not None:
-            # 🔒 VERIFICAR que NO sea empleado
             grupos_empleados = ['Administrador', 'Empleado', 'Cocina']
             es_empleado = user.groups.filter(name__in=grupos_empleados).exists() or user.is_superuser
-            
+
             if es_empleado:
                 messages.error(request, '⚠️ Este portal es solo para clientes. Los empleados deben usar su portal exclusivo.')
                 return render(request, 'usuarios/sesion.html')
-            
-            # Si llega aquí, es un cliente normal
+
             login(request, user)
             messages.success(request, 'Inicio de sesión exitoso.')
-            return redirect('pedidos:index')  # Clientes van al menú de pedidos
+
+            # Verificar si el carrito en sesión tiene productos
+            carrito = request.session.get('carrito', {})
+            if carrito:  # tiene al menos un producto
+                return redirect('pedidos:carrito')
+            else:
+                return redirect('pedidos:menu_productos')
         else:
             messages.error(request, 'Usuario o contraseña incorrectos.')
-    
+
     return render(request, 'usuarios/sesion.html')
 @login_required
 def perfil_user(request):

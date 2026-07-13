@@ -5,7 +5,7 @@
         <div class="form-check">
             <input class="form-check-input" type="checkbox" name="adicional[]" value="{{ adicional.id }}" id="adicional-{{ adicional.id }}">
             <label class="form-check-label" for="adicional-{{ adicional.id }}">
-                Extra {{ adicional.nombre }} <span class="text-muted">+ Gs{{ adicional.precio }}</span>
+                Extra {{ adicional.nombre }} <span class="text-muted"> +{{ adicional.precio|punto_miles }}₲</span>
             </label>
         </div>
     {% empty %}
