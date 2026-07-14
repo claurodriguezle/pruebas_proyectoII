@@ -196,8 +196,9 @@ def agregar_pedido_cuenta(request):
         producto = get_object_or_404(Producto, pk=producto_id, estado='A')
         adicionales = Adicional.objects.filter(id__in=adicionales_ids, activo=True)
 
-        precio_unitario = producto.precio + sum(ad.precio for ad in adicionales)
-        total_item = precio_unitario * cantidad
+        precio_unitario = producto.precio
+        extras_unitario = sum(ad.precio for ad in adicionales)
+        total_item = (precio_unitario + extras_unitario) * cantidad
         total += total_item
 
         productos_info.append({
@@ -290,7 +291,7 @@ def ver_cuenta(request, cuenta_id):
                 'nombre': d.producto.nombre,
                 'cantidad': d.cantidad,
                 'precio_unitario': d.precio_unitario,
-                'subtotal': d.cantidad * d.precio_unitario,
+                'subtotal': d.subtotal(),
             }
             for d in p.detalle.all()
         ]
@@ -671,13 +672,13 @@ def facturar_desde_caja(request, pedido_id):
 
                 # Registrar venta en caja si no existe
                 if not hasattr(pedido, 'venta_caja'):
-                    total_con_delivery = pedido.total + (pedido.costo_delivery or 0)
+                    #total_con_delivery = pedido.total + (pedido.costo_delivery or 0)
                     VentaCaja.objects.create(
                         caja=caja,
                         pedido=pedido,
                         cliente=pedido.cliente,
-                        total=total_con_delivery,
-                        monto_recibido=total_con_delivery,
+                        total=pedido.total,
+                        monto_recibido=pedido.total,
                         vuelto=0,
                         tipo_entrega=pedido.tipo_entrega,
                     )

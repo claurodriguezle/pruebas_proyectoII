@@ -20,7 +20,8 @@ from .models import Stock
 from django.db.models import Sum, F
 #from . import models {}
 from .forms import ItemForm
-
+from django.db import transaction, IntegrityError, connection
+from django.db.models import ProtectedError
 from egresos.models import Egreso
 
 
@@ -226,7 +227,11 @@ def editar_persona(request, id):
 @grupo_requerido('Administrador')
 def eliminar_persona(request, id):
     persona = get_object_or_404(Persona, id=id)
-    persona.delete()
+    try:
+        persona.delete()
+        messages.success(request, 'Persona eliminada correctamente.')
+    except ProtectedError:
+        messages.error(request, 'No se puede eliminar esta persona porque tiene registros asociados')
     return redirect('administrador:listar_personas')
 
 # PRODUCTOS
@@ -708,40 +713,36 @@ def crear_stock(request):
                 }
             )
 
+            if not created_item:
+                messages.error(
+                    request,
+                    f'❌ Ya existe un ítem llamado "{nombre}". '
+                    'Si querés modificar su stock, editalo desde la lista de Stock.'
+                )
+                return redirect('administrador:crear_stock')
+
             proveedor = None
             if proveedor_id:
                 proveedor = Proveedor.objects.get(id=proveedor_id)
 
-            # Si ya existe stock no se debe crear otro
-            stock_existente = Stock.objects.filter(item=item).first()
+            stock = Stock.objects.create(
+                item=item,
+                cant_minima=cant_minima,
+                cant_maxima=cant_maxima,
+                cant_disponible=cant_disponible,
+                proveedor_principal=proveedor
+            )
 
-            if stock_existente:
-                stock_existente.cant_minima = cant_minima
-                stock_existente.cant_maxima = cant_maxima
-                stock_existente.cant_disponible = cant_disponible
-                stock_existente.proveedor_principal = proveedor
-                stock_existente.save()
-            else:
-                stock = Stock.objects.create(
-                    item=item,
-                    cant_minima=cant_minima,
-                    cant_maxima=cant_maxima,
-                    cant_disponible=cant_disponible,
-                    proveedor_principal=proveedor
-                )
+            #Buscar compras anteriores y sumarlas como stock disponible
+            cantidad_total_comprada = item.detalles_compra.aggregate(
+                total=Sum('cantidad')
+            )['total'] or 0
 
-                #Buscar compras anteriores y sumarlas como stock disponible
-                cantidad_total_comprada = item.detalles_compra.aggregate(
-                    total=Sum('cantidad')
-                )['total'] or 0
+            stock.cant_disponible = cantidad_total_comprada
+            stock.save()
 
-                stock.cant_disponible = cantidad_total_comprada
-                stock.save()
-
-
-            messages.success(request, '✅ Ítem y stock creados o actualizados exitosamente')
+            messages.success(request, '✅ Ítem y stock creados exitosamente')
             return redirect('administrador:lista_stock')
-
         except Exception as e:
             messages.error(request, f'❌ Error al crear o actualizar el ítem: {str(e)}')
 
@@ -830,6 +831,14 @@ def editar_stock(request, stock_id):
         except Exception as e:
             messages.error(request, f'❌ Error al editar el stock: {str(e)}')
 
+    # Preparar valores para mostrar en el formulario (GET, o si el POST falló)
+    cant_min_mostrar = stock.cant_minima
+    cant_max_mostrar = stock.cant_maxima
+
+    if stock.item.tipo == 'MATERIA_PRIMA' and stock.item.unidad_medida == 'kg':
+        cant_min_mostrar = cant_min_mostrar / 1000
+        cant_max_mostrar = cant_max_mostrar / 1000
+
     context = {
         'stock': stock,
         'proveedores': Proveedor.objects.all(),
@@ -839,12 +848,12 @@ def editar_stock(request, stock_id):
             'nombre': stock.item.nombre,
             'tipo': stock.item.tipo,
             'unidad_medida': stock.item.unidad_medida,
-            'cant_minima': stock.cant_minima,
-            'cant_maxima': stock.cant_maxima,
-            'proveedor': stock.proveedor_principal.id if stock.proveedor_principal else '',
+            'cant_minima': f"{cant_min_mostrar:.2f}",
+            'cant_maxima': f"{cant_max_mostrar:.2f}",
+            'proveedor': str(stock.proveedor_principal.id) if stock.proveedor_principal else '',
         }
     }
-    return render(request, 'stock/crear_stock.html', context)
+    return render(request, 'stock/editar_stock.html', context)
 
 #Eliminar Stock
 @transaction.atomic
@@ -1057,123 +1066,35 @@ def lista_items(request):
         'query': query
     })
 
-'''
 @grupo_requerido('Administrador')
 def editar_item(request, pk):
     item = get_object_or_404(Item, pk=pk)
-    stock = Stock.objects.filter(item=item).first()
 
-    if request.method == 'POST':
-        # Procesar el formulario cuando se envía
-        form = ItemForm(request.POST, instance=item)
-        if form.is_valid():
-            form.save()
-            messages.success(request, 'Ítem actualizado correctamente')
-            return redirect('administrador:lista_items')
-    else:
-        # Mostrar el formulario con datos actuales
-        form = ItemForm(instance=item)
-    
-    # Preparamos los datos para el template
-    valores_previos = {
-        'nombre': item.nombre,
-        'tipo': item.tipo,
-        'unidad_medida': item.unidad_medida,
-        # No incluimos datos de stock aquí
-    }
-
-    return render(request, 'stock/crear_stock.html', {
-        'modo_edicion': True,  # Flag clave para el template
-        'valores_previos': valores_previos,
-        'tipo_choices': Item.TIPO_CHOICES,
-        'unidad_choices': Item.UNIDAD_CHOICES,
-        'proveedores': Proveedor.objects.all()
-    })
-
-@grupo_requerido('Administrador')
-def editar_item(request, pk):
-    item = get_object_or_404(Item, pk=pk)
-    # Buscar el stock asociado a este item (relación 1 a 1)
-    stock = Stock.objects.filter(item=item).first()
-    
     if request.method == 'POST':
         try:
-            with transaction.atomic():
-                # 1. Actualizar el Item
-                item.nombre = request.POST.get('nombre', '').strip()
-                item.tipo = request.POST.get('tipo')
-                item.unidad_medida = request.POST.get('unidad_medida')
-                item.save()
-                
-                # 2. Actualizar o crear el Stock asociado
-                cant_minima = Decimal(request.POST.get('cant_minima', 0))
-                cant_maxima = Decimal(request.POST.get('cant_maxima', 0))
-                proveedor_id = request.POST.get('proveedor')
-                
-                # Conversión si es materia prima en kg
-                if item.tipo == 'MATERIA_PRIMA' and item.unidad_medida == 'kg':
-                    cant_minima = cant_minima * 1000
-                    cant_maxima = cant_maxima * 1000
-                
-                proveedor = None
-                if proveedor_id:
-                    proveedor = Proveedor.objects.get(id=proveedor_id)
-                
-                if stock:
-                    # Actualizar stock existente
-                    stock.cant_minima = cant_minima
-                    stock.cant_maxima = cant_maxima
-                    stock.proveedor_principal = proveedor
-                    stock.save()
-                else:
-                    # Crear nuevo stock si no existe
-                    stock = Stock.objects.create(
-                        item=item,
-                        cant_minima=cant_minima,
-                        cant_maxima=cant_maxima,
-                        cant_disponible=0,
-                        proveedor_principal=proveedor
-                    )
-                
-                messages.success(request, '✅ Ítem y stock actualizados correctamente')
-                return redirect('administrador:lista_items')
-                
+            item.nombre = request.POST.get('nombre', '').strip()
+            item.tipo = request.POST.get('tipo')
+            item.unidad_medida = request.POST.get('unidad_medida')
+            item.save()
+
+            messages.success(request, '✅ Ítem actualizado correctamente')
+            return redirect('administrador:lista_items')
+
         except Exception as e:
-            messages.error(request, f'❌ Error al actualizar: {str(e)}')
+            messages.error(request, f'❌ Error: {str(e)}')
             return redirect('administrador:editar_item', pk=item.pk)
-    
-    # GET: Preparar valores para el formulario
-    # Valores del item
+
+    # GET - Preparar datos para el formulario
     valores_previos = {
         'nombre': item.nombre,
         'tipo': item.tipo,
         'unidad_medida': item.unidad_medida,
     }
-    
-    # Valores del stock (si existe)
-    if stock:
-        cant_minima = stock.cant_minima
-        cant_maxima = stock.cant_maxima
-        
-        # Convertir de gramos a kg si es materia prima en kg
-        if item.tipo == 'MATERIA_PRIMA' and item.unidad_medida == 'kg':
-            cant_minima = cant_minima / 1000
-            cant_maxima = cant_maxima / 1000
-        
-        valores_previos['cant_minima'] = float(cant_minima)
-        valores_previos['cant_maxima'] = float(cant_maxima)
-        valores_previos['proveedor'] = stock.proveedor_principal.id if stock.proveedor_principal else ''
-    else:
-        valores_previos['cant_minima'] = 0
-        valores_previos['cant_maxima'] = 0
-        valores_previos['proveedor'] = ''
-    
-    return render(request, 'stock/crear_stock.html', {
-        'modo_edicion': True,
+
+    return render(request, 'items/editar_item.html', {
         'valores_previos': valores_previos,
         'tipo_choices': Item.TIPO_CHOICES,
         'unidad_choices': Item.UNIDAD_CHOICES,
-        'proveedores': Proveedor.objects.all()
     })
 '''
 @grupo_requerido('Administrador')
@@ -1240,17 +1161,7 @@ def editar_item(request, pk):
         valores_previos['cant_minima'] = 0
         valores_previos['cant_maxima'] = 0
         valores_previos['proveedor'] = ''
-    
-    # Debug: imprimir en consola para verificar
-    print("=== EDITANDO ITEM ===")
-    print(f"Item ID: {item.id}")
-    print(f"valores_previos: {valores_previos}")
-    # Debug: Verificar que los datos existen antes de renderizar
-    print("=== DATOS ENVIADOS AL TEMPLATE ===")
-    print(f"cant_minima: {valores_previos.get('cant_minima')}")
-    print(f"cant_maxima: {valores_previos.get('cant_maxima')}")
-    print(f"proveedor: {valores_previos.get('proveedor')}")
-    
+
     return render(request, 'stock/crear_stock.html', {
         'valores_previos': valores_previos,
         'tipo_choices': Item.TIPO_CHOICES,
@@ -1259,7 +1170,7 @@ def editar_item(request, pk):
         'modo_edicion': True,  # ← Esta variable está aquí pero el template no la usa
         'es_edicion': True,  # ← Agregamos esta variable para el template
     })
-
+'''
 @grupo_requerido('Administrador')
 def eliminar_item(request, pk):
     item = get_object_or_404(Item, pk=pk)

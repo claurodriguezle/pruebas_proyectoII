@@ -172,8 +172,9 @@ class DetallePedido(models.Model):
 
     def subtotal(self):
         # Precio base x cantidad + suma adicionales
-        return self.precio_unitario * self.cantidad
-    
+        #return self.precio_unitario * self.cantidad
+        total_adicionales = sum(a.subtotal() for a in self.adicionales.all())
+        return (self.precio_unitario + total_adicionales) * self.cantidad   
     def __str__(self):
         return f"{self.cantidad} x {self.producto.nombre}"
 
