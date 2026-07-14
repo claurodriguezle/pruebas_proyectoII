@@ -7,3 +7,10 @@ window.addEventListener('modalProductoCerrado', () => {
     }
 });
 
+document.body.addEventListener('htmx:beforeSwap', function(evt) {
+    if (evt.detail.xhr.status === 422) {
+        // Le decimos a htmx: esto no es un error, sí quiero que lo swapees
+        evt.detail.shouldSwap = true;
+        evt.detail.isError = false;
+    }
+});

@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, NON_FIELD_ERRORS
 from django.contrib import messages
 from django.db import transaction, IntegrityError, connection
 from django.db.models import Q, Value, CharField
@@ -14,6 +14,7 @@ from .models import Compra, DetalleCompra, Item
 from .forms import CompraForm
 from . import models
 from django.utils import timezone
+from django.forms.utils import ErrorDict
 from django.contrib.auth.decorators import login_required
 #Importaciones para Stock
 from .models import Stock
@@ -276,8 +277,13 @@ def crear_htmx(request):
     if form.is_valid():
         producto = form.save()
         return render(request, 'productos/row_partial.html', {'producto': producto})
-    # si hay errores, vuelve a renderizar el mismo partial de formulario
-    return render(request, 'productos/form_partial.html', {'form': form})
+    # Form inválido: mostrar errores dentro del modal, no en la tabla
+    response = render(request, 'productos/form_partial.html', {'form': form})
+    response.status_code = 422
+    response['HX-Retarget'] = '#productFormBody'
+    response['HX-Reswap'] = 'innerHTML'
+    return response
+
 
 # RENDERIZA EL FORMULARIO CON LOS DATOS DE UN PRODUCTO EXISTENTE PARA EDITAR
 @grupo_requerido('Administrador')
@@ -295,12 +301,27 @@ def editar_htmx(request, pk):
     producto = get_object_or_404(Producto, pk=pk)
     form = ProductoForm(request.POST, request.FILES, instance=producto)
     if form.is_valid():
-        producto = form.save()
-        return render(request, 'productos/row_partial.html', {'producto': producto})
-    return render(request, 'productos/form_partial.html', {
+        try:
+            with transaction.atomic():
+                producto = form.save()
+            return render(request, 'productos/row_partial.html', {'producto': producto})
+        except IntegrityError:
+            form.add_error(None, 'El código ingresado o nombre ya existe.')
+    else:
+        # Elimina los errores automaticos de Django para mostrar el error con el estilo de bootstrap
+        if 'codigo' in form.errors or 'nombre' in form.errors or NON_FIELD_ERRORS in form.errors:
+            form._errors = ErrorDict()  # limpia TODOS los errores existentes
+            form.add_error(None, 'El código ingresado o nombre ya existe.')
+
+    # Form inválido: mostrar errores dentro del modal, no en la fila
+    response = render(request, 'productos/form_partial.html', {
         'form': form,
         'producto': producto
     })
+    response.status_code = 422
+    response['HX-Retarget'] = '#productFormBody'
+    response['HX-Reswap'] = 'innerHTML'
+    return response
 
 # ELIMINA UN PRODUCTO Y DEVUELVE UNA RESPUESTA VACÍA PARA QUE HTMX ELIMINE LA FILA EN LA VISTA
 @grupo_requerido('Administrador')

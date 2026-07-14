@@ -164,10 +164,9 @@
             // Barra de busqueda
             document.addEventListener('click', function(e) {
                 const input = document.getElementById('buscar');
-                const resultados = document.getElementById('productos-lista');
-                
-                if (!input.contains(e.target)) {
-                    // Limpiar el input y disparar búsqueda vacía
+
+                // Solo actuar si el click fue afuera del input Y el input tiene texto
+                if (!input.contains(e.target) && input.value.trim() !== '') {
                     input.value = '';
                     htmx.ajax('GET', "{% url 'pedidos:buscar_productos' %}", {
                         target: '#productos-lista',

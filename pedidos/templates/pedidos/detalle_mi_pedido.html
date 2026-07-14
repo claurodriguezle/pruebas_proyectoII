@@ -151,7 +151,7 @@
                 <div class="mt-2 ms-3 small text-muted">
                   {% for ad in det.adicionales.all %}
                     <div>
-                      + {{ ad.cantidad }} x {{ ad.adicional.nombre }}
+                      <strong>Extra:</strong> +{{ ad.cantidad }} x {{ ad.adicional.nombre }} Gs {{ ad.adicional.precio|punto_miles }}
                     </div>
                   {% endfor %}
                 </div>

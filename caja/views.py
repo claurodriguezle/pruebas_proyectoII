@@ -671,7 +671,7 @@ def facturar_desde_caja(request, pedido_id):
 
                 # Registrar venta en caja si no existe
                 if not hasattr(pedido, 'venta_caja'):
-                    total_con_delivery = pedido.total + (pedido.costo_delivery or 0)
+                    total_con_delivery = pedido.total #+ (pedido.costo_delivery or 0)
                     VentaCaja.objects.create(
                         caja=caja,
                         pedido=pedido,

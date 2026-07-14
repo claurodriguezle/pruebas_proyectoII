@@ -11,6 +11,9 @@ from django.db.models.functions import ExtractWeekDay
 from facturacion.models import DetalleFactura, Factura
 from administrador.models import Item, DetalleCompra, Producto, IngredienteProducto, CategoriaProducto, Stock
 from reportes.utils_costos import calcular_cpp_por_item, calcular_costo_producto, cpp_display
+#Importaciones para permisos
+from usuarios.decorators import grupo_requerido
+from django.contrib.auth.decorators import login_required
 
 def _get_datos_reporte(fecha_inicio, fecha_fin, categoria_id=None):
 
@@ -709,7 +712,8 @@ def reporte_stock_datos(request):
     return render(request, 'reportes/partials/stock_resultados.html', context)
 
 # REPORTE DE COSTOS DE TODOS LOS PRODUCTOS (por categoría y rango de fechas)
-
+@grupo_requerido('Administrador')
+@login_required
 def reporte_costos_productos(request):
     """Vista principal del reporte de costos de todos los productos activos."""
     hoy = date.today()
@@ -721,20 +725,25 @@ def reporte_costos_productos(request):
     }
     return render(request, 'reportes/costos_productos.html', context)
 
-
+@grupo_requerido('Administrador')
+@login_required
 def reporte_costos_productos_datos(request):
     """Partial HTMX con los datos del reporte de costos de todos los productos activos."""
     hoy = date.today()
 
     # --- Parámetros ---
-    try:
-        fecha_inicio = date.fromisoformat(request.GET.get('fecha_inicio', ''))
-    except (ValueError, TypeError):
-        fecha_inicio = hoy.replace(day=1)
+    fecha_inicio_str = request.GET.get('fecha_inicio')
+    fecha_fin_str = request.GET.get('fecha_fin')
 
-    try:
-        fecha_fin = date.fromisoformat(request.GET.get('fecha_fin', ''))
-    except (ValueError, TypeError):
+    fecha_inicio = parse_date(fecha_inicio_str) if fecha_inicio_str else hoy.replace(day=1)
+    fecha_fin = parse_date(fecha_fin_str) if fecha_fin_str else hoy
+
+    if not fecha_inicio or not fecha_fin:
+        fecha_inicio = hoy.replace(day=1)
+        fecha_fin = hoy
+
+    # La fecha fin no puede superar el día de hoy
+    if fecha_fin > hoy:
         fecha_fin = hoy
 
     if fecha_inicio > fecha_fin:

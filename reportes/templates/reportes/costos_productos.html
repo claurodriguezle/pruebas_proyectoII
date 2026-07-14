@@ -62,6 +62,13 @@
           </button>
         </div>
 
+        <div class="col-6 d-none" id="error-fechas">
+          <div class="alert alert-danger py-2 mb-0 small">
+              <i class="bi bi-exclamation-triangle me-1"></i>
+              <span id="error-fechas-msg"></span>
+          </div>
+        </div>
+
       </form>
     </div>
   </div>
@@ -104,6 +111,42 @@
       filtrosHTML: `Categoría: <strong>${categoriaTxt}</strong> &nbsp;|&nbsp; CPP calculado hasta: <strong>${fmt(fechaFin)}</strong>`
     });
   }
-</script>
+
+document.addEventListener('DOMContentLoaded', function () {
+    const filtrosForm = document.getElementById('filtros-form');
+    if (!filtrosForm) return;
+
+    filtrosForm.addEventListener('htmx:confirm', function (evt) {
+        const fechaInicioEl = document.getElementById('fecha_inicio');
+        const fechaFinEl = document.getElementById('fecha_fin');
+        const errorDiv = document.getElementById('error-fechas');
+        const errorMsg = document.getElementById('error-fechas-msg');
+
+        if (!fechaInicioEl || !fechaFinEl || !errorDiv || !errorMsg) return;
+
+        const fechaInicio = fechaInicioEl.value;
+        const fechaFin = fechaFinEl.value;
+        const hoy = new Date().toISOString().split('T')[0];
+
+        let mensaje = null;
+
+        if (!fechaInicio || !fechaFin) {
+            mensaje = 'Debés seleccionar ambas fechas.';
+        } else if (fechaFin > hoy) {
+            mensaje = 'La fecha "Hasta" no puede ser posterior al día de hoy.';
+        } else if (fechaInicio > fechaFin) {
+            mensaje = 'La fecha "Desde" no puede ser posterior a la fecha "Hasta".';
+        }
+
+        if (mensaje) {
+            evt.preventDefault();
+            errorMsg.textContent = mensaje;
+            errorDiv.classList.remove('d-none');
+            return;
+        }
+
+        errorDiv.classList.add('d-none');
+    });
+});
 
 {% endblock %}
