@@ -328,17 +328,28 @@ def emitir_factura(request, venta_id):
  
     # Detalles desde cuenta de mesa (múltiples pedidos)
     if venta.cuenta:
-        for pedido in venta.cuenta.pedidos.exclude(estado_entrega='CA'):
-            for item in pedido.detalle.select_related('producto').all():
-                DetalleFactura.objects.create(
-                    factura         = factura,
-                    producto        = item.producto,
-                    descripcion     = item.producto.nombre,
-                    codigo_producto = item.producto.codigo,
-                    cantidad        = item.cantidad,
-                    precio_unitario = item.precio_unitario,
-                    total           = item.precio_unitario * item.cantidad,
-                )
+            for pedido in venta.cuenta.pedidos.exclude(estado_entrega='CA'):
+                for item in pedido.detalle.select_related('producto').all():
+                    DetalleFactura.objects.create(
+                        factura         = factura,
+                        producto        = item.producto,
+                        descripcion     = item.producto.nombre,
+                        codigo_producto = item.producto.codigo,
+                        cantidad        = item.cantidad,
+                        precio_unitario = item.precio_unitario,
+                        total           = item.precio_unitario * item.cantidad,
+                    )
+                    for extra in item.adicionales.select_related('adicional').all():
+                        cantidad_extra = extra.cantidad * item.cantidad
+                        DetalleFactura.objects.create(
+                            factura         = factura,
+                            producto        = item.producto,
+                            descripcion     = f"Extra: {extra.adicional.nombre}",
+                            codigo_producto = item.producto.codigo,
+                            cantidad        = cantidad_extra,
+                            precio_unitario = extra.adicional.precio,
+                            total           = extra.adicional.precio * cantidad_extra,
+                        )
     # Fallback: venta directa con pedido único
     elif venta.pedido:
         for item in venta.pedido.detalle.select_related('producto').all():
@@ -351,6 +362,17 @@ def emitir_factura(request, venta_id):
                 precio_unitario = item.precio_unitario,
                 total           = item.precio_unitario * item.cantidad,
             )
+            for extra in item.adicionales.select_related('adicional').all():
+                cantidad_extra = extra.cantidad * item.cantidad
+                DetalleFactura.objects.create(
+                    factura         = factura,
+                    producto        = item.producto,
+                    descripcion     = f"Extra: {extra.adicional.nombre}",
+                    codigo_producto = item.producto.codigo,
+                    cantidad        = cantidad_extra,
+                    precio_unitario = extra.adicional.precio,
+                    total           = extra.adicional.precio * cantidad_extra,
+                )
  
     factura.calcular_totales()
     messages.success(request, f"✅ Factura {nro_fact} emitida correctamente.")

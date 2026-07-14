@@ -131,8 +131,6 @@ class Item(models.Model):
         ('unidad','Unidad'),
         ('kg','Kilogramo'),
         ('gr','Gramo'),
-        ('lt','Litro'),
-        ('ml','Mililitro'),
     ]
     TIPO_CHOICES = [
         ('MATERIA_PRIMA', 'Materia_Prima'),

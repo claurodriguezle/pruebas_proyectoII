@@ -103,20 +103,34 @@ def generar_factura_desde_pedido(pedido):
 
     # ── Crear los detalles de productos ──────────────────────────────────────
     for detalle in pedido.detalle.select_related('producto').all():
-        precio_unit = detalle.precio_unitario
-        cantidad    = detalle.cantidad
-        total_item  = precio_unit * cantidad
+            precio_unit = detalle.precio_unitario
+            cantidad    = detalle.cantidad
+            total_item  = precio_unit * cantidad
 
-        DetalleFactura.objects.create(
-            factura          = factura,
-            producto         = detalle.producto,
-            descripcion      = detalle.producto.nombre,
-            codigo_producto  = detalle.producto.codigo,
-            cantidad         = cantidad,
-            precio_unitario  = precio_unit,
-            descuento        = 0,
-            total            = total_item,
-        )
+            DetalleFactura.objects.create(
+                factura          = factura,
+                producto         = detalle.producto,
+                descripcion      = detalle.producto.nombre,
+                codigo_producto  = detalle.producto.codigo,
+                cantidad         = cantidad,
+                precio_unitario  = precio_unit,
+                descuento        = 0,
+                total            = total_item,
+            )
+
+            # Un renglón aparte por cada extra de esta línea
+            for extra in detalle.adicionales.select_related('adicional').all():
+                cantidad_extra = extra.cantidad * cantidad
+                DetalleFactura.objects.create(
+                    factura          = factura,
+                    producto         = detalle.producto,
+                    descripcion      = f"Extra: {extra.adicional.nombre}",
+                    codigo_producto  = detalle.producto.codigo,
+                    cantidad         = cantidad_extra,
+                    precio_unitario  = extra.adicional.precio,
+                    descuento        = 0,
+                    total            = extra.adicional.precio * cantidad_extra,
+                )
 
     # ── 🔥 NUEVO: Agregar costo de delivery como item separado ───────────────
     if pedido.costo_delivery and pedido.costo_delivery > 0:
