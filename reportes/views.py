@@ -43,7 +43,8 @@ def _get_datos_reporte(fecha_inicio, fecha_fin, categoria_id=None):
 
     return list(datos)
 
-
+@grupo_requerido('Administrador')
+@login_required
 def reporte_ventas_productos(request):
     # Vista principal del reporte. Renderiza el template con filtros
 
@@ -65,7 +66,8 @@ def reporte_ventas_productos(request):
     }
     return render(request, 'reportes/ventas_productos.html', context)
 
-
+@grupo_requerido('Administrador')
+@login_required
 def reporte_ventas_productos_datos(request):
     
     # Endpoint HTMX que retorna el HTML parcial con los resultados del reporte.
@@ -121,6 +123,8 @@ def reporte_ventas_productos_datos(request):
 
 # REPORTE: DELIVERY VS RETIRO
 
+@grupo_requerido('Administrador')
+@login_required
 def reporte_entregas(request):
     #Vista principal del reporte de tipos de entrega
     hoy = date.today()
@@ -198,6 +202,8 @@ def reporte_entregas_datos(request):
     return render(request, 'reportes/partials/entregas_resultados.html', context)
 
 # REPORTE DE TOP 10 CLIENTES
+@grupo_requerido('Administrador')
+@login_required
 def reporte_top_clientes(request):
     #Vista principal del reporte de top clientes
     hoy = date.today()
@@ -261,6 +267,8 @@ def reporte_top_clientes_datos(request):
     return render(request, 'reportes/partials/top_clientes_resultados.html', context)
 
 # REPORTES DE VENTAS
+@grupo_requerido('Administrador')
+@login_required
 def reporte_ventas(request):
     #Vista principal del reporte de ventas
     hoy = date.today()
@@ -335,6 +343,8 @@ def reporte_ventas_datos(request):
     return render(request, 'reportes/partials/ventas_resultados.html', context)
 
 # REPORTES DE COSTOS
+@grupo_requerido('Administrador')
+@login_required
 def reporte_costos(request):
     """Vista principal del reporte de costos mensuales."""
     hoy = date.today()
@@ -472,6 +482,8 @@ def reporte_costos_datos(request):
 
 # REPORTE DE GANANCIAS
 
+@grupo_requerido('Administrador')
+@login_required
 def reporte_ganancias(request):
     """Vista principal del reporte de ganancias mensuales."""
     hoy = date.today()
@@ -487,7 +499,8 @@ def reporte_ganancias(request):
     }
     return render(request, 'reportes/ganancias.html', context)
  
- 
+@grupo_requerido('Administrador')
+@login_required
 def reporte_ganancias_datos(request):
     """Partial HTMX con los datos del reporte de ganancias del período."""
     hoy = date.today()
@@ -664,7 +677,6 @@ def _get_datos_stock(fecha_fin):
 
     return datos
 
-
 def _parse_fechas(request):
     """Parsea y valida fechas desde GET. Devuelve (fecha_inicio, fecha_fin)."""
     hoy = date.today()
@@ -684,7 +696,8 @@ def _parse_fechas(request):
     return fecha_inicio, fecha_fin
 
 # Vistas
-
+@grupo_requerido('Administrador')
+@login_required
 def reporte_stock(request):
     """Vista principal. Renderiza el template con filtros."""
     hoy = date.today()
@@ -694,7 +707,8 @@ def reporte_stock(request):
     }
     return render(request, 'reportes/stock.html', context)
 
-
+@grupo_requerido('Administrador')
+@login_required
 def reporte_stock_datos(request):
     """Endpoint HTMX. Devuelve el partial con la tabla de resultados."""
     fecha_inicio, fecha_fin = _parse_fechas(request)

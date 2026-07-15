@@ -101,11 +101,11 @@ WSGI_APPLICATION = 'burgerSystem.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME':'Db_Burger_App',
-        'USER':'crodriguez',
-        'PASSWORD':'12345',
+        'NAME':'db_burgerapp',
+        'USER':'ruizj',
+        'PASSWORD':'admin',
         'HOST':'localhost',
-        'PORT': '5433',
+        'PORT': '5432',
     }
 }
 
@@ -140,7 +140,7 @@ USE_I18N = True
 
 USE_TZ = True
 
-SESSION_COOKIE_AGE = 600
+SESSION_COOKIE_AGE = 600000000
 LOGIN_URL = 'usuarios:sesion'
 SESSION_SAVE_EVERY_REQUEST = True
 
