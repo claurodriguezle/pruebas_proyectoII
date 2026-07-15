@@ -709,21 +709,21 @@ def crear_stock(request):
             tipo = request.POST.get('tipo')
             unidad_medida = request.POST.get('unidad_medida')
             cant_minima = Decimal(request.POST.get('cant_minima', 0))
-            cant_maxima = Decimal(request.POST.get('cant_maxima', 0))
+            #cant_maxima = Decimal(request.POST.get('cant_maxima', 0))
             cant_disponible = Decimal(request.POST.get('cant_disponible', 0))
             proveedor_id = request.POST.get('proveedor')
 
             if not nombre:
                 raise ValidationError("El nombre del ítem es requerido")
-            if cant_minima < 0 or cant_maxima < 0 or cant_disponible < 0:
+            '''if cant_minima < 0 or cant_maxima < 0 or cant_disponible < 0:
                 raise ValidationError("Las cantidades no pueden ser negativas")
             if cant_minima > cant_maxima:
-                raise ValidationError("La cantidad mínima no puede ser mayor que la máxima")
+                raise ValidationError("La cantidad mínima no puede ser mayor que la máxima")'''
 
             #  Conversión automática si unidad es kg
             if tipo == 'MATERIA_PRIMA' and unidad_medida == 'kg':
                 cant_minima = cant_minima * 1000
-                cant_maxima = cant_maxima * 1000
+                #cant_maxima = cant_maxima * 1000
                 cant_disponible = cant_disponible * 1000
 
             item, created_item = Item.objects.get_or_create(
@@ -749,7 +749,7 @@ def crear_stock(request):
             stock = Stock.objects.create(
                 item=item,
                 cant_minima=cant_minima,
-                cant_maxima=cant_maxima,
+                #cant_maxima=cant_maxima,
                 cant_disponible=cant_disponible,
                 proveedor_principal=proveedor
             )
@@ -791,7 +791,7 @@ def actualizar_stock_desde_compra(compra):
                 stock = Stock.objects.create(
                     item=detalle_compra.item,
                     cant_minima=0,
-                    cant_maxima=0,
+                    #cant_maxima=0,
                     cant_disponible=0,
                     proveedor_principal=detalle_compra.compra.proveedor
                 )
@@ -829,20 +829,20 @@ def editar_stock(request, stock_id):
     if request.method == 'POST':
         try:
             cant_minima = Decimal(request.POST.get('cant_minima', 0))
-            cant_maxima = Decimal(request.POST.get('cant_maxima', 0))
+            #cant_maxima = Decimal(request.POST.get('cant_maxima', 0))
             proveedor_id = request.POST.get('proveedor')
 
-            if cant_minima < 0 or cant_maxima < 0:
+            if cant_minima < 0 :
                 raise ValidationError("Las cantidades no pueden ser negativas")
-            if cant_minima > cant_maxima:
-                raise ValidationError("La cantidad mínima no puede ser mayor que la máxima")
+            '''if cant_minima > cant_maxima:
+                raise ValidationError("La cantidad mínima no puede ser mayor que la máxima")'''
 
             if stock.item.tipo == 'MATERIA_PRIMA' and stock.item.unidad_medida == 'kg':
                 cant_minima = cant_minima * 1000
-                cant_maxima = cant_maxima * 1000
+                #cant_maxima = cant_maxima * 1000
 
             stock.cant_minima = cant_minima
-            stock.cant_maxima = cant_maxima
+            #stock.cant_maxima = cant_maxima
             stock.proveedor_principal = Proveedor.objects.get(id=proveedor_id) if proveedor_id else None
             stock.save()
 
@@ -854,11 +854,11 @@ def editar_stock(request, stock_id):
 
     # Preparar valores para mostrar en el formulario (GET, o si el POST falló)
     cant_min_mostrar = stock.cant_minima
-    cant_max_mostrar = stock.cant_maxima
+    #cant_max_mostrar = stock.cant_maxima
 
     if stock.item.tipo == 'MATERIA_PRIMA' and stock.item.unidad_medida == 'kg':
         cant_min_mostrar = cant_min_mostrar / 1000
-        cant_max_mostrar = cant_max_mostrar / 1000
+        #cant_max_mostrar = cant_max_mostrar / 1000
 
     context = {
         'stock': stock,
@@ -870,7 +870,7 @@ def editar_stock(request, stock_id):
             'tipo': stock.item.tipo,
             'unidad_medida': stock.item.unidad_medida,
             'cant_minima': f"{cant_min_mostrar:.2f}",
-            'cant_maxima': f"{cant_max_mostrar:.2f}",
+            #'cant_maxima': f"{cant_max_mostrar:.2f}",
             'proveedor': str(stock.proveedor_principal.id) if stock.proveedor_principal else '',
         }
     }
@@ -1093,7 +1093,18 @@ def editar_item(request, pk):
 
     if request.method == 'POST':
         try:
-            item.nombre = request.POST.get('nombre', '').strip()
+            nombre = request.POST.get('nombre', '').strip()
+            nombre = Item.estandarizar_nombre(nombre)  # mismo estandarizado que usa crear_stock
+
+            if not nombre:
+                raise ValidationError("El nombre del ítem es requerido")
+
+            # Verificar que no exista OTRO ítem con ese nombre (excluyendo el actual)
+            if Item.objects.filter(nombre=nombre).exclude(pk=item.pk).exists():
+                messages.error(request, f'❌ Ya existe un ítem llamado "{nombre}".')
+                return redirect('administrador:editar_item', pk=item.pk)
+
+            item.nombre = nombre
             item.tipo = request.POST.get('tipo')
             item.unidad_medida = request.POST.get('unidad_medida')
             item.save()
