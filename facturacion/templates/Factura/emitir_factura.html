@@ -471,6 +471,7 @@ function mostrarClienteEncontrado(data) {
     hiddenId.value  = data.cliente_id;
     hiddenDir.value = data.ciudad || '';
 
+    document.getElementById('error-busqueda').style.display     = 'none';
     document.getElementById('cliente-encontrado').style.display = 'block';
     document.getElementById('registro-rapido').style.display    = 'none';
     btnSubmit.disabled = false;
@@ -524,9 +525,9 @@ async function registrarCliente() {
         const data = await r.json();
 
         if (data.success) {
+            mostrarClienteEncontrado(data);
             // Guardar dirección ingresada en el campo oculto
             hiddenDir.value = payload.direccion;
-            mostrarClienteEncontrado(data);
         } else {
             errBox.textContent   = data.error;
             errBox.style.display = 'block';

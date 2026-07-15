@@ -637,10 +637,10 @@ function agregarProductoPersonalizado(modalElement) {
         let adicionalPrecio = 0;
         if (label) {
             const texto = label.textContent;
-            const match = texto.match(/Extra (.+?) \+Gs(\d+)/);
+            const match = texto.match(/Extra\s+(.+?)\s+\+([\d.]+)\s*₲/);
             if (match) {
-                adicionalNombre = match[1];
-                adicionalPrecio = parseInt(match[2]);
+                adicionalNombre = match[1].trim();
+                adicionalPrecio = parseInt(match[2].replace(/\./g, ''), 10);
             }
         }
         adicionalesSeleccionados.push({
@@ -877,11 +877,14 @@ function cargarCuenta() {
                     <strong class="small">Pedido #${p.pedido_id}</strong>
                     ${badgeCocina}
                 </div>`;
-            p.items.forEach(item => {
+             p.items.forEach(item => {
+                const extrasTexto = item.adicionales && item.adicionales.length
+                    ? `<div class="ps-3" style="font-size:.7rem;color:#888;">+ ${item.adicionales.join(', ')}</div>`
+                    : '';
                 html += `<div class="d-flex justify-content-between small text-muted px-1">
                     <span>${item.cantidad}× ${item.nombre}</span>
                     <span>${gs(item.subtotal)}</span>
-                </div>`;
+                </div>${extrasTexto}`;
             });
             html += `<div class="d-flex justify-content-between align-items-center mt-1">
                         <span class="small fw-semibold text-danger">Subtotal: ${gs(p.total)}</span>

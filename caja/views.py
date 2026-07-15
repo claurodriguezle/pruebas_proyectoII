@@ -292,6 +292,7 @@ def ver_cuenta(request, cuenta_id):
                 'cantidad': d.cantidad,
                 'precio_unitario': d.precio_unitario,
                 'subtotal': d.subtotal(),
+                'adicionales': [a.adicional.nombre for a in d.adicionales.select_related('adicional').all()],
             }
             for d in p.detalle.all()
         ]

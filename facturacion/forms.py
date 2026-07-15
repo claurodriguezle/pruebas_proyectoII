@@ -6,10 +6,10 @@ from .models import Timbrado, Factura
 class TimbradoForm(forms.ModelForm):
     class Meta:
         model = Timbrado
-        fields = '__all__'
+        fields = ['numero', 'ruc', 'fecha_inicio_vigencia', 'fecha_fin_vigencia', 'activo']
         widgets = {
-            'fecha_inicio_vigencia': forms.DateInput(attrs={'type': 'date'}),
-            'fecha_fin_vigencia': forms.DateInput(attrs={'type': 'date'}),
+            'fecha_inicio_vigencia': forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date'}),
+            'fecha_fin_vigencia': forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date'}),
         }
 
 class FacturaForm(forms.ModelForm):

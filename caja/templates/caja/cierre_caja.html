@@ -202,12 +202,13 @@
                             </label>
                             <div class="input-group input-group-lg">
                                 <span class="input-group-text">Gs</span>
-                                <input type="number"
+                                <input type="text"
+                                       inputmode="numeric"
                                        class="form-control"
                                        id="monto_final_real"
                                        name="monto_final_real"
-                                       step="1"
-                                       min="0"
+                                       
+                                       
                                        required
                                        placeholder="0"
                                        autofocus>
@@ -245,10 +246,14 @@
 </div>
 
 <script>
-const montoEsperado = parseFloat("{{ caja.monto_final_esperado|punto_miles }}") || 0;
+const montoEsperado = parseFloat("{{ caja.monto_final_esperado}}") || 0;
 
 document.getElementById('monto_final_real').addEventListener('input', function () {
-    const montoReal = parseInt(this.value) || 0;
+    // Formatear con puntos de miles mientras se escribe
+    const soloDigitos = this.value.replace(/\D/g, '');
+    this.value = soloDigitos ? parseInt(soloDigitos, 10).toLocaleString('es-PY') : '';
+
+    const montoReal = parseInt(soloDigitos) || 0;
     const diferencia = montoReal - montoEsperado;
 
     const diffInfo = document.getElementById('diferencia-info');

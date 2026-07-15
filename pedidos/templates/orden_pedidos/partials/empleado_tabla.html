@@ -9,7 +9,7 @@
         <th>Mesa</th>
         <th>Cliente</th>
         <th>Items</th>
-        <th>Total</th>
+        <!--<th>Total</th>-->
         <th>Cocina</th>
         <th>Entrega</th>
         <th>Acciones</th>
@@ -54,7 +54,7 @@
             </div>
           </td>
 
-          <td><div class="order-total">{{ p.total_con_delivery|punto_miles }} Gs.</div></td>
+          <!--<td><div class="order-total">{{ p.total_con_delivery|punto_miles }} Gs.</div></td>-->
 
           <td>
             <span class="badge badge-cocina-{{ p.estado_cocina }}">
@@ -67,7 +67,7 @@
 
           <td>
             <span class="badge badge-entrega-{{ p.estado_entrega }}">
-              {% if p.estado_entrega == 'PE' %}⏳ Pendiente en cocina
+              {% if p.estado_entrega == 'PE' %}⏳ Pendiente
               {% elif p.estado_entrega == 'EN' %}📦 Entregado
               {% elif p.estado_entrega == 'PP' %}💰 Pendiente Pago
               {% elif p.estado_entrega == 'FA' %}📄 Facturado
